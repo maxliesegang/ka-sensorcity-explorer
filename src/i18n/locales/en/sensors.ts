@@ -1,0 +1,55 @@
+export default {
+  badge: "Filter sensors",
+  heading: "Sensors",
+  intro:
+    "Browse every live station as scannable cards or a dense table. Select one to see current readings, history and raw attributes.",
+  empty: "No sensors found.",
+  noMatch: "No sensors match these filters.",
+  filtersAria: "Sensor filters",
+  stats: {
+    matching: "matching sensors",
+    mapped: "mapped",
+    freshest: "freshest reading",
+  },
+  search: {
+    label: "Search by name",
+    placeholder: "e.g. Marktplatz",
+  },
+  category: {
+    label: "Category",
+    all: "All categories",
+  },
+  sort: {
+    label: "Sort by",
+    name: "Name",
+    category: "Category",
+    value: "Current value",
+    measuredAt: "Last reading",
+    ascending: "Ascending",
+    descending: "Descending",
+    toggleDirection: "Toggle sort direction",
+  },
+  reset: "Reset",
+  quickFiltersAria: "Quick category filters",
+  allCategories: "All",
+  result_one: "{{count}} sensor",
+  result_other: "{{count}} sensors",
+  inCategory: " in {{category}}",
+  view: {
+    label: "View",
+    cards: "Cards",
+    table: "Table",
+  },
+  columns: {
+    name: "Name",
+    category: "Category",
+    value: "Current value",
+    lastReading: "Last reading",
+  },
+  badges: {
+    mapped: "Mapped",
+    noMap: "No map",
+  },
+  currentValue: "Current value",
+  openDetails: "Open details",
+} as const;

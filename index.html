@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Karlsruhe SensorCity Explorer</title>
+    <meta
+      name="description"
+      content="A minimal explorer for the City of Karlsruhe SensorCity sensor network."
+    />
+  </head>
+  <body>
+    <!--
+      KERN exposes its colour tokens through an elevation-context class
+      (`kern-level-0/1/2`). `kern-level-0` is the page base level: it wires up
+      the `*-contextual` tokens the app's components reference and keeps the
+      content background in step with the `<body>` background in both the light
+      and dark OS colour schemes.
+    -->
+    <div id="root" class="kern-level-0"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

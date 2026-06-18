@@ -1,0 +1,55 @@
+export default {
+  badge: "Sensoren filtern",
+  heading: "Sensoren",
+  intro:
+    "Durchsuchen Sie jede Live-Station als übersichtliche Karten oder als kompakte Tabelle. Wählen Sie eine Station, um aktuelle Messwerte, den Verlauf und die Rohattribute anzuzeigen.",
+  empty: "Keine Sensoren gefunden.",
+  noMatch: "Keine Sensoren entsprechen diesen Filtern.",
+  filtersAria: "Sensorfilter",
+  stats: {
+    matching: "passende Sensoren",
+    mapped: "auf der Karte",
+    freshest: "aktuellster Messwert",
+  },
+  search: {
+    label: "Nach Name suchen",
+    placeholder: "z. B. Marktplatz",
+  },
+  category: {
+    label: "Kategorie",
+    all: "Alle Kategorien",
+  },
+  sort: {
+    label: "Sortieren nach",
+    name: "Name",
+    category: "Kategorie",
+    value: "Aktueller Wert",
+    measuredAt: "Letzter Messwert",
+    ascending: "Aufsteigend",
+    descending: "Absteigend",
+    toggleDirection: "Sortierrichtung umschalten",
+  },
+  reset: "Zurücksetzen",
+  quickFiltersAria: "Schnellfilter nach Kategorie",
+  allCategories: "Alle",
+  result_one: "{{count}} Sensor",
+  result_other: "{{count}} Sensoren",
+  inCategory: " in {{category}}",
+  view: {
+    label: "Ansicht",
+    cards: "Karten",
+    table: "Tabelle",
+  },
+  columns: {
+    name: "Name",
+    category: "Kategorie",
+    value: "Aktueller Wert",
+    lastReading: "Letzter Messwert",
+  },
+  badges: {
+    mapped: "Auf Karte",
+    noMap: "Keine Karte",
+  },
+  currentValue: "Aktueller Wert",
+  openDetails: "Details öffnen",
+} as const;

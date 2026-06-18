@@ -1,0 +1,2399 @@
+/*
+ * App layout on top of the KERN UX design system. Components (buttons, tables,
+ * badges, alerts, forms, headings, links) come from KERN classes; this file
+ * only adds page structure and a few things KERN doesn't cover (the map, the
+ * SVG chart, category accent dots). All colours/spacing reference KERN tokens.
+ */
+
+:root {
+  --app-max-width: 1160px;
+  --app-reading-width: 760px;
+  --kern-color-layout-text-default-contextual: var(--kern-color-layout-text-default);
+  --kern-color-layout-text-muted-contextual: var(--kern-color-layout-text-muted);
+  --kern-color-layout-text-inverse-contextual: var(--kern-color-layout-text-inverse);
+  --kern-color-layout-layer-surface-contextual: var(--kern-color-layout-background-hued);
+  --kern-color-layout-background-default-contextual: var(--kern-color-layout-background-default);
+  --kern-color-layout-border-contextual: var(--kern-color-layout-border);
+  --kern-color-action-default-contextual: var(--kern-color-action-default);
+  --kern-color-action-on-default-contextual: var(--kern-color-action-on-default);
+  --kern-color-action-focus-default-contextual: var(--kern-color-action-focus-border-outside);
+  --kern-color-decorative-border-contextual: var(--kern-color-layout-border);
+  /* Let native UI (form controls, scrollbars) follow the OS scheme, in step
+     with KERN's prefers-color-scheme token set. */
+  color-scheme: light dark;
+}
+
+:root[data-kern-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-kern-theme="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+  overflow-x: hidden;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+}
+
+/* Skip link ---------------------------------------------------------------- */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 1000;
+  padding: 0.5rem 1rem;
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  transition: top 0.15s ease-in;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+/* Header ------------------------------------------------------------------- */
+.app__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  max-width: var(--app-max-width);
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--kern-metric-space-default, 1rem) 1.25rem;
+}
+
+.app__header-wrap {
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  border-bottom: var(--kern-metric-border-width-default, 2px) solid
+    var(--kern-color-layout-border-contextual, #6e7597);
+  position: sticky;
+  top: 0;
+  z-index: 900;
+}
+
+.app__brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  line-height: 1.15;
+  color: inherit;
+  text-decoration: none;
+}
+
+.app__title {
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  font-size: 1.25rem;
+}
+
+.app__nav {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.app__nav-link {
+  padding: 0.5rem 0.8rem;
+  text-decoration: none;
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  min-height: 2.5rem;
+}
+
+.app__nav-link:hover {
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+}
+
+.app__nav-link--active,
+.app__nav-link--active:hover {
+  background: var(--kern-color-action-default-contextual, #2044aa);
+  /* Pair text with the action background so it stays legible in dark mode. */
+  color: var(--kern-color-action-on-default-contextual, #fff);
+}
+
+.app__nav-link:focus-visible {
+  outline: 3px solid var(--kern-color-action-focus-default-contextual, #454b6b);
+  outline-offset: 2px;
+}
+
+/* KERN icons are CSS masks. KERN components (for example .kern-btn/.kern-link)
+   set their own icon colours; app-owned controls do the same through currentColor
+   so active, hover, and theme states stay in sync without per-icon overrides. */
+:is(
+  .app__nav-link,
+  .theme-switch__option,
+  .map-filter__only,
+  .th-sort,
+  .category-option,
+  .segmented-control__option,
+  .preset-button,
+  .action-card__icon,
+  .signal-card__age
+) .kern-icon {
+  background-color: currentColor;
+}
+
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--kern-metric-space-2x-small, 0.125rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+}
+
+.theme-switch__option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  min-height: 2.25rem;
+  padding: 0.35rem 0.6rem;
+  border: 0;
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  background: transparent;
+  font: inherit;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.theme-switch__option:hover {
+  color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.theme-switch__option--active,
+.theme-switch__option--active:hover {
+  color: var(--kern-color-action-on-default-contextual, #fff);
+  background: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.theme-switch__option:focus-visible {
+  outline: 3px solid var(--kern-color-action-focus-default-contextual, #454b6b);
+  outline-offset: 2px;
+}
+
+.theme-switch__text {
+  font-size: 0.875rem;
+}
+
+/* Language switch reuses .theme-switch; its options are short codes (EN/DE). */
+.theme-switch__text--code {
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+}
+
+/* Main / footer ------------------------------------------------------------ */
+.app__main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  padding: var(--kern-metric-space-x-large, 2rem) 1.25rem 3.5rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.app__main:focus {
+  outline: none;
+}
+
+.app__footer {
+  border-top: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  padding: var(--kern-metric-space-default, 1rem) 1.25rem;
+  font-size: 0.85rem;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  max-width: var(--app-max-width);
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Generic blocks ----------------------------------------------------------- */
+.view-header {
+  max-width: var(--app-reading-width);
+  margin-bottom: var(--kern-metric-space-large, 1.5rem);
+}
+
+.view-header h1 {
+  margin-top: 0;
+  max-width: 17ch;
+  overflow-wrap: anywhere;
+}
+
+.view-header p {
+  max-width: var(--app-reading-width);
+}
+
+.view-header > * + * {
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+.stack > * + * {
+  margin-top: var(--kern-metric-space-large, 1.5rem);
+}
+
+/* Category accent dot (carries the per-category colour from config) -------- */
+.cat-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+}
+
+.legend-item,
+.filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  min-width: 0;
+}
+
+/* Toolbar (filters, controls) --------------------------------------------- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-default, 1rem);
+  align-items: flex-end;
+  margin-bottom: var(--kern-metric-space-default, 1rem);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  min-width: 12rem;
+}
+
+.filter-panel,
+.query-form,
+.map-filters,
+.surface-section,
+.sensor-detail__section {
+  padding: var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.result-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--kern-metric-space-default, 1rem);
+  padding: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-default, 1rem);
+  margin: var(--kern-metric-space-default, 1rem) 0
+    var(--kern-metric-space-small, 0.5rem);
+  border-left: var(--kern-metric-border-width-bold, 4px) solid
+    var(--kern-color-action-default-contextual, #2044aa);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+  min-height: 3rem;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--kern-metric-space-default, 1rem);
+}
+
+.about-actions,
+.about-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  margin-top: var(--kern-metric-space-default, 1rem);
+}
+
+.about-facts {
+  margin-top: var(--kern-metric-space-default, 1rem);
+}
+
+.about-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-default, 1rem);
+  margin-top: var(--kern-metric-space-default, 1rem);
+}
+
+.about-settings__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-small, 0.5rem);
+}
+
+.about-settings__label {
+  min-width: 5rem;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+/* Status / loader ---------------------------------------------------------- */
+.loader-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.loader-wrap .kern-loader {
+  display: inline-block;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-width: 4px;
+}
+
+.alert-stack {
+  margin: 0.75rem 0;
+}
+
+/* Visually-hidden (screen-reader-only) content ---------------------------- */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  max-width: 1px !important;
+  max-height: 1px !important;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Map --------------------------------------------------------------------- */
+.map {
+  height: clamp(360px, calc(100vh - 18rem), 680px);
+  min-height: 360px;
+  width: 100%;
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  overflow: hidden;
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+}
+
+/* Leaflet markers, tooltips and popups, restyled to match the KERN UX chrome
+   and to give clear pointer/touch feedback. */
+.sensor-marker {
+  cursor: pointer;
+  /* `r` (radius) can't transition, but the drop-shadow glow can — so hover/
+     active feedback animates smoothly even as JS bumps the radius. */
+  transition: filter 0.15s ease;
+}
+
+.sensor-marker:hover {
+  filter: drop-shadow(0 0 4px rgba(19, 21, 37, 0.45));
+}
+
+/* Use matching background/text tokens (not the text token as a background) so
+   the chip stays readable in both the light and dark themes. */
+.leaflet-tooltip.sensor-tooltip {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  box-shadow: 0 2px 8px rgba(19, 21, 37, 0.25);
+  white-space: nowrap;
+}
+
+.leaflet-tooltip.sensor-tooltip::before {
+  border-top-color: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+/* Hover tooltips are a pointer-only affordance; on touch the tap opens the
+   popup directly, so suppress them to avoid a sticky label. */
+@media (hover: none) {
+  .leaflet-tooltip.sensor-tooltip {
+    display: none;
+  }
+}
+
+/* Permanent value labels at each cell centre so the reading (or Δ from the
+   baseline) can be read straight off the map. Unboxed so they blend into the
+   field, but drawn as a fixed dark glyph wrapped in a solid white halo so they
+   stay legible over any cell colour — including the near-white centre of the
+   diverging deviation scale. The `--temp-label-scale` custom property is set on
+   the map container from the zoom level, so labels shrink when zoomed out and
+   stop overlapping. */
+.leaflet-tooltip.temperature-field-label {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: calc(0.8125rem * var(--temp-label-scale, 1));
+  font-weight: var(--kern-typography-font-weight-bold, 700);
+  line-height: 1.2;
+  box-shadow: none;
+  white-space: nowrap;
+  pointer-events: none;
+  /* Layered offsets + blur build an opaque white outline around the glyph. */
+  text-shadow:
+    -1px -1px 0 #fff,
+    1px -1px 0 #fff,
+    -1px 1px 0 #fff,
+    1px 1px 0 #fff,
+    0 0 3px #fff;
+}
+
+/* Drop Leaflet's default tooltip arrow — these are plain labels. */
+.leaflet-tooltip.temperature-field-label::before {
+  display: none;
+}
+
+/* Leaflet hardcodes a white popup background; set it (and the tip) from the
+   same KERN token as the text so both flip together and stay readable in the
+   dark theme. */
+.sensor-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  box-shadow: 0 6px 24px rgba(19, 21, 37, 0.22);
+}
+
+.sensor-popup .leaflet-popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  min-width: 11rem;
+  color: inherit;
+  line-height: 1.35;
+}
+
+.sensor-popup .leaflet-popup-tip {
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  box-shadow: 0 6px 24px rgba(19, 21, 37, 0.22);
+}
+
+/* The close button inherits a dark colour from Leaflet; tie it to the text
+   token so it's visible against the dark-theme background too. */
+.sensor-popup .leaflet-popup-close-button {
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.sensor-popup__cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  font-size: 0.8125rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.sensor-popup__name {
+  font-size: 1rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.sensor-popup__meta {
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  font-size: 0.8125rem;
+}
+
+.sensor-popup__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  text-decoration: none;
+}
+
+.sensor-popup__link:hover {
+  text-decoration: underline;
+}
+
+/* Secondary "set as reference" action — a small outlined button under the
+   details link, tied to the same action token as the link. */
+.sensor-popup__action {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--kern-color-action-default-contextual, #2044aa);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: transparent;
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  cursor: pointer;
+}
+
+.sensor-popup__action:hover {
+  background: var(--kern-color-action-default-contextual, #2044aa);
+  color: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.map-filters {
+  margin-bottom: var(--kern-metric-space-default, 1rem);
+  min-inline-size: 0;
+}
+
+.map-filters__legend {
+  display: table;
+  width: auto;
+  padding: 0;
+  margin-bottom: var(--kern-metric-space-small, 0.5rem);
+}
+
+.map-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--kern-metric-space-small, 0.5rem);
+  min-width: 0;
+}
+
+.map-filter {
+  --category-color: var(--kern-color-action-default-contextual, #2044aa);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 2.75rem;
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.map-filter--active {
+  border-color: var(--kern-color-action-default-contextual, #2044aa);
+  box-shadow: inset 3px 0 0 var(--category-color);
+}
+
+.map-filter__toggle,
+.map-filter__only {
+  min-width: 0;
+  min-height: 2.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font: inherit;
+  cursor: pointer;
+}
+
+.map-filter__toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+}
+
+.map-filter__toggle .cat-dot {
+  background: var(--category-color);
+}
+
+.map-filter__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.map-filter__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 1.75rem;
+  min-height: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+  font-size: 0.8125rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.map-filter__only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--kern-metric-space-2x-small, 0.125rem);
+  align-self: stretch;
+  min-width: 4.25rem;
+  padding: 0 0.55rem;
+  border-left: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  font-size: 0.8125rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.map-filter__toggle:hover,
+.map-filter__only:hover {
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+}
+
+.map-filter__toggle:focus-visible,
+.map-filter__only:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid var(--kern-color-action-focus-default-contextual, #454b6b);
+  outline-offset: -3px;
+}
+
+.map-filter:not(.map-filter--active) .map-filter__toggle {
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.map-filter:not(.map-filter--active) .cat-dot {
+  opacity: 0.45;
+}
+
+.map-filter--active .map-filter__count {
+  color: var(--kern-color-action-on-default-contextual, #fff);
+  background: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-default, 1rem);
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+/* Chart ------------------------------------------------------------------- */
+.chart {
+  margin: 0;
+}
+
+.chart__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--kern-metric-space-default, 1rem);
+  padding: var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-bottom: 0;
+  border-top-left-radius: var(--kern-metric-border-radius-default, 4px);
+  border-top-right-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+}
+
+.chart__header p {
+  margin: var(--kern-metric-space-x-small, 0.25rem) 0 0;
+}
+
+.chart__svg {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-bottom-left-radius: var(--kern-metric-border-radius-default, 4px);
+  border-bottom-right-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.chart__svg:focus-visible {
+  outline: 3px solid var(--kern-color-action-focus-default-contextual, #454b6b);
+  outline-offset: 2px;
+}
+
+.chart__grid line {
+  stroke: var(--kern-color-layout-border, #dadce6);
+}
+
+.chart__grid text,
+.chart__axis {
+  font-size: 11px;
+  fill: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.chart__cursor {
+  stroke: var(--kern-color-layout-text-muted-contextual, #404565);
+  stroke-dasharray: 3 3;
+}
+
+.chart__caption {
+  font-size: 0.875rem;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+.chart__data {
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+.chart__data[open] .table-scroll {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+/* Detail / misc ----------------------------------------------------------- */
+.back-link {
+  display: inline-flex;
+  margin-bottom: var(--kern-metric-space-default, 1rem);
+}
+
+.url-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  word-break: break-all;
+  padding: var(--kern-metric-space-default, 1rem);
+  margin-top: var(--kern-metric-space-default, 1rem);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+}
+
+.url-box .kern-label {
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+}
+
+.table-scroll {
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+  max-width: 100%;
+  overflow: auto;
+}
+
+code,
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}
+
+/* Sortable table headers -------------------------------------------------- */
+.th-sort {
+  background: none;
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: inherit;
+  min-width: 100%;
+  justify-content: inherit;
+}
+
+.th-sort__icon {
+  opacity: 0.6;
+}
+
+.th-sort__icon--active {
+  opacity: 1;
+  color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.th-sort:focus-visible {
+  outline: 3px solid var(--kern-color-action-focus-default-contextual, #454b6b);
+  outline-offset: 2px;
+}
+
+/* Query form -------------------------------------------------------------- */
+.query-form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--kern-metric-space-default, 1rem);
+  align-items: end;
+}
+
+.query-form-grid > .field {
+  grid-column: span 4;
+  min-width: 0;
+}
+
+.query-form-grid__layer,
+.query-form-grid > .query-form-grid__wide {
+  grid-column: span 6;
+}
+
+.query-form-grid > .query-form-grid__count {
+  grid-column: span 3;
+}
+
+.query-form-grid__submit {
+  grid-column: span 3;
+  justify-self: end;
+}
+
+/* Detail ------------------------------------------------------------------ */
+.sensor-detail .view-header {
+  margin-bottom: 0;
+}
+
+.surface-section > .kern-heading-small:first-child,
+.sensor-detail__section > .kern-heading-small:first-child,
+.section-toolbar > .kern-heading-small,
+.section-toolbar h2,
+.section-toolbar p {
+  margin: 0;
+}
+
+.section-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--kern-metric-space-default, 1rem);
+  flex-wrap: wrap;
+  margin-bottom: var(--kern-metric-space-default, 1rem);
+}
+
+/* Redesigned app shell ----------------------------------------------------- */
+.app__header {
+  gap: var(--kern-metric-space-large, 1.5rem);
+  align-items: flex-start;
+}
+
+.app__brand {
+  flex-direction: row;
+  align-items: center;
+  min-width: 15rem;
+  padding: var(--kern-metric-space-2x-small, 0.125rem) 0;
+}
+
+.app__brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 2.75rem;
+  color: var(--kern-color-action-on-default-contextual, #fff);
+  background: var(--kern-color-action-default-contextual, #2044aa);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.app__brand:hover .app__title {
+  color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.app__brand:focus-visible,
+.action-card:focus-visible,
+.sensor-card:focus-visible,
+.preset-button:focus-visible,
+.segmented-control__option:focus-visible {
+  outline: 3px solid var(--kern-color-action-focus-default-contextual, #454b6b);
+  outline-offset: 2px;
+}
+
+.pulse-stat__label,
+.reading-card__label {
+  display: block;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  font-size: 0.8125rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.app__title {
+  display: block;
+}
+
+.app__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex: 1 1 36rem;
+  min-width: 0;
+}
+
+.app__nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.theme-switch {
+  flex: 0 0 auto;
+}
+
+.theme-switch__option {
+  min-width: 4.75rem;
+}
+
+.view-header--wide {
+  max-width: 920px;
+}
+
+/* Compact hero: badge on top, then heading, then intro — the familiar reading
+   order — but the heading and text run wider so they wrap onto fewer lines,
+   trimming the header's overall height. */
+.view-header--compact {
+  max-width: none;
+  margin-bottom: var(--kern-metric-space-default, 1rem);
+}
+
+.view-header--compact .view-header__lead h1 {
+  max-width: none;
+}
+
+.view-header--compact .view-header__intro {
+  max-width: 80ch;
+}
+
+.view-header .kern-badge {
+  margin-bottom: var(--kern-metric-space-small, 0.5rem);
+}
+
+.sensor-card-grid,
+.preset-row,
+.result-actions,
+.map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  min-width: 0;
+}
+
+.pulse-stat,
+.signal-card,
+.sensor-card,
+.reading-card,
+.preset-button,
+.kpi,
+.action-card {
+  color: inherit;
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease,
+    color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.pulse-stat {
+  padding: var(--kern-metric-space-default, 1rem);
+}
+
+.pulse-stat__value {
+  display: block;
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.pulse-stat__value--text {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.sensor-card:hover,
+.preset-button:hover,
+.action-card:hover {
+  border-color: var(--kern-color-action-default-contextual, #2044aa);
+  box-shadow: 0 0 0 1px var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.sensor-card:hover .sensor-card__name {
+  color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.card-link__cue {
+  align-self: end;
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  font-size: 0.875rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.card-link__cue:focus-visible,
+.signal-card__name:focus-visible {
+  outline: 2px solid var(--kern-color-action-focus-default-contextual, #454b6b);
+  outline-offset: 2px;
+}
+
+/* Pulse overview: a single-viewport dashboard (intro + KPIs, category
+   signals, action bar) that fills the main area without page scrolling. */
+.pulse {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: var(--kern-metric-space-large, 1.5rem);
+  align-content: start;
+}
+
+.pulse__bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--kern-metric-space-large, 1.5rem);
+  flex-wrap: wrap;
+  padding-bottom: var(--kern-metric-space-default, 1rem);
+  border-bottom: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+}
+
+.pulse__intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  min-width: 0;
+  flex: 1 1 26rem;
+}
+
+.pulse__intro .kern-badge {
+  align-self: flex-start;
+  margin-bottom: var(--kern-metric-space-2x-small, 0.125rem);
+}
+
+.pulse__intro h1,
+.pulse__intro p {
+  margin: 0;
+  max-width: 38rem;
+}
+
+.pulse__kpis {
+  display: flex;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  margin: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-self: stretch;
+  max-width: 32rem;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  justify-content: center;
+  padding: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-default, 1rem);
+  min-width: 6.5rem;
+  flex: 1 1 6.5rem;
+}
+
+.kpi--accent {
+  border-color: var(--kern-color-action-default-contextual, #2044aa);
+  background: var(--kern-color-action-default-contextual, #2044aa);
+  color: var(--kern-color-action-on-default-contextual, #fff);
+}
+
+.kpi__value {
+  margin: 0;
+  font-size: 1.85rem;
+  line-height: 1;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.kpi__label {
+  font-size: 0.8125rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.kpi--accent .kpi__label {
+  color: var(--kern-color-action-on-default-contextual, #fff);
+  opacity: 0.85;
+}
+
+.pulse__signals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: var(--kern-metric-space-default, 1rem);
+  min-height: 0;
+}
+
+.signal-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  padding: var(--kern-metric-space-default, 1rem);
+  border-top: 4px solid var(--category-color, var(--kern-color-action-default-contextual, #2044aa));
+  min-width: 0;
+  min-height: 12.5rem;
+}
+
+.signal-card__label {
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.signal-card__name {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.signal-card__name:hover {
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  text-decoration: underline;
+}
+
+.signal-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  column-gap: var(--kern-metric-space-default, 1rem);
+  row-gap: var(--kern-metric-space-2x-small, 0.125rem);
+  margin-top: auto;
+  padding-top: var(--kern-metric-space-small, 0.5rem);
+  border-top: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  min-width: 0;
+}
+
+.signal-card__age {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.2rem;
+  max-width: 100%;
+  min-width: 0;
+  text-align: left;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.signal-card__age-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pulse__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--kern-metric-space-small, 0.5rem);
+  padding-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  padding: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-default, 1rem);
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  text-decoration: none;
+  min-width: 0;
+}
+
+.action-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+}
+
+.action-card__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.action-card__text > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-card__text .kern-body {
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.action-card--latest {
+  border-color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.signal-card__top,
+.sensor-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kern-metric-space-small, 0.5rem);
+}
+
+.signal-card__value,
+.sensor-card__reading,
+.reading-card__value {
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font-size: 1.65rem;
+  line-height: 1.1;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  overflow-wrap: anywhere;
+}
+
+/* Sensor atlas ------------------------------------------------------------- */
+.sensor-console {
+  display: grid;
+  gap: var(--kern-metric-space-default, 1rem);
+  margin-bottom: var(--kern-metric-space-default, 1rem);
+}
+
+.sensor-console__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--kern-metric-space-small, 0.5rem);
+}
+
+.filter-panel--inline {
+  margin-bottom: 0;
+  align-items: end;
+}
+
+.filter-panel--inline .field {
+  flex: 1 1 14rem;
+}
+
+.sensor-filter-panel {
+  display: grid;
+  gap: var(--kern-metric-space-default, 1rem);
+}
+
+.sensor-filter-panel .toolbar {
+  margin-bottom: 0;
+  padding-top: var(--kern-metric-space-default, 1rem);
+  border-top: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+}
+
+.category-picker {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.category-picker__legend {
+  display: table;
+  width: auto;
+  padding: 0;
+  margin-bottom: var(--kern-metric-space-x-small, 0.25rem);
+}
+
+.category-picker__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-small, 0.5rem);
+}
+
+.category-option {
+  --category-color: var(--kern-color-action-default-contextual, #2044aa);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  max-width: 100%;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  font: inherit;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  cursor: pointer;
+  min-width: 0;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.category-option:hover,
+.category-option--active {
+  border-color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.category-option--active {
+  color: var(--kern-color-action-on-default-contextual, #fff);
+  background: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.category-option:focus-visible {
+  outline: 3px solid var(--kern-color-action-focus-default-contextual, #454b6b);
+  outline-offset: 2px;
+}
+
+.category-option__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  color: inherit;
+}
+
+.category-option__mark .cat-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--category-color);
+}
+
+.category-option__label,
+.category-option__count {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-option__label {
+  min-width: 0;
+}
+
+.category-option__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 1.75rem;
+  min-height: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+  font-size: 0.8125rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.category-option--active .category-option__mark {
+  color: var(--kern-color-action-on-default-contextual, #fff);
+}
+
+.category-option--active .category-option__mark .cat-dot {
+  outline: 1px solid var(--kern-color-action-on-default-contextual, #fff);
+  outline-offset: 2px;
+}
+
+.category-option--active .category-option__count {
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  background: var(--kern-color-action-on-default-contextual, #fff);
+}
+
+.segmented-control {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--kern-metric-space-2x-small, 0.125rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  /* Sits inside .result-bar, which already uses the hued surface token, so the
+     track takes the page background instead — otherwise the two share a colour
+     and the toggle has no figure/ground contrast in any theme. */
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.segmented-control__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.65rem;
+  border: 0;
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  background: transparent;
+  font: inherit;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  cursor: pointer;
+}
+
+.segmented-control__option--active {
+  color: var(--kern-color-action-on-default-contextual, #fff);
+  background: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.segmented-control__option:hover {
+  color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.segmented-control__option--active:hover {
+  color: var(--kern-color-action-on-default-contextual, #fff);
+}
+
+.sensor-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+}
+
+.sensor-card {
+  display: grid;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  grid-template-rows: auto auto 1fr auto auto;
+  padding: var(--kern-metric-space-default, 1rem);
+  min-height: 12rem;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.sensor-card__name {
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font-size: 1.125rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+/* Map shell ---------------------------------------------------------------- */
+.map-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-default, 1rem);
+}
+
+.map-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(16rem, 1fr) auto;
+  align-items: center;
+  gap: var(--kern-metric-space-default, 1rem);
+  padding: var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.map-toolbar__summary {
+  min-width: 8rem;
+}
+
+.map-toolbar__metric {
+  display: block;
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.map-toolbar__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-default, 1rem);
+  min-width: 0;
+  align-items: center;
+}
+
+.result-bar--compact {
+  margin: 0;
+}
+
+.map-shell .map-filters {
+  margin: 0;
+}
+
+.map-shell .map-filter-grid {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.map-shell .map {
+  height: clamp(460px, calc(100vh - 19rem), 720px);
+}
+
+/* Detail profile ----------------------------------------------------------- */
+.detail-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem);
+  gap: var(--kern-metric-space-default, 1rem);
+  align-items: stretch;
+  padding: var(--kern-metric-space-large, 1.5rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-top: 4px solid var(--category-color, var(--kern-color-action-default-contextual, #2044aa));
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.detail-hero__main {
+  min-width: 0;
+}
+
+.detail-hero__main h1 {
+  overflow-wrap: anywhere;
+}
+
+.detail-hero__main h1,
+.detail-hero__main p {
+  margin-bottom: 0;
+}
+
+.detail-hero__reading {
+  display: grid;
+  align-content: center;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  padding: var(--kern-metric-space-default, 1rem);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+}
+
+.detail-tabs {
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  overflow: hidden;
+}
+
+.detail-tabs__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-small, 0.5rem) 0;
+  border-bottom: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+}
+
+.detail-tabs__tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 10rem;
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
+  margin: 0 0 -1px;
+  border: 1px solid transparent;
+  border-bottom-color: var(--kern-color-layout-border-contextual, #a5aac3);
+  border-top-left-radius: var(--kern-metric-border-radius-default, 4px);
+  border-top-right-radius: var(--kern-metric-border-radius-default, 4px);
+  background: transparent;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  font: inherit;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  cursor: pointer;
+}
+
+.detail-tabs__tab:hover {
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.detail-tabs__tab:focus-visible {
+  outline: 3px solid var(--kern-color-action-focus-default-contextual, #454b6b);
+  outline-offset: -3px;
+  z-index: 1;
+}
+
+.detail-tabs__tab--active {
+  border-color: var(--kern-color-layout-border-contextual, #a5aac3);
+  border-bottom-color: var(--kern-color-layout-background-default-contextual, #fff);
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.detail-tabs__tab--active::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--category-color, var(--kern-color-action-default-contextual, #2044aa));
+}
+
+.detail-tabs__panel {
+  padding: var(--kern-metric-space-large, 1.5rem);
+}
+
+.reading-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--kern-metric-space-small, 0.5rem);
+}
+
+.reading-grid--featured {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.reading-card {
+  display: grid;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  padding: var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+  min-width: 0;
+}
+
+.reading-card__value {
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.sensor-detail__section--plain {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.detail-facts {
+  margin-top: var(--kern-metric-space-default, 1rem);
+}
+
+.sensor-location {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-default, 1rem);
+}
+
+.sensor-location .section-toolbar {
+  margin-bottom: 0;
+}
+
+.sensor-location__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  justify-content: flex-end;
+}
+
+.sensor-location__map {
+  height: clamp(320px, 42vh, 500px);
+  min-height: 300px;
+}
+
+/* Query console ------------------------------------------------------------ */
+.query-page {
+  display: grid;
+  gap: var(--kern-metric-space-default, 1rem);
+}
+
+.preset-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.75rem;
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.preset-button:hover {
+  color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.request-console__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kern-metric-space-default, 1rem);
+  flex-wrap: wrap;
+}
+
+.request-console code {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.result-actions {
+  align-items: center;
+}
+
+@media (max-width: 980px) {
+  .app__header-wrap {
+    position: static;
+  }
+
+  .app__header {
+    align-items: flex-start;
+  }
+
+  .app__tools {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .app__nav {
+    flex: 1 1 100%;
+  }
+
+  .pulse__kpis {
+    justify-content: flex-start;
+  }
+
+  .map-toolbar {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .map-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .app__main {
+    padding: var(--kern-metric-space-large, 1.5rem) 1rem 2.5rem;
+  }
+
+  .app__header {
+    align-items: flex-start;
+    padding: var(--kern-metric-space-default, 1rem);
+  }
+
+  .app__brand {
+    min-width: 0;
+  }
+
+  .app__tools,
+  .app__nav {
+    width: 100%;
+  }
+
+  .app__nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app__tools {
+    justify-content: flex-start;
+  }
+
+  .theme-switch {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .app__nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 0;
+    text-align: center;
+    padding-inline: 0.5rem;
+  }
+
+  .app__nav-link span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .theme-switch__option {
+    min-width: 0;
+  }
+
+  .query-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .query-form-grid > .field,
+  .query-form-grid__layer,
+  .query-form-grid > .query-form-grid__wide,
+  .query-form-grid > .query-form-grid__count,
+  .query-form-grid__submit {
+    grid-column: 1;
+  }
+
+  .query-form-grid__submit {
+    justify-self: stretch;
+  }
+
+  .query-form-grid__submit,
+  .filter-panel--inline .kern-btn,
+  .map-actions .kern-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .section-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .detail-tabs__list {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: var(--kern-metric-space-small, 0.5rem);
+  }
+
+  .detail-tabs__tab {
+    justify-content: flex-start;
+    margin: 0;
+    border-color: transparent;
+    border-radius: var(--kern-metric-border-radius-default, 4px);
+  }
+
+  .detail-tabs__tab--active {
+    border-color: var(--kern-color-layout-border-contextual, #a5aac3);
+  }
+
+  .detail-tabs__panel {
+    padding: var(--kern-metric-space-default, 1rem);
+  }
+
+  .map {
+    height: 420px;
+    min-height: 320px;
+  }
+
+  .sensor-console__summary,
+  .detail-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .pulse {
+    gap: var(--kern-metric-space-default, 1rem);
+  }
+
+  .pulse__bar {
+    align-items: stretch;
+  }
+
+  .pulse__kpis,
+  .kpi {
+    width: 100%;
+  }
+
+  .pulse__signals,
+  .sensor-card-grid,
+  .reading-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-shell .map {
+    height: 430px;
+    min-height: 320px;
+  }
+
+  .map-shell .map-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-filter {
+    grid-template-columns: minmax(0, 1fr) 2.75rem;
+  }
+
+  .map-filter__only {
+    min-width: 2.75rem;
+    padding: 0;
+  }
+
+  .map-filter__only-text {
+    display: none;
+  }
+
+  .map-toolbar {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+  }
+
+  .map-toolbar__meta,
+  .map-actions,
+  .sensor-location__actions {
+    grid-column: auto;
+    width: 100%;
+  }
+
+  .map-actions,
+  .sensor-location__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .map-toolbar__meta {
+    flex-direction: column;
+    gap: var(--kern-metric-space-x-small, 0.25rem);
+  }
+
+  .result-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .segmented-control {
+    width: 100%;
+  }
+
+  .segmented-control__option {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .category-option {
+    flex: 1 1 calc(50% - var(--kern-metric-space-small, 0.5rem));
+  }
+
+  .category-option--all {
+    flex-basis: 100%;
+  }
+
+  .temp-legend__scale {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .temp-legend__scale-end {
+    text-align: left;
+  }
+
+  .temp-legend__scale-end .temp-legend__end {
+    margin-inline: 0 0.4rem;
+  }
+}
+
+/* Temperature field legend ------------------------------------------------ */
+/* Thermostat icon for the Temperature nav item. KERN ships no thermal icon, so
+   we define one here using KERN's own CSS-mask technique (Material Symbols). */
+.kern-icon--device-thermostat {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M15%2013V5c0-1.66-1.34-3-3-3S9%203.34%209%205v8c-1.21.91-2%202.37-2%204%200%202.76%202.24%205%205%205s5-2.24%205-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1%201-1s1%20.45%201%201h-1v1h1v2h-1v1h1v2h-2z'/%3E%3C/svg%3E");
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M15%2013V5c0-1.66-1.34-3-3-3S9%203.34%209%205v8c-1.21.91-2%202.37-2%204%200%202.76%202.24%205%205%205s5-2.24%205-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1%201-1s1%20.45%201%201h-1v1h1v2h-1v1h1v2h-2z'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  background-color: currentColor;
+}
+
+@media (forced-colors: active) {
+  .kern-icon--device-thermostat {
+    background-color: CanvasText !important;
+    forced-color-adjust: none;
+  }
+}
+
+.temp-legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+  padding: var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+/* Wraps the bar so the Δ=0 tick can be positioned over it. */
+.temp-legend__bar-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.temp-legend__bar {
+  width: 100%;
+  height: 20px;
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+}
+
+/* Vertical tick marking where Δ=0 (the baseline) falls on the diverging bar. */
+.temp-legend__tick {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--kern-color-layout-text-default-contextual, #16192c);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.temp-legend__scale {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.temp-legend__scale-end {
+  text-align: right;
+}
+
+/* Δ=0 label for the diverging deviation scale (e.g. "0 °C"), positioned over the
+   bar's zero crossing via an inline `left` (it is rarely the centre). */
+.temp-legend__scale-mid {
+  position: absolute;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+}
+
+.temp-legend__end {
+  display: inline-block;
+  margin-inline-end: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  font-size: 0.72rem;
+}
+
+.temp-legend__scale-end .temp-legend__end {
+  margin-inline: 0.4rem 0;
+}
+
+.temp-legend__caption {
+  text-align: center;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+/* Cross-sensor temperature analysis, shown beneath the temperature field. */
+.temp-insights-shell {
+  margin-top: var(--kern-metric-space-large, 1.5rem);
+}
+
+.temp-insights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-default, 1rem);
+}
+
+.temp-insights > .kern-heading-large {
+  margin-bottom: 0;
+}
+
+.temp-insights__archive-time {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-x-small, 0.25rem)
+    var(--kern-metric-space-small, 0.5rem);
+  margin: 0;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.temp-insights__archive-time .kern-label {
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+}
+
+.temp-insights__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--kern-metric-space-small, 0.5rem);
+}
+
+.temp-insights__kpis .pulse-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  min-width: 0;
+}
+
+.temp-insights__kpis .pulse-stat p {
+  margin: 0;
+}
+
+.temp-live-stats__sensor-link {
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  overflow-wrap: anywhere;
+}
+
+.temp-insights__volatile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  padding: var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-inline-start-width: 4px;
+  border-inline-start-color: var(--kern-color-action-default-contextual, #2044aa);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.temp-insights__volatile p {
+  margin: 0;
+}
+
+.temp-insights__chart {
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+.temp-insights-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-default, 1rem);
+}
+
+.temp-insights-tabs__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  border-bottom: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+}
+
+.temp-insights-tabs__tab {
+  appearance: none;
+  margin: 0 0 -1px;
+  padding: 0.75rem 1rem;
+  border: 1px solid transparent;
+  border-bottom-color: var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px)
+    var(--kern-metric-border-radius-default, 4px) 0 0;
+  background: transparent;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  font: inherit;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.temp-insights-tabs__tab:hover {
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+}
+
+.temp-insights-tabs__tab:focus-visible {
+  outline: 2px solid var(--kern-color-action-default-contextual, #2044aa);
+  outline-offset: 2px;
+}
+
+.temp-insights-tabs__tab[aria-selected="true"] {
+  border-color: var(--kern-color-layout-border-contextual, #a5aac3);
+  border-bottom-color: var(--kern-color-layout-background-default-contextual, #fff);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+}
+
+.temp-insights-tabs__panel {
+  min-width: 0;
+}
+
+.temp-insights-tabs__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-small, 0.5rem);
+}
+
+.historical-temperature-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-default, 1rem);
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+.historical-temperature-field .section-toolbar {
+  align-items: flex-start;
+}
+
+.historical-temperature-field .section-toolbar h3,
+.historical-temperature-field .section-toolbar p {
+  margin-bottom: 0;
+}
+
+.historical-temperature-field__shell .historical-temperature-field__map {
+  height: clamp(360px, 48vh, 560px);
+  min-height: 320px;
+}
+
+.historical-temperature-field__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  padding: var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.historical-temperature-field__slider {
+  width: 100%;
+  accent-color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.historical-temperature-field__range-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.historical-temperature-field__range-labels span:last-child {
+  text-align: right;
+}
+
+/* Call to action shown before the (heavy) analysis is loaded on demand. */
+.temp-insights-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  padding: var(--kern-metric-space-large, 1.5rem);
+  border: 1px dashed var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.temp-insights-cta .kern-heading-large {
+  margin-bottom: 0;
+}
+
+.temp-insights-cta p {
+  max-width: 60ch;
+  margin: 0;
+}
+
+/* Sortable column header: a full-width button that looks like header text. */
+.temp-insights__sort {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.kern-table__header--numeric .temp-insights__sort {
+  justify-content: flex-end;
+}
+
+.temp-insights__sort:hover {
+  color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.temp-insights__sort:focus-visible {
+  outline: 2px solid var(--kern-color-action-default-contextual, #2044aa);
+  outline-offset: 2px;
+}
+
+.temp-insights__sort-arrow {
+  font-size: 0.72rem;
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+/* Single-sensor historical analysis. Reuses .temp-insights layout primitives
+   (KPI grid, left-accent callout, chart figure); only the few bits below are
+   specific to it. */
+.history-analysis {
+  margin-top: var(--kern-metric-space-default, 1rem);
+}
+
+.history-analysis__trend-arrow {
+  font-weight: 700;
+  color: var(--kern-color-action-default-contextual, #2044aa);
+}
+
+.history-analysis__diurnal {
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+/* Diurnal bars inherit the accent colour from the SVG's `color` (currentColor). */
+.history-analysis__bar {
+  fill: currentColor;
+}
+
+/* Baseline deviation controls --------------------------------------------- */
+/* Presentational control strip used by both temperature maps. The baseline
+   selector stays mounted in absolute mode so the toggle does not shift. */
+.temperature-baseline-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--kern-metric-space-default, 1rem);
+  padding: var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.temperature-baseline-controls__modes {
+  align-self: end;
+}
+
+.temperature-baseline-controls__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-2x-small, 0.125rem);
+  margin: 0;
+  min-width: 0;
+  /* Grow to take the slack, but stay readable; wraps below its basis. */
+  flex: 1 1 16rem;
+  max-width: 24rem;
+  transition: opacity 0.12s ease;
+}
+
+.temperature-baseline-controls__field--disabled {
+  opacity: 0.58;
+}
+
+.temperature-baseline-controls__field .kern-form-input__select-wrapper,
+.temperature-baseline-controls__field .kern-form-input__select {
+  width: 100%;
+}
+
+/* Value-label toggle sits inline with the other controls, bottom-aligned with
+   the baseline select (min-height matches the select so it lines up). */
+.temperature-baseline-controls__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--kern-metric-space-x-small, 0.5rem);
+  margin: 0;
+  min-height: 2.5rem;
+  cursor: pointer;
+}
+
+.temperature-baseline-controls__toggle input {
+  cursor: pointer;
+}
+
+.temperature-baseline-controls__toggle .kern-label {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  /* Stack the controls full-width once they no longer fit side by side. */
+  .temperature-baseline-controls__modes,
+  .temperature-baseline-controls__field,
+  .temperature-baseline-controls__toggle {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .temperature-baseline-controls__toggle {
+    min-height: 0;
+  }
+}
+
+/* Baseline station marker: the ring weight/colour/radius are set via Leaflet
+   path options in drawTemperatureField; add a subtle glow so it reads as the
+   anchor even where the contrasting ring overlaps a similar fill. */
+.temperature-baseline-marker {
+  filter: drop-shadow(0 0 3px rgba(19, 21, 37, 0.55));
+}

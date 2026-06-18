@@ -1,0 +1,31 @@
+export default {
+  badge: "Räumlicher Explorer",
+  heading: "Sensorkarte",
+  intro:
+    "Live-Sensorstandorte in ganz Karlsruhe, nach Kategorie eingefärbt. Schalten Sie Kategorien um, setzen Sie die Stadtansicht zurück und öffnen Sie Marker für Detaildiagramme.",
+  introLinkPrefix: "Lieber eine Liste? ",
+  introLink: "Alle Sensoren durchsuchen",
+  controlsAria: "Kartensteuerung und Kartenfläche",
+  visibleSensors: "sichtbare Sensoren",
+  categoriesActive: "{{enabled}} von {{total}} Kategorien aktiv",
+  liveSensorsLoaded: "{{count}} Live-Sensoren geladen",
+  fitSensors: "Sensoren einpassen",
+  clearAll: "Alle abwählen",
+  selectAll: "Alle auswählen",
+  emptyToMap: "Keine Sensoren zum Anzeigen.",
+  filtersLegend: "Sensorkategorien",
+  only: "Nur",
+  onlyAria: "Nur {{category}}-Sensoren anzeigen",
+  mapAria: "Karte der Karlsruher Sensoren",
+  legendAria: "Kategoriefarben",
+  status: {
+    loading: "Sensoren werden geladen …",
+    error: "Kartendaten konnten nicht geladen werden.",
+    showing_one: "{{count}} Sensor wird angezeigt.",
+    showing_other: "{{count}} Sensoren werden angezeigt.",
+  },
+  popup: {
+    lastReading: "Letzte Messung:",
+    viewDetails: "Details anzeigen",
+  },
+} as const;

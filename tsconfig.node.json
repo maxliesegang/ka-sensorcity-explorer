@@ -1,0 +1,12 @@
+{
+  // Type-check the Node-run tooling (the offline-snapshot capture script) under
+  // the same strict options as the app, but with Node globals available. Run by
+  // `npm run typecheck` alongside the app config.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // `node` for the script's own globals; `vite/client` because it type-imports
+    // DemoSnapshot from src/demo, which references `import.meta.env`.
+    "types": ["node", "vite/client"]
+  },
+  "include": ["scripts"]
+}
