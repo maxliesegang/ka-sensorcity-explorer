@@ -15,6 +15,15 @@ export function formatTimestamp(epochMs: number | null): string {
   });
 }
 
+/** Format an epoch-ms timestamp as a localized time of day, e.g. "14:05". */
+export function formatTime(epochMs: number | null): string {
+  if (epochMs == null) return NOT_AVAILABLE;
+  return new Date(epochMs).toLocaleTimeString(i18n.language, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /** Format a numeric reading with an optional unit. */
 export function formatValue(value: unknown, unit?: string): string {
   if (typeof value !== "number" || !Number.isFinite(value)) return NOT_AVAILABLE;

@@ -35,4 +35,9 @@ export default {
     heading: "Privacy and limits",
     body: "The app does not require an account and does not write to the FeatureServer. Theme preference is stored in local browser storage. Sensor availability, update frequency and history depth depend on the public service.",
   },
+  experiment: {
+    heading: "Experiment",
+    body: "A small experiment that blends the city's sensors with citizen stations from openSenseMap and sensor.community, to see how a denser temperature field would look.",
+    link: "Try the combined live temperature map",
+  },
 } as const;

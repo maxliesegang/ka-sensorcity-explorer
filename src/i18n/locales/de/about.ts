@@ -35,4 +35,9 @@ export default {
     heading: "Datenschutz und Grenzen",
     body: "Die App erfordert kein Konto und schreibt nicht auf den FeatureServer. Die Design-Einstellung wird im lokalen Browser-Speicher abgelegt. Verfügbarkeit der Sensoren, Aktualisierungsfrequenz und Verlaufstiefe hängen vom öffentlichen Dienst ab.",
   },
+  experiment: {
+    heading: "Experiment",
+    body: "Ein kleiner Versuch, der die städtischen Sensoren mit Bürgerstationen von openSenseMap und sensor.community verbindet, um zu sehen, wie ein dichteres Temperaturfeld aussehen würde.",
+    link: "Kombinierte Live-Temperaturkarte ausprobieren",
+  },
 } as const;

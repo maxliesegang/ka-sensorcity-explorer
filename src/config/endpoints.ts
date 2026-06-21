@@ -20,5 +20,32 @@ export const PEGELONLINE_BASE_URL =
 /** Bright Sky (DWD) weather API. */
 export const BRIGHTSKY_BASE_URL = "https://api.brightsky.dev";
 
+/** openSenseMap community sensor API. */
+export const OPENSENSEMAP_BASE_URL = "https://api.opensensemap.org";
+
+/** sensor.community (formerly luftdaten.info) open data API. */
+export const SENSOR_COMMUNITY_BASE_URL = "https://data.sensor.community";
+
+/**
+ * Circular area around Karlsruhe used to scope sensor.community's area filter:
+ * latitude, longitude and radius in kilometres.
+ */
+export const KARLSRUHE_AREA = {
+  lat: 49.0069,
+  lon: 8.4037,
+  radiusKm: 8,
+} as const;
+
+/**
+ * Bounding box around Karlsruhe used to scope openSenseMap community boxes.
+ * Order is openSenseMap's `bbox` convention: minLng, minLat, maxLng, maxLat.
+ */
+export const KARLSRUHE_BBOX = {
+  minLng: 8.27,
+  minLat: 48.95,
+  maxLng: 8.52,
+  maxLat: 49.1,
+} as const;
+
 /** DWD Rheinstetten — the "undisturbed" out-of-city temperature baseline station. */
 export const DWD_RHEINSTETTEN_STATION_ID = "04177";

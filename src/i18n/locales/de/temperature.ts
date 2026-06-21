@@ -31,6 +31,27 @@ export default {
     viewDetails: "Details anzeigen",
     setReference: "Als Referenz festlegen",
   },
+  combined: {
+    badge: "Stadt + Community",
+    heading: "Live-Temperaturen in ganz Karlsruhe",
+    intro:
+      "Eine Live-Temperaturkarte, die das städtische SensorCity-Netz mit nahegelegenen Bürgerstationen von openSenseMap und sensor.community verbindet, damit das Feld überall dort gefüllt ist, wo gemessen wird.",
+    introLinkPrefix: "Lieber nur das Stadtnetz? ",
+    introLink: "Temperaturkarte nur mit Stadtsensoren öffnen",
+    source: {
+      sensorcity: "SensorCity-Sensor",
+      opensensemap: "openSenseMap-Community-Sensor",
+      sensorcommunity: "sensor.community-Sensor",
+    },
+    viewOnSource: "Auf {{source}} ansehen",
+    readingTime: "Messung um {{time}} Uhr",
+    sourceBreakdown:
+      "{{city}} Stadt · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
+    communityUnavailable:
+      "Einige Community-Sensordaten sind derzeit nicht verfügbar; angezeigt wird, was geladen wurde.",
+    attribution:
+      "Community-Messwerte über openSenseMap (opensensemap.org) und sensor.community, beide lizenziert unter CC BY-SA 4.0.",
+  },
   baseline: {
     modeAbsolute: "Absolut",
     modeDeviation: "Abweichung zur Basislinie",

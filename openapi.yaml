@@ -1,0 +1,850 @@
+openapi: 3.0.3
+
+info:
+  title: Karlsruhe SensorCity API (ArcGIS REST FeatureServer)
+  version: "1.0.0"
+  description: |
+    Unofficial OpenAPI description of the read-only **ArcGIS REST FeatureServer**
+    that backs the City of Karlsruhe "SensorCity" dashboard. No authentication is
+    required. This spec models the subset of the generic ArcGIS Feature Service
+    query contract that the SensorCity explorer relies on, plus the SensorCity
+    layer/field semantics.
+
+    ## Layers
+
+    | ID | Name | Kind | History range |
+    |----|------|------|---------------|
+    | 1 | `Sensordaten_Update` | live (latest value per sensor) | current only |
+    | 2 | `NodeRED_Temperatur_Archiv` | archive | ~5 weeks rolling |
+    | 3 | `NodeRED_TSK_Archiv` | archive | ~5 months rolling |
+    | 4 | `NodeRED_Regenschreiber_Archiv` | archive | ~2 months rolling |
+    | 5 | `NodeRED_Bodensensoren_Archiv` | archive | ~2 months rolling |
+
+    Archives are **rolling windows** — old rows drop off.
+
+    ## Gotchas (important)
+
+    - **Errors arrive as HTTP 200** with an `{ "error": { code, message } }`
+      envelope, *not* as a non-2xx status. Always inspect the body.
+    - `resultRecordCount` is capped at **2000** (`maxRecordCount`). Page using
+      `resultOffset` + a stable `orderByFields`; `exceededTransferLimit: true`
+      signals more rows remain.
+    - Timestamp fields (`measured_at`, `inserted_at`) are **epoch milliseconds, UTC**.
+    - `f=csv` is **not** supported on `/query`; use `json` or `geojson`.
+    - Treat the service as read-only.
+  license:
+    name: MIT
+    url: https://opensource.org/license/mit
+  contact:
+    name: ka-sensorcity-explorer
+    url: https://github.com/
+
+servers:
+  - url: https://geoportal.karlsruhe.de/ags04/rest/services/Hosted/Sensordaten_NodeRED/FeatureServer
+    description: Karlsruhe ArcGIS REST FeatureServer (Hosted/Sensordaten_NodeRED)
+
+security: []
+
+tags:
+  - name: service
+    description: Service-level metadata
+  - name: layer
+    description: Layer metadata
+  - name: query
+    description: Feature query operation
+
+paths:
+  /:
+    get:
+      tags: [service]
+      summary: Service metadata
+      description: Returns FeatureServer metadata, including the list of layers.
+      operationId: getServiceInfo
+      parameters:
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: |
+            Service metadata, or an ArcGIS `{ error }` envelope (still HTTP 200).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ServiceInfo"
+                  - $ref: "#/components/schemas/ErrorEnvelope"
+        "4XX":
+          $ref: "#/components/responses/HttpClientError"
+
+  /{layerId}:
+    get:
+      tags: [layer]
+      summary: Layer metadata
+      description: |
+        Returns metadata for a single layer, including its field definitions
+        (`fields`) and `maxRecordCount`. Append `?f=json`.
+      operationId: getLayerInfo
+      parameters:
+        - $ref: "#/components/parameters/LayerId"
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: |
+            Layer metadata, or an ArcGIS `{ error }` envelope (still HTTP 200).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/LayerInfo"
+                  - $ref: "#/components/schemas/ErrorEnvelope"
+              examples:
+                liveLayer:
+                  summary: Live layer (1) field metadata (truncated)
+                  value:
+                    id: 1
+                    name: Sensordaten_Update
+                    type: Feature Layer
+                    geometryType: esriGeometryPoint
+                    maxRecordCount: 2000
+                    fields:
+                      - { name: objectid, type: esriFieldTypeOID, alias: objectid }
+                      - { name: device_id, type: esriFieldTypeString, alias: device_id }
+                      - { name: name, type: esriFieldTypeString, alias: name }
+                      - { name: beschreibung, type: esriFieldTypeString, alias: beschreibung }
+                      - { name: measured_at, type: esriFieldTypeDouble, alias: measured_at }
+                      - { name: temp, type: esriFieldTypeDouble, alias: temp }
+        "4XX":
+          $ref: "#/components/responses/HttpClientError"
+
+  /{layerId}/query:
+    get:
+      tags: [query]
+      summary: Query features
+      description: |
+        Standard ArcGIS Feature Service query operation. Filter with `where`
+        (SQL), select fields with `outFields`, sort with `orderByFields`,
+        paginate with `resultOffset`/`resultRecordCount`, count with
+        `returnCountOnly`, or aggregate with `outStatistics`.
+
+        Remember to URL-encode parameter values (spaces, `'`, `[`, `{`, …).
+      operationId: queryLayer
+      parameters:
+        - $ref: "#/components/parameters/LayerId"
+        - name: where
+          in: query
+          required: true
+          description: SQL filter. Use `1=1` to match all rows.
+          schema:
+            type: string
+            default: "1=1"
+          examples:
+            all:
+              value: "1=1"
+            byDevice:
+              value: "device_id='25865bf9-41f8-453a-b44f-157901d81df0'"
+            sinceEpochMs:
+              value: "measured_at >= 1780272000000"
+            nameLike:
+              value: "name LIKE '003%'"
+        - name: outFields
+          in: query
+          description: Comma-separated field list, or `*` for all fields.
+          schema:
+            type: string
+            default: "*"
+          examples:
+            all:
+              value: "*"
+            history:
+              value: "measured_at,temp"
+        - name: orderByFields
+          in: query
+          description: |
+            Sort clause, e.g. `measured_at ASC`. A stable order is **required**
+            for correct pagination.
+          schema:
+            type: string
+          examples:
+            oldestFirst:
+              value: "measured_at ASC"
+            newestFirst:
+              value: "measured_at DESC"
+        - name: resultOffset
+          in: query
+          description: Number of matching rows to skip (pagination).
+          schema:
+            type: integer
+            minimum: 0
+        - name: resultRecordCount
+          in: query
+          description: Page size. Hard maximum is `maxRecordCount` (2000).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 2000
+        - name: returnGeometry
+          in: query
+          description: Whether to include feature geometry. Set `false` for attributes only.
+          schema:
+            type: boolean
+            default: true
+        - name: returnCountOnly
+          in: query
+          description: Return only the match count (`{ count }`) instead of features.
+          schema:
+            type: boolean
+            default: false
+        - name: groupByFieldsForStatistics
+          in: query
+          description: |
+            Comma-separated grouping fields for `outStatistics`, e.g. `name`
+            or `beschreibung`.
+          schema:
+            type: string
+        - name: outStatistics
+          in: query
+          description: |
+            JSON array of statistic definitions (URL-encoded). See
+            `OutStatistic`. Returns one feature per group with the computed
+            output fields as attributes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutStatistic"
+              examples:
+                countByCategory:
+                  summary: Count grouped by category
+                  value:
+                    - statisticType: count
+                      onStatisticField: objectid
+                      outStatisticFieldName: cnt
+                dateRange:
+                  summary: Min/max of measured_at
+                  value:
+                    - statisticType: min
+                      onStatisticField: measured_at
+                      outStatisticFieldName: mn
+                    - statisticType: max
+                      onStatisticField: measured_at
+                      outStatisticFieldName: mx
+        - name: f
+          in: query
+          description: |
+            Output format. `csv` is **not** supported on `/query`.
+          schema:
+            type: string
+            enum: [json, geojson]
+            default: json
+      responses:
+        "200":
+          description: |
+            Query result. Depending on parameters this is a feature set, a count,
+            or an ArcGIS `{ error }` envelope (errors are still HTTP 200).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/QueryResponse"
+                  - $ref: "#/components/schemas/CountResponse"
+                  - $ref: "#/components/schemas/ErrorEnvelope"
+              examples:
+                featureSet:
+                  summary: Feature set (attributes + geometry)
+                  value:
+                    objectIdFieldName: objectid
+                    geometryType: esriGeometryPoint
+                    spatialReference: { wkid: 4326, latestWkid: 4326 }
+                    fields:
+                      - { name: objectid, type: esriFieldTypeOID, alias: objectid }
+                      - { name: name, type: esriFieldTypeString, alias: name }
+                      - { name: temp, type: esriFieldTypeDouble, alias: temp }
+                    exceededTransferLimit: false
+                    features:
+                      - attributes:
+                          objectid: 42
+                          device_id: 25865bf9-41f8-453a-b44f-157901d81df0
+                          name: 003 - Kreuzung Herrenalber Strasse - Battstrasse
+                          beschreibung: Temperatur
+                          measured_at: 1780272000000
+                          temp: 21.4
+                          luftfeuchte: 58.2
+                        geometry: { x: 8.401, y: 48.998 }
+                count:
+                  summary: returnCountOnly=true
+                  value:
+                    count: 515873
+                statistics:
+                  summary: Grouped statistics
+                  value:
+                    fields:
+                      - { name: beschreibung, type: esriFieldTypeString, alias: beschreibung }
+                      - { name: cnt, type: esriFieldTypeInteger, alias: cnt }
+                    features:
+                      - attributes: { beschreibung: Temperatur, cnt: 120 }
+                      - attributes: { beschreibung: TSK-Container, cnt: 60 }
+                error:
+                  summary: Error envelope (HTTP 200)
+                  value:
+                    error:
+                      code: 400
+                      message: "Unable to complete operation."
+                      details: ["Invalid SQL statement"]
+            application/geo+json:
+              schema:
+                $ref: "#/components/schemas/GeoJsonFeatureCollection"
+              examples:
+                featureCollection:
+                  summary: GeoJSON result when f=geojson
+                  value:
+                    type: FeatureCollection
+                    features:
+                      - type: Feature
+                        id: 42
+                        properties:
+                          objectid: 42
+                          name: 003 - Kreuzung Herrenalber Strasse - Battstrasse
+                        geometry:
+                          type: Point
+                          coordinates: [8.401, 48.998]
+        "4XX":
+          $ref: "#/components/responses/HttpClientError"
+
+components:
+  responses:
+    HttpClientError:
+      description: |
+        HTTP-level client error from the server or proxy. ArcGIS operation
+        errors commonly still use HTTP 200 with an `{ error }` body.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+        text/html:
+          schema:
+            type: string
+
+  parameters:
+    LayerId:
+      name: layerId
+      in: path
+      required: true
+      description: FeatureServer layer id.
+      schema:
+        type: integer
+        enum: [1, 2, 3, 4, 5]
+      examples:
+        live:
+          summary: Live latest-value layer
+          value: 1
+        tempArchive:
+          summary: Temperature/air archive
+          value: 2
+    Format:
+      name: f
+      in: query
+      description: Output format for JSON metadata responses.
+      schema:
+        type: string
+        enum: [json]
+        default: json
+
+  schemas:
+    Point:
+      type: object
+      description: A point geometry in the layer's spatial reference (WGS84).
+      properties:
+        x:
+          type: number
+          description: Longitude.
+        y:
+          type: number
+          description: Latitude.
+      required: [x, y]
+
+    AttributeValue:
+      description: A single attribute value (loosely typed by the service).
+      oneOf:
+        - type: string
+          nullable: true
+        - type: number
+        - type: boolean
+
+    Attributes:
+      type: object
+      description: |
+        Attribute bag for a feature. Keys vary by layer; common SensorCity
+        fields are listed below. Additional fields are allowed.
+      additionalProperties:
+        $ref: "#/components/schemas/AttributeValue"
+      properties:
+        objectid:
+          type: integer
+          description: Stable object id (primary key within a layer).
+        device_id:
+          type: string
+          description: Stable per-sensor id; best key for one station's history.
+        name:
+          type: string
+          description: Station label, e.g. "003 - Kreuzung Herrenalber Strasse - Battstrasse".
+        beschreibung:
+          type: string
+          description: Sensor category (live layer 1).
+          enum:
+            - Temperatur
+            - TSK-Container
+            - Regenschreiber
+            - Boden-Sensor
+            - Wasserpegel-Sensor
+        lat:
+          type: number
+          nullable: true
+        lon:
+          type: number
+          nullable: true
+        measured_at:
+          type: number
+          description: Measurement time, epoch **milliseconds** UTC.
+        inserted_at:
+          type: number
+          description: Ingestion time, epoch **milliseconds** UTC.
+        temp:
+          type: number
+          description: Air temperature (°C). Layer 2.
+        luftfeuchte:
+          type: number
+          description: Relative humidity (%). Layer 2.
+        press:
+          type: number
+          description: Air pressure (Pa). Layer 2.
+        pm10:
+          type: number
+          description: Particulate matter PM10 (µg/m³). Layer 2.
+        pm25:
+          type: number
+          description: Particulate matter PM2.5 (µg/m³). Layer 2.
+        sonnenstrahlung:
+          type: number
+          description: Solar radiation (W/m²). Layer 2.
+        niederschlag:
+          type: number
+          description: Precipitation (mm). Layer 2.
+        windgeschwindigkeit:
+          type: number
+          description: Wind speed (m/s). Layer 2.
+        fillinglvl_percent:
+          type: number
+          description: Waste-container fill level (%). Layer 3.
+        clicks:
+          type: number
+          description: Rain-gauge tipping-bucket clicks. Layer 4.
+        bodenfeuchte:
+          type: number
+          description: Soil moisture (%). Layer 5.
+        bodentemperatur:
+          type: number
+          description: Soil temperature (°C). Layer 5.
+        pegel:
+          type: number
+          description: Water level (cm). Live layer 1 only (Wasserpegel-Sensor).
+        temperaturkategorien:
+          type: string
+          nullable: true
+        fuellstatus:
+          type: string
+          nullable: true
+        uv_a_strahlung:
+          type: number
+          nullable: true
+          description: UV-A radiation. Layer 2.
+        uv_b_strahlung:
+          type: number
+          nullable: true
+          description: UV-B radiation. Layer 2.
+        batteriestatus:
+          type: number
+          nullable: true
+        parser_id:
+          type: string
+          nullable: true
+        packet_id:
+          type: string
+          nullable: true
+        id:
+          type: string
+          nullable: true
+        typ:
+          type: string
+          nullable: true
+        art:
+          type: string
+          nullable: true
+        quelle:
+          type: string
+          nullable: true
+        messeinheit_hoehe:
+          type: string
+          nullable: true
+        messeinheit_tiefe:
+          type: string
+          nullable: true
+        anwendung:
+          type: string
+          nullable: true
+        archiviert:
+          type: string
+          nullable: true
+        standort:
+          type: string
+          nullable: true
+        standort1:
+          type: string
+          nullable: true
+        gemessen_am:
+          type: string
+          nullable: true
+        baumart:
+          type: string
+          nullable: true
+        baumnummer:
+          type: integer
+          nullable: true
+        bemerkung:
+          type: string
+          nullable: true
+        breitengrad:
+          type: integer
+          nullable: true
+        einbau:
+          type: string
+          nullable: true
+        laengengrad:
+          type: integer
+          nullable: true
+        messtiefen:
+          type: string
+          nullable: true
+        oz:
+          type: integer
+          nullable: true
+        pflanzjahr:
+          type: integer
+          nullable: true
+        pflegebezirk:
+          type: string
+          nullable: true
+        sensornummer:
+          type: integer
+          nullable: true
+        stadtteil:
+          type: string
+          nullable: true
+        standortnummer:
+          type: integer
+          nullable: true
+        battery_voltage:
+          type: string
+          nullable: true
+        device:
+          type: integer
+          nullable: true
+        protocol_version:
+          type: integer
+          nullable: true
+        soil_moisture_at_depth_0:
+          type: string
+          nullable: true
+        soil_moisture_at_depth_1:
+          type: string
+          nullable: true
+        soil_moisture_at_depth_2:
+          type: string
+          nullable: true
+        soil_moisture_at_depth_3:
+          type: string
+          nullable: true
+        soil_moisture_at_depth_4:
+          type: string
+          nullable: true
+        soil_moisture_at_depth_5:
+          type: string
+          nullable: true
+        soil_moisture_at_depth_6:
+          type: string
+          nullable: true
+        soil_moisture_at_depth_7:
+          type: string
+          nullable: true
+        soil_temperature_at_depth_0:
+          type: string
+          nullable: true
+        soil_temperature_at_depth_1:
+          type: string
+          nullable: true
+        soil_temperature_at_depth_2:
+          type: string
+          nullable: true
+        soil_temperature_at_depth_3:
+          type: string
+          nullable: true
+        soil_temperature_at_depth_4:
+          type: string
+          nullable: true
+        soil_temperature_at_depth_5:
+          type: string
+          nullable: true
+        soil_temperature_at_depth_6:
+          type: string
+          nullable: true
+        soil_temperature_at_depth_7:
+          type: string
+          nullable: true
+        einbaudatum:
+          type: number
+          nullable: true
+          description: Installation date, epoch milliseconds UTC.
+
+    Feature:
+      type: object
+      description: One ArcGIS feature — attribute bag plus optional point geometry.
+      properties:
+        attributes:
+          $ref: "#/components/schemas/Attributes"
+        geometry:
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/Point"
+          nullable: true
+      required: [attributes]
+
+    FieldInfo:
+      type: object
+      description: Field definition as reported by the service.
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          description: Esri field type, e.g. `esriFieldTypeDouble`.
+          example: esriFieldTypeDouble
+        alias:
+          type: string
+        length:
+          type: integer
+          description: Maximum field length for string/date fields, when reported.
+        nullable:
+          type: boolean
+          description: Whether the ArcGIS field allows null values.
+        defaultValue:
+          $ref: "#/components/schemas/AttributeValue"
+        modelName:
+          type: string
+      required: [name, type]
+
+    SpatialReference:
+      type: object
+      properties:
+        wkid:
+          type: integer
+          example: 4326
+        latestWkid:
+          type: integer
+          example: 4326
+
+    GeoJsonPoint:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [Point]
+        coordinates:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+          description: Longitude/latitude coordinate pair.
+      required: [type, coordinates]
+
+    GeoJsonFeature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [Feature]
+        id:
+          oneOf:
+            - type: integer
+            - type: string
+        properties:
+          $ref: "#/components/schemas/Attributes"
+        geometry:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/GeoJsonPoint"
+      required: [type, properties, geometry]
+
+    GeoJsonFeatureCollection:
+      type: object
+      description: GeoJSON response returned when `/query` is called with `f=geojson`.
+      properties:
+        type:
+          type: string
+          enum: [FeatureCollection]
+        features:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeoJsonFeature"
+      required: [type, features]
+
+    QueryResponse:
+      type: object
+      description: A feature set returned by `/query`.
+      properties:
+        objectIdFieldName:
+          type: string
+        geometryType:
+          type: string
+          example: esriGeometryPoint
+        spatialReference:
+          $ref: "#/components/schemas/SpatialReference"
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldInfo"
+        exceededTransferLimit:
+          type: boolean
+          description: True when more rows remain beyond this page.
+        features:
+          type: array
+          items:
+            $ref: "#/components/schemas/Feature"
+        error:
+          $ref: "#/components/schemas/ArcGisError"
+      required: [features]
+
+    CountResponse:
+      type: object
+      description: Response when `returnCountOnly=true`.
+      properties:
+        count:
+          type: integer
+      required: [count]
+
+    OutStatistic:
+      type: object
+      description: One statistic definition for `outStatistics`.
+      properties:
+        statisticType:
+          type: string
+          enum: [count, sum, min, max, avg, stddev, var]
+        onStatisticField:
+          type: string
+          description: Field to aggregate.
+        outStatisticFieldName:
+          type: string
+          description: Output attribute name for the computed value.
+      required: [statisticType, onStatisticField, outStatisticFieldName]
+
+    ArcGisError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "Unable to complete operation."
+        details:
+          type: array
+          items:
+            type: string
+      required: [code, message]
+
+    ErrorEnvelope:
+      type: object
+      description: |
+        ArcGIS error wrapper. **Returned with HTTP 200** — callers must inspect
+        the body for an `error` key rather than relying on the status code.
+      properties:
+        error:
+          $ref: "#/components/schemas/ArcGisError"
+      required: [error]
+
+    ServiceInfo:
+      type: object
+      description: FeatureServer-level metadata (subset).
+      properties:
+        currentVersion:
+          type: number
+        serviceDescription:
+          type: string
+        maxRecordCount:
+          type: integer
+          example: 2000
+        capabilities:
+          type: string
+          example: Query,Create,Update,Delete,Editing,Uploads
+        supportedQueryFormats:
+          type: string
+          example: JSON
+        initialExtent:
+          type: object
+          properties:
+            spatialReference:
+              $ref: "#/components/schemas/SpatialReference"
+        fullExtent:
+          type: object
+          properties:
+            spatialReference:
+              $ref: "#/components/schemas/SpatialReference"
+        layers:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              type:
+                type: string
+                example: Feature Layer
+              geometryType:
+                type: string
+                example: esriGeometryPoint
+
+    LayerInfo:
+      type: object
+      description: Single-layer metadata (subset).
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+          example: Feature Layer
+        geometryType:
+          type: string
+          example: esriGeometryPoint
+        maxRecordCount:
+          type: integer
+          example: 2000
+        objectIdField:
+          type: string
+          example: objectid
+        globalIdField:
+          type: string
+          nullable: true
+        capabilities:
+          type: string
+          example: Query,Create,Update,Delete,Editing,Uploads
+        supportedQueryFormats:
+          type: string
+          example: JSON, geoJSON, PBF
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldInfo"

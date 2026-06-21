@@ -13,6 +13,7 @@ import { OverviewView } from "./views/OverviewView";
 import { SensorsView } from "./views/SensorsView";
 import { MapView } from "./views/MapView";
 import { TemperatureFieldView } from "./views/TemperatureFieldView";
+import { CombinedTemperatureFieldView } from "./views/CombinedTemperatureFieldView";
 import { SensorDetailView } from "./views/SensorDetailView";
 import { QueryView } from "./views/QueryView";
 import { AboutView } from "./views/AboutView";
@@ -89,6 +90,11 @@ export function App() {
           <Route path="/sensors" element={<SensorsView />} />
           <Route path="/map" element={<MapView />} />
           <Route path="/temperature" element={<TemperatureFieldView />} />
+          {/* Hidden from nav: combined SensorCity + community temperature field. */}
+          <Route
+            path="/combined-temperature"
+            element={<CombinedTemperatureFieldView />}
+          />
           <Route path="/heatmap" element={<Navigate to="/temperature" replace />} />
           <Route path="/sensor/:objectId" element={<SensorDetailView />} />
           <Route path="/query" element={<QueryView />} />

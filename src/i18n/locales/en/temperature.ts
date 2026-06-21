@@ -30,6 +30,27 @@ export default {
     viewDetails: "View details",
     setReference: "Set as reference",
   },
+  combined: {
+    badge: "City + community",
+    heading: "Live temperatures across Karlsruhe",
+    intro:
+      "A live temperature map that blends the city's SensorCity network with nearby openSenseMap and sensor.community citizen stations, so the field is filled in wherever someone is measuring.",
+    introLinkPrefix: "Prefer the city network alone? ",
+    introLink: "Open the city-only temperature map",
+    source: {
+      sensorcity: "SensorCity sensor",
+      opensensemap: "openSenseMap community sensor",
+      sensorcommunity: "sensor.community sensor",
+    },
+    viewOnSource: "View on {{source}}",
+    readingTime: "Reading at {{time}}",
+    sourceBreakdown:
+      "{{city}} city · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
+    communityUnavailable:
+      "Some community sensor data is unavailable right now; showing what loaded.",
+    attribution:
+      "Community readings via openSenseMap (opensensemap.org) and sensor.community, both licensed CC BY-SA 4.0.",
+  },
   baseline: {
     modeAbsolute: "Absolute",
     modeDeviation: "Difference from baseline",

@@ -522,6 +522,12 @@ body {
   font-size: 0.8125rem;
 }
 
+.sensor-popup__note {
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
 .sensor-popup__link {
   display: inline-flex;
   align-items: center;

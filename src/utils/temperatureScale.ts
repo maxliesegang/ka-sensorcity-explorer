@@ -85,7 +85,9 @@ function absPos(temperature: number): number {
 }
 
 /** Build an anchored-relative temperature scale from the live points. */
-export function buildTemperatureScale(points: TemperatureFieldPoint[]): TemperatureScale {
+export function buildTemperatureScale(
+  points: readonly TemperatureFieldPoint[],
+): TemperatureScale {
   let min = Infinity;
   let max = -Infinity;
   for (const p of points) {

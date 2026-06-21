@@ -1,27 +1,22 @@
-// Temperature field of live "Temperatur" sensors, drawn as nearest-sensor
-// (Thiessen / Voronoi) regions: each cell is filled with its sensor's colour so
-// hotter and colder parts of the city read at a glance. The source sensors are
-// drawn above as coloured markers. The colour scale is anchored to the current
-// readings so warm areas never read as blue. Mirrors MapView's Leaflet lifecycle
-// (create-once, invalidateSize, teardown) and KERN view-header markup.
+// Combined temperature field: SensorCity's own network plus community readings
+// (openSenseMap and sensor.community) around Karlsruhe, drawn as one
+// nearest-sensor (Voronoi) field.
 //
-// Shares its colour scale, baseline/deviation model and legend with the combined
-// community view via useTemperatureFieldModel.
+// This is a sibling of TemperatureFieldView — both share the colour scale,
+// baseline/deviation model and legend via useTemperatureFieldModel — but its
+// points come from several sources (see combineTemperaturePoints) and it is
+// intentionally hidden from the nav while the community-data blend is evaluated.
 
 import L from "leaflet";
 import { useEffect, useMemo, useState } from "react";
-import { KernBadge, KernButton } from "@kern-ux-annex/kern-react-kit";
+import { KernBadge } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { fetchSensors } from "../api/sensorcity";
-import { fetchTemperatureInsights } from "../api/temperatureInsights";
-import { categoryLabelKey } from "../config/layers";
+import { fetchOpenSenseMapTemperatures } from "../api/opensensemap";
+import { fetchSensorCommunityTemperatures } from "../api/sensorcommunity";
 import { AsyncBoundary } from "../components/Status";
 import { TemperatureLegend } from "../components/TemperatureLegend";
-import {
-  TemperatureInsights,
-  TemperatureLiveStats,
-} from "../components/TemperatureInsights";
 import { useAsync } from "../hooks/useAsync";
 import { useLeafletMap } from "../hooks/useLeafletMap";
 import {
@@ -40,57 +35,72 @@ import {
 import { TemperatureBaselineControls } from "../components/TemperatureBaselineControls";
 import { useTemperatureFieldModel } from "../hooks/useTemperatureFieldModel";
 import { formatSignedDelta, formatTime, formatValue } from "../utils/format";
+import { getLiveTemperatureFieldPoints } from "../utils/liveTemperatureObservations";
 import {
-  summarizeLiveTemperatureObservations,
-  getLiveTemperatureObservations,
-  getLiveTemperatureFieldPoints,
-  type LiveTemperatureFieldPoint,
-} from "../utils/liveTemperatureObservations";
+  combineTemperaturePoints,
+  type CombinedTemperaturePoint,
+} from "../utils/combinedTemperatureField";
 
 const UNIT = "°C";
 
-// Resting/hover/active ring sizes for the temperature point markers (smaller
-// than the sensor map's, as they sit atop the coloured Voronoi field). `rest`
-// must match the marker style drawn in drawTemperatureField so resetting on
-// mouse-out/close is seamless.
+// Resting/hover/active ring sizes for the point markers — matches the sibling
+// temperature view so the two maps read identically.
 const MARKER_STYLES: MarkerInteractionStyles = {
   rest: { radius: 5, weight: 1, color: "#fff" },
   hover: { radius: 8, weight: 2 },
   active: { radius: 9, weight: 3 },
 };
 
-export function TemperatureFieldView() {
+export function CombinedTemperatureFieldView() {
   const sensors = useAsync(fetchSensors, []);
-  const [showInsights, setShowInsights] = useState(false);
-  const insights = useAsync(fetchTemperatureInsights, [], { enabled: showInsights });
+  const openSenseMap = useAsync(fetchOpenSenseMapTemperatures, []);
+  const sensorCommunity = useAsync(fetchSensorCommunityTemperatures, []);
   const { t } = useTranslation("temperature");
-  const { t: tc } = useTranslation("common");
 
   // Field group (Voronoi polygons) is created first so it sits under the markers.
   const { containerRef, mapRef, groupsRef } = useLeafletMap(["field", "markers"]);
 
   const [shownCount, setShownCount] = useState(0);
 
-  const temperaturePoints = useMemo(
+  const sensorCityPoints = useMemo(
     () => (sensors.data ? getLiveTemperatureFieldPoints(sensors.data) : []),
     [sensors.data],
   );
-  const liveTemperatureObservations = useMemo(
-    () => (sensors.data ? getLiveTemperatureObservations(sensors.data) : []),
-    [sensors.data],
+  const combinedPoints = useMemo(
+    () =>
+      combineTemperaturePoints(sensorCityPoints, [
+        {
+          source: "opensensemap",
+          idPrefix: "osm",
+          readings: openSenseMap.data ?? [],
+          hrefFor: (id) => `https://opensensemap.org/explore/${id}`,
+        },
+        {
+          source: "sensorcommunity",
+          idPrefix: "sc",
+          readings: sensorCommunity.data ?? [],
+        },
+      ]),
+    [sensorCityPoints, openSenseMap.data, sensorCommunity.data],
   );
-  const liveTemperatureSummary = useMemo(
-    () => summarizeLiveTemperatureObservations(liveTemperatureObservations),
-    [liveTemperatureObservations],
-  );
+  const sourceCounts = useMemo(() => {
+    const counts = { sensorCity: 0, openSenseMap: 0, sensorCommunity: 0 };
+    for (const point of combinedPoints) {
+      if (point.source === "sensorcity") counts.sensorCity++;
+      else if (point.source === "opensensemap") counts.openSenseMap++;
+      else counts.sensorCommunity++;
+    }
+    return counts;
+  }, [combinedPoints]);
+
   const baselineReadings = useMemo(
     () =>
-      liveTemperatureObservations.map(({ sensor, temperature }) => ({
-        id: String(sensor.objectId),
-        label: sensor.name,
-        temperature,
+      combinedPoints.map((point) => ({
+        id: point.id,
+        label: point.name,
+        temperature: point.temperature,
       })),
-    [liveTemperatureObservations],
+    [combinedPoints],
   );
 
   const {
@@ -111,60 +121,68 @@ export function TemperatureFieldView() {
     legend,
     colorFor,
     labelFor,
-  } = useTemperatureFieldModel(temperaturePoints, baselineReadings);
+  } = useTemperatureFieldModel(combinedPoints, baselineReadings);
 
-  // Re-render the region polygons + markers whenever the sensor data changes.
+  // Re-render the region polygons + markers whenever the combined data changes.
   useEffect(() => {
     const map = mapRef.current;
     const field = groupsRef.current.field;
     const markers = groupsRef.current.markers;
     if (!map || !field || !markers) return;
 
-    if (temperaturePoints.length === 0 || !temperatureScale) {
+    if (combinedPoints.length === 0 || !temperatureScale) {
       clearTemperatureFieldLayers(field, markers);
       setShownCount(0);
       return;
     }
 
-    const temperatureCategoryLabel = tc(categoryLabelKey("Temperatur"));
     const attachInteractions = createMarkerInteractions(MARKER_STYLES);
 
     /** Bind the shared sensor tooltip + popup to a Leaflet layer. */
-    function bindSensor(layer: L.Layer, point: LiveTemperatureFieldPoint): void {
-      const sensorId = String(point.sensor.objectId);
-      // Hide the "set as reference" button when this sensor is already the
-      // active deviation baseline (it's the highlighted marker).
-      const isCurrentBaseline = mode === "deviation" && baselineId === sensorId;
+    function bindPoint(layer: L.Layer, point: CombinedTemperaturePoint): void {
+      const sourceLabel = t(`combined.source.${point.source}`);
+      // Hide the "set as reference" button when this point is already the active
+      // deviation baseline (it's the highlighted marker).
+      const isCurrentBaseline = mode === "deviation" && baselineId === point.id;
+      // The link is dropped (helper-side) when neither href nor cta is set, e.g.
+      // sensor.community devices that have no public per-sensor page.
+      const href = point.detailHref ?? point.externalHref;
+      const cta = href
+        ? point.detailHref
+          ? t("popup.viewDetails")
+          : t("combined.viewOnSource", { source: sourceLabel })
+        : undefined;
+
       layer
         .bindTooltip(
-          `${point.sensor.name} — ${point.temperature.toFixed(1)} °C`,
+          `${point.name} — ${point.temperature.toFixed(1)} °C`,
           SENSOR_TOOLTIP_OPTIONS,
         )
         .bindPopup(
           sensorPopupHtml({
             color: colorFor(point.temperature),
-            label: temperatureCategoryLabel,
-            name: point.sensor.name,
+            label: sourceLabel,
+            name: point.name,
             meta: `${point.temperature.toFixed(1)} °C`,
-            href: `#/sensor/${point.sensor.objectId}`,
-            cta: t("popup.viewDetails"),
+            note:
+              point.measuredAt != null
+                ? t("combined.readingTime", { time: formatTime(point.measuredAt) })
+                : undefined,
+            href,
+            cta,
             action: isCurrentBaseline ? undefined : { label: t("popup.setReference") },
           }),
           SENSOR_POPUP_OPTIONS,
         );
 
-      // Wire the "set as reference" button: switch to deviation mode anchored on
-      // this sensor.
       if (!isCurrentBaseline) {
         bindPopupAction(layer, () => {
           setMode("deviation");
-          setBaselineId(sensorId);
+          setBaselineId(point.id);
           layer.closePopup();
         });
       }
 
-      // Hover/active affordance on the point markers only — the Voronoi cells
-      // share the same popup but shouldn't resize.
       if (layer instanceof L.CircleMarker) attachInteractions(layer);
     }
 
@@ -172,26 +190,25 @@ export function TemperatureFieldView() {
       map,
       field,
       markers,
-      points: temperaturePoints,
+      points: combinedPoints,
       color: (point) => colorFor(point.temperature),
-      bindLayer: bindSensor,
+      bindLayer: bindPoint,
       label: showLabels ? (point) => labelFor(point.temperature) : undefined,
       fitBounds: false,
-      highlight: (point) =>
-        mode === "deviation" && String(point.sensor.objectId) === baselineId,
+      highlight: (point) => mode === "deviation" && point.id === baselineId,
     });
 
-    setShownCount(temperaturePoints.length);
-  }, [temperaturePoints, temperatureScale, t, tc, baselineId, mode, setMode, setBaselineId, showLabels, colorFor, labelFor]);
+    setShownCount(combinedPoints.length);
+  }, [combinedPoints, temperatureScale, t, baselineId, mode, setMode, setBaselineId, showLabels, colorFor, labelFor]);
 
-  // Fit the view to the sensors only when the data itself changes — not on every
-  // redraw (e.g. toggling labels or switching colour mode), so those leave the
-  // current pan/zoom untouched.
+  // Fit the view to the points only when the data itself changes — not on every
+  // redraw (toggling labels, switching colour mode), so those leave the current
+  // pan/zoom untouched.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || temperaturePoints.length === 0) return;
-    fitTemperatureFieldToPoints(map, temperaturePoints);
-  }, [temperaturePoints]);
+    if (!map || combinedPoints.length === 0) return;
+    fitTemperatureFieldToPoints(map, combinedPoints);
+  }, [combinedPoints]);
 
   // Keep the map sized correctly across loading/data transitions.
   useEffect(() => {
@@ -206,29 +223,26 @@ export function TemperatureFieldView() {
     : sensors.error
       ? t("status.error")
       : isDeviationMapActive
-        ? t("baseline.status", {
-            name: baselineLabel,
-            count: shownCount,
-          })
+        ? t("baseline.status", { name: baselineLabel, count: shownCount })
         : temperatureScale
-        ? t("status.showingRange", {
-            count: shownCount,
-            min: temperatureScale.min.toFixed(1),
-            max: temperatureScale.max.toFixed(1),
-          })
-        : t("status.showing", { count: shownCount });
+          ? t("status.showingRange", {
+              count: shownCount,
+              min: temperatureScale.min.toFixed(1),
+              max: temperatureScale.max.toFixed(1),
+            })
+          : t("status.showing", { count: shownCount });
 
   return (
     <div>
       <div className="view-header view-header--compact">
         <div className="view-header__lead">
-          <KernBadge label={t("badge")} variant="info" />
-          <h1 className="kern-heading-large">{t("heading")}</h1>
+          <KernBadge label={t("combined.badge")} variant="info" />
+          <h1 className="kern-heading-large">{t("combined.heading")}</h1>
         </div>
         <p className="kern-body kern-body--muted view-header__intro">
-          {t("intro")} {t("introLinkPrefix")}
-          <Link className="kern-link" to="/map">
-            {t("introLink")}
+          {t("combined.intro")} {t("combined.introLinkPrefix")}
+          <Link className="kern-link" to="/temperature">
+            {t("combined.introLink")}
           </Link>
           .
         </p>
@@ -236,7 +250,7 @@ export function TemperatureFieldView() {
 
       <section className="map-shell" aria-label={t("canvasAria")}>
         <TemperatureBaselineControls
-          id="city-temperature-baseline-controls-select"
+          id="combined-temperature-baseline-controls-select"
           mode={mode}
           onModeChange={setMode}
           baselineId={baselineId}
@@ -253,6 +267,20 @@ export function TemperatureFieldView() {
 
         <div className="result-bar result-bar--compact" role="status" aria-live="polite">
           <span className="kern-body kern-body--small">{mapStatus}</span>
+          {!sensors.loading && !sensors.error && (
+            <span className="kern-body kern-body--small kern-body--muted">
+              {t("combined.sourceBreakdown", {
+                city: sourceCounts.sensorCity,
+                opensensemap: sourceCounts.openSenseMap,
+                sensorcommunity: sourceCounts.sensorCommunity,
+              })}
+            </span>
+          )}
+          {(openSenseMap.error || sensorCommunity.error) && (
+            <span className="kern-body kern-body--small kern-body--muted">
+              {t("combined.communityUnavailable")}
+            </span>
+          )}
           {isDeviationMapActive && dwdBaselineObservation && (
             <span className="kern-body kern-body--small kern-body--muted">
               {t("baseline.dwdReading", {
@@ -279,7 +307,7 @@ export function TemperatureFieldView() {
 
         <AsyncBoundary
           state={sensors}
-          isEmpty={(data) => getLiveTemperatureFieldPoints(data).length === 0}
+          isEmpty={() => combinedPoints.length === 0}
           emptyLabel={t("emptyToMap")}
         >
           {() =>
@@ -302,44 +330,10 @@ export function TemperatureFieldView() {
             ) : null
           }
         </AsyncBoundary>
-      </section>
 
-      <section className="temp-insights-shell" aria-label={t("insights.live.heading")}>
-        <AsyncBoundary
-          state={sensors}
-          isEmpty={(data) => getLiveTemperatureObservations(data).length === 0}
-          emptyLabel={t("insights.empty")}
-        >
-          {() => (
-            <TemperatureLiveStats
-              current={liveTemperatureSummary}
-              sensorCount={liveTemperatureObservations.length}
-            />
-          )}
-        </AsyncBoundary>
-      </section>
-
-      <section className="temp-insights-shell" aria-label={t("insights.heading")}>
-        {showInsights ? (
-          <AsyncBoundary
-            state={insights}
-            isEmpty={(data) => data.sensorCount === 0}
-            emptyLabel={t("insights.empty")}
-          >
-            {(data) => <TemperatureInsights insights={data} />}
-          </AsyncBoundary>
-        ) : (
-          <div className="temp-insights-cta">
-            <h2 className="kern-heading-large">{t("insights.heading")}</h2>
-            <p className="kern-body kern-body--muted">{t("insights.cta.hint")}</p>
-            <KernButton
-              type="button"
-              variant="primary"
-              onClick={() => setShowInsights(true)}
-              label={t("insights.cta.button")}
-            />
-          </div>
-        )}
+        <p className="kern-body kern-body--small kern-body--muted">
+          {t("combined.attribution")}
+        </p>
       </section>
     </div>
   );

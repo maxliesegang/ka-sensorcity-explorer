@@ -29,9 +29,14 @@ export interface SensorPopupContent {
   name: string;
   /** Secondary line, e.g. the current reading or its age. */
   meta: string;
-  /** Link target (hash route) for the "view details" call to action. */
-  href: string;
-  cta: string;
+  /** Optional smaller, muted line below `meta`, e.g. the reading time. */
+  note?: string;
+  /**
+   * Link target (hash route or external URL) for the call to action. Omit both
+   * `href` and `cta` for sources with no per-sensor page — the link is dropped.
+   */
+  href?: string;
+  cta?: string;
   /**
    * Optional secondary button. Rendered with the `sensor-popup__action` class
    * (and `data-popup-action`) so callers can wire its click on `popupopen`.
@@ -45,6 +50,7 @@ export function sensorPopupHtml({
   label,
   name,
   meta,
+  note,
   href,
   cta,
   action,
@@ -52,6 +58,16 @@ export function sensorPopupHtml({
   const actionButton = action
     ? `<button type="button" class="sensor-popup__action" data-popup-action>${escapeHtml(action.label)}</button>`
     : "";
+  const noteLine = note
+    ? `<span class="sensor-popup__note">${escapeHtml(note)}</span>`
+    : "";
+  const link =
+    href && cta
+      ? `<a class="sensor-popup__link" href="${escapeHtml(href)}">
+      ${escapeHtml(cta)}
+      <span aria-hidden="true">→</span>
+    </a>`
+      : "";
   return `
     <span class="sensor-popup__cat">
       <span class="cat-dot" style="background:${escapeHtml(color)}"></span>
@@ -59,10 +75,8 @@ export function sensorPopupHtml({
     </span>
     <strong class="sensor-popup__name">${escapeHtml(name)}</strong>
     <span class="sensor-popup__meta">${escapeHtml(meta)}</span>
-    <a class="sensor-popup__link" href="${escapeHtml(href)}">
-      ${escapeHtml(cta)}
-      <span aria-hidden="true">→</span>
-    </a>
+    ${noteLine}
+    ${link}
     ${actionButton}
   `;
 }

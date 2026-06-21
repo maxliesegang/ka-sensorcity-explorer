@@ -201,6 +201,16 @@ export function AboutView({
         <h2 className="kern-heading-small">{t("privacy.heading")}</h2>
         <p className="kern-body">{t("privacy.body")}</p>
       </section>
+
+      <section className="surface-section">
+        <h2 className="kern-heading-small">{t("experiment.heading")}</h2>
+        <p className="kern-body">{t("experiment.body")}</p>
+        <p className="kern-body">
+          <Link className="kern-link" to="/combined-temperature">
+            {t("experiment.link")}
+          </Link>
+        </p>
+      </section>
     </section>
   );
 }
