@@ -105,7 +105,8 @@ export default {
     },
     "3": {
       label: "Abfallbehälter-Archiv",
-      description: "Füllstände von Abfallbehältern. ~5 Monate rollierend.",
+      description:
+        "Füllstände und Behältertemperatur von Abfallbehältern. ~5 Monate rollierend.",
     },
     "4": {
       label: "Regenschreiber-Archiv",

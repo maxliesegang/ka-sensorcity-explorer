@@ -106,7 +106,8 @@ export default {
     },
     "3": {
       label: "Waste container archive",
-      description: "Waste-container fill levels. ~5 months rolling.",
+      description:
+        "Waste-container fill levels and container temperature. ~5 months rolling.",
     },
     "4": {
       label: "Rain gauge archive",

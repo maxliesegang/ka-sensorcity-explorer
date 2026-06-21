@@ -51,7 +51,10 @@ export const CATEGORIES: Category[] = [
     key: "TSK-Container",
     color: "#2e7d32",
     archiveLayerId: 3,
-    measurements: [{ field: "fillinglvl_percent", unit: "%" }],
+    measurements: [
+      { field: "fillinglvl_percent", unit: "%" },
+      { field: "temp", unit: "°C" },
+    ],
   },
   {
     key: "Regenschreiber",
