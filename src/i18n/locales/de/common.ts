@@ -52,6 +52,7 @@ export default {
     hoursAgo_other: "vor {{count}} Std.",
     daysAgo_one: "vor {{count}} Tag",
     daysAgo_other: "vor {{count}} Tagen",
+    readingTime: "Messung um {{time}} Uhr",
   },
   chart: {
     measurement: "Messwert",

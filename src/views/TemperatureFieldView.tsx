@@ -146,6 +146,7 @@ export function TemperatureFieldView() {
             label: temperatureCategoryLabel,
             name: point.sensor.name,
             meta: `${point.temperature.toFixed(1)} °C`,
+            readingTime: point.sensor.measuredAt,
             href: `#/sensor/${point.sensor.objectId}`,
             cta: t("popup.viewDetails"),
             action: isCurrentBaseline ? undefined : { label: t("popup.setReference") },

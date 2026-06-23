@@ -53,6 +53,7 @@ export default {
     hoursAgo_other: "{{count}} h ago",
     daysAgo_one: "{{count}} d ago",
     daysAgo_other: "{{count}} d ago",
+    readingTime: "Reading at {{time}}",
   },
   chart: {
     measurement: "measurement",

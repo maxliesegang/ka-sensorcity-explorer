@@ -17,7 +17,6 @@ import {
 } from "../config/layers";
 import { useAsync } from "../hooks/useAsync";
 import { DEFAULT_ZOOM, KARLSRUHE, useLeafletMap } from "../hooks/useLeafletMap";
-import { timeAgo } from "../utils/format";
 import {
   createMarkerInteractions,
   SENSOR_POPUP_OPTIONS,
@@ -25,6 +24,7 @@ import {
   sensorPopupHtml,
   type MarkerInteractionStyles,
 } from "../utils/leafletMarkers";
+import { formatPrimaryMeasurementLine } from "../utils/sensorMeasurements";
 
 // Resting/hover/active ring sizes for the category markers.
 const MARKER_STYLES: MarkerInteractionStyles = {
@@ -88,7 +88,8 @@ export function MapView() {
             color,
             label,
             name: sensor.name,
-            meta: `${t("popup.lastReading")} ${timeAgo(sensor.measuredAt)}`,
+            meta: formatPrimaryMeasurementLine(sensor, tc),
+            readingTime: sensor.measuredAt,
             href: `#/sensor/${sensor.objectId}`,
             cta: t("popup.viewDetails"),
           }),

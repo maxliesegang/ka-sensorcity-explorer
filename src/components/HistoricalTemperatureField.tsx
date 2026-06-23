@@ -15,7 +15,13 @@ import {
   formatTemperatureLabel,
   formatTemperatureDeviationLabel,
 } from "../hooks/useTemperatureFieldLabels";
-import { formatSignedDelta, formatTimestamp, formatValue } from "../utils/format";
+import {
+  formatReadingTime,
+  formatSignedDelta,
+  formatTime,
+  formatTimestamp,
+  formatValue,
+} from "../utils/format";
 import { escapeHtml } from "../utils/html";
 import {
   clearTemperatureFieldLayers,
@@ -60,7 +66,7 @@ export function HistoricalTemperatureField({
   bucketHours,
   onSelectedTimeChange,
 }: Props) {
-  const { t, i18n } = useTranslation("temperature");
+  const { t } = useTranslation("temperature");
   const { containerRef, mapRef, groupsRef } = useLeafletMap(["field", "markers"]);
   const latestIndex = Math.max(0, snapshots.length - 1);
   const [selectedIndex, setSelectedIndex] = useState(latestIndex);
@@ -174,6 +180,7 @@ export function HistoricalTemperatureField({
         .bindPopup(
           `<strong>${escapeHtml(point.name)}</strong><br/>` +
             `${value}<br/>` +
+            `${escapeHtml(formatReadingTime(selectedSnapshot.timestamp))}<br/>` +
             `<a href="#/sensor/${point.objectId}">${escapeHtml(t("popup.viewDetails"))}</a>`,
         );
     }
@@ -297,13 +304,7 @@ export function HistoricalTemperatureField({
             <span className="kern-body kern-body--small kern-body--muted">
               {t("baseline.dwdReading", {
                 value: formatValue(dwdBaselineObservation.temperature, UNIT),
-                time: new Date(dwdBaselineObservation.timestamp).toLocaleTimeString(
-                  i18n.language,
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  },
-                ),
+                time: formatTime(dwdBaselineObservation.timestamp),
               })}
             </span>
           )}

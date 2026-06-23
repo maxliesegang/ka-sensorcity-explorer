@@ -5,6 +5,7 @@
 
 import L from "leaflet";
 
+import { formatReadingTime } from "./format";
 import { escapeHtml } from "./html";
 
 /** Tooltip options that opt the label into the KERN-styled `.sensor-tooltip`. */
@@ -29,8 +30,10 @@ export interface SensorPopupContent {
   name: string;
   /** Secondary line, e.g. the current reading or its age. */
   meta: string;
-  /** Optional smaller, muted line below `meta`, e.g. the reading time. */
+  /** Optional smaller, muted line below `meta`. Overrides `readingTime`. */
   note?: string;
+  /** Epoch-ms timestamp used to render the standard "Reading at …" note. */
+  readingTime?: number | null;
   /**
    * Link target (hash route or external URL) for the call to action. Omit both
    * `href` and `cta` for sources with no per-sensor page — the link is dropped.
@@ -51,15 +54,18 @@ export function sensorPopupHtml({
   name,
   meta,
   note,
+  readingTime,
   href,
   cta,
   action,
 }: SensorPopupContent): string {
+  const popupNote =
+    note ?? (readingTime != null ? formatReadingTime(readingTime) : undefined);
   const actionButton = action
     ? `<button type="button" class="sensor-popup__action" data-popup-action>${escapeHtml(action.label)}</button>`
     : "";
-  const noteLine = note
-    ? `<span class="sensor-popup__note">${escapeHtml(note)}</span>`
+  const noteLine = popupNote
+    ? `<span class="sensor-popup__note">${escapeHtml(popupNote)}</span>`
     : "";
   const link =
     href && cta

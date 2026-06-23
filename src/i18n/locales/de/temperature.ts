@@ -44,7 +44,6 @@ export default {
       sensorcommunity: "sensor.community-Sensor",
     },
     viewOnSource: "Auf {{source}} ansehen",
-    readingTime: "Messung um {{time}} Uhr",
     sourceBreakdown:
       "{{city}} Stadt · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
     communityUnavailable:

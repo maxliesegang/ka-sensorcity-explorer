@@ -13,32 +13,20 @@ import {
   CATEGORIES,
   categoryColor,
   categoryLabelKey,
-  getCategory,
   measurementLabelKey,
 } from "../config/layers";
 import { useAsync } from "../hooks/useAsync";
 import type { Sensor } from "../types";
-import { formatValue, timeAgo } from "../utils/format";
+import { timeAgo } from "../utils/format";
+import {
+  formatPrimaryMeasurementValue,
+  primaryMeasurement,
+  primaryMeasurementValue,
+} from "../utils/sensorMeasurements";
 
 type SortKey = "name" | "category" | "value" | "measuredAt";
 type SortDir = "asc" | "desc";
 type ViewMode = "cards" | "table";
-
-function primaryMeasurement(sensor: Sensor) {
-  return getCategory(sensor.category)?.measurements[0];
-}
-
-function primaryValue(sensor: Sensor): number | null {
-  const primary = primaryMeasurement(sensor);
-  if (!primary) return null;
-  const value = sensor.attributes[primary.field];
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function formatPrimaryValue(sensor: Sensor): string {
-  const primary = primaryMeasurement(sensor);
-  return primary ? formatValue(sensor.attributes[primary.field], primary.unit) : "—";
-}
 
 function numericCompare(a: number | null, b: number | null, dir: SortDir): number {
   if (a == null && b == null) return 0;
@@ -66,7 +54,11 @@ function compareSensors(
       dir,
     );
   } else if (key === "value") {
-    result = numericCompare(primaryValue(firstSensor), primaryValue(secondSensor), dir);
+    result = numericCompare(
+      primaryMeasurementValue(firstSensor),
+      primaryMeasurementValue(secondSensor),
+      dir,
+    );
   } else if (key === "category") {
     result = categoryLabel(firstSensor.category).localeCompare(
       categoryLabel(secondSensor.category),
@@ -481,7 +473,7 @@ function SensorExplorer({
                     </span>
                   </td>
                   <td className="kern-table__cell kern-table__cell--numeric">
-                    {formatPrimaryValue(sensor)}
+                    {formatPrimaryMeasurementValue(sensor)}
                   </td>
                   <td className="kern-table__cell kern-table__cell--numeric">
                     {timeAgo(sensor.measuredAt)}
@@ -522,7 +514,7 @@ function SensorCard({ sensor }: { sensor: Sensor }) {
       </span>
       <span className="sensor-card__name">{sensor.name}</span>
       <span className="sensor-card__reading">
-        {formatPrimaryValue(sensor)}
+        {formatPrimaryMeasurementValue(sensor)}
       </span>
       <span className="kern-body kern-body--small">
         {primary ? tc(measurementLabelKey(primary.field)) : t("currentValue")} ·{" "}

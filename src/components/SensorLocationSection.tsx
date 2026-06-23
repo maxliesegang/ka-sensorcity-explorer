@@ -8,8 +8,9 @@ import { categoryColor, categoryLabelKey } from "../config/layers";
 import { useAsync } from "../hooks/useAsync";
 import { DEFAULT_ZOOM, KARLSRUHE, useLeafletMap } from "../hooks/useLeafletMap";
 import type { Sensor } from "../types";
-import { timeAgo } from "../utils/format";
+import { formatReadingTime } from "../utils/format";
 import { escapeHtml } from "../utils/html";
+import { formatPrimaryMeasurementLine } from "../utils/sensorMeasurements";
 
 const SENSOR_ZOOM = 16;
 const FIT_OPTIONS: L.FitBoundsOptions = { padding: [24, 24], maxZoom: 14 };
@@ -73,7 +74,7 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
         weight: isSelected ? 3 : 1,
       })
         .bindTooltip(`${escapeHtml(item.name)} - ${escapeHtml(label)}`)
-        .bindPopup(renderPopup(item, label, isSelected, t))
+        .bindPopup(renderPopup(item, label, isSelected, t, tc))
         .addTo(group);
 
       if (isSelected) marker.bringToFront();
@@ -186,6 +187,7 @@ function renderPopup(
   label: string,
   isSelected: boolean,
   translate: (key: string) => string,
+  translateCommon: (key: string) => string,
 ): string {
   const action = isSelected
     ? escapeHtml(translate("location.popup.currentSensor"))
@@ -196,9 +198,12 @@ function renderPopup(
   return `
     <strong>${escapeHtml(sensor.name)}</strong><br/>
     ${escapeHtml(label)}<br/>
-    ${escapeHtml(translate("location.popup.lastReading"))} ${escapeHtml(
-      timeAgo(sensor.measuredAt),
-    )}<br/>
+    ${escapeHtml(formatPrimaryMeasurementLine(sensor, translateCommon))}<br/>
+    ${
+      sensor.measuredAt != null
+        ? `${escapeHtml(formatReadingTime(sensor.measuredAt))}<br/>`
+        : ""
+    }
     ${action}
   `;
 }

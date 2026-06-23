@@ -24,6 +24,12 @@ export function formatTime(epochMs: number | null): string {
   });
 }
 
+/** Format the popup note that names when a reading was taken. */
+export function formatReadingTime(epochMs: number | null): string {
+  if (epochMs == null) return NOT_AVAILABLE;
+  return i18n.t("time.readingTime", { time: formatTime(epochMs) });
+}
+
 /** Format a numeric reading with an optional unit. */
 export function formatValue(value: unknown, unit?: string): string {
   if (typeof value !== "number" || !Number.isFinite(value)) return NOT_AVAILABLE;

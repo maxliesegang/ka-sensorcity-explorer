@@ -164,10 +164,7 @@ export function CombinedTemperatureFieldView() {
             label: sourceLabel,
             name: point.name,
             meta: `${point.temperature.toFixed(1)} °C`,
-            note:
-              point.measuredAt != null
-                ? t("combined.readingTime", { time: formatTime(point.measuredAt) })
-                : undefined,
+            readingTime: point.measuredAt,
             href,
             cta,
             action: isCurrentBaseline ? undefined : { label: t("popup.setReference") },

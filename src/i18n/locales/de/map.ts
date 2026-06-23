@@ -25,7 +25,6 @@ export default {
     showing_other: "{{count}} Sensoren werden angezeigt.",
   },
   popup: {
-    lastReading: "Letzte Messung:",
     viewDetails: "Details anzeigen",
   },
 } as const;
