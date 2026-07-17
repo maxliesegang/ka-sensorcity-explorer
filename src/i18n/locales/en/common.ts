@@ -81,26 +81,31 @@ export default {
       // Marks a filled-in value wherever cells are read one at a time (the
       // column readout, the data table) and the legend is too far away to help.
       interpolatedValue: "{{value}} (interpolated)",
-      reading: "depth {{band}}: {{value}}",
+      reading: "level {{band}}: {{value}}",
       span: "{{from}} to {{to}}",
       stepHint: "use arrow keys to step through time",
-      summary: "{{bands}} depth bands · {{count}} readings · {{span}}",
+      summary: "{{bands}} depth levels · {{count}} readings · {{span}}",
       mode: {
         label: "Profile display",
-        absolute: "Absolute values",
-        development: "Change",
+        absolute: "Readings",
+        development: "Variation",
       },
+      modeHint: {
+        absolute: "Colour shows the reading at each depth level.",
+        development: "Colour shows variation from each depth level's typical value.",
+      },
+      colorScale: "Colour scale",
       change24h: "Change over the latest 24 hours",
-      medianNote: "Compared with each depth's median",
-      descAbsolute: "Heatmap of {{label}}: {{bands}} bands from {{count}} readings, values ranging from {{min}} to {{max}}, {{from}} to {{to}}. Colour shows the reading; deeper colour means a higher value.",
-      descDevelopment: "Heatmap of change in {{label}}: {{bands}} bands from {{count}} readings, deviations from each depth's median ranging from {{min}} to {{max}}, {{from}} to {{to}}. Colour shows the direction and size of change.",
+      medianNote: "Typical value: median for each depth level",
+      descAbsolute: "Heatmap of {{label}}: {{bands}} depth levels from {{count}} readings, values ranging from {{min}} to {{max}}, {{from}} to {{to}}. Colour shows the reading; deeper colour means a higher value.",
+      descDevelopment: "Heatmap of change in {{label}}: {{bands}} depth levels from {{count}} readings, deviations from each level's median ranging from {{min}} to {{max}}, {{from}} to {{to}}. Colour shows the direction and size of change.",
     },
   },
   // Shared by everything that shows stacked depths — the profile heatmap's axis
   // and the current-readings depth table.
   depth: {
-    label: "Depth",
-    band: "Depth {{band}}",
+    label: "Depth level",
+    band: "Level {{band}}",
   },
   // Names the quantity only; the surrounding view already says "by depth".
   depthProfiles: {

@@ -49,10 +49,10 @@ export default {
   profile: {
     heading: "Tiefenprofil",
     intro:
-      "Alle Tiefenstufen dieser Sonde über das vorgehaltene Archiv. Der Feed veröffentlicht gestufte Bänder statt tatsächlicher Tiefen; Stufe 0 ist die oberflächennächste.",
-    quantity: "Größe",
+      "Die Farbe zeigt, wie sich die Messwerte in den Tiefenstufen über die Zeit verändern. Stufe 0 liegt der Oberfläche am nächsten.",
+    quantity: "Messgröße",
     tableCaption:
-      "Neuester Messwert je Tiefenstufe. Stufe 0 ist die oberflächennächste.",
+      "Stufe 0 liegt der Oberfläche am nächsten; genaue Tiefen werden nicht veröffentlicht.",
   },
   rawAttributes: "Rohdaten",
   rawIntro: "Nicht leere Originalattribute aus der Live-API-Antwort.",

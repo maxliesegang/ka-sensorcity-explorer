@@ -47,9 +47,10 @@ export default {
   profile: {
     heading: "Depth profile",
     intro:
-      "Every depth band of this probe over the retained archive. The feed publishes stacked bands rather than actual depths, so band 0 is the shallowest.",
-    quantity: "Quantity",
-    tableCaption: "Latest reading per depth band. Band 0 is the shallowest.",
+      "Colour shows how readings at each depth level change over time. Level 0 is closest to the surface.",
+    quantity: "Measurement",
+    tableCaption:
+      "Level 0 is closest to the surface; exact depths are not published.",
   },
   rawAttributes: "Raw data",
   rawIntro: "Original non-empty attributes from the live API response.",

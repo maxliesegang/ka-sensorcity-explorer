@@ -762,34 +762,39 @@ body {
 
 /* Depth profile heatmap --------------------------------------------------- */
 .depth-profile .chart__header {
-  flex-wrap: wrap;
-}
-
-.depth-profile__heading {
-  flex: 1 1 28rem;
-  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-x-large, 2rem);
 }
 
 .depth-profile__modes {
-  margin-top: var(--kern-metric-space-small, 0.5rem);
+  min-width: 0;
+}
+
+.depth-profile__modes .kern-fieldset__body,
+.depth-profile-picker .kern-fieldset__body {
+  flex-wrap: wrap;
 }
 
 .depth-profile__change-summary {
-  margin-top: var(--kern-metric-space-small, 0.5rem);
+  margin-top: var(--kern-metric-space-default, 1rem);
+  padding-top: var(--kern-metric-space-default, 1rem);
+  border-top: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
 }
 
 .depth-profile__change-summary dl {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--kern-metric-space-x-small, 0.25rem)
-    var(--kern-metric-space-default, 1rem);
-  margin: var(--kern-metric-space-x-small, 0.25rem) 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  gap: var(--kern-metric-space-small, 0.5rem);
+  max-width: 50rem;
+  margin: var(--kern-metric-space-small, 0.5rem) 0 0;
 }
 
 .depth-profile__change-summary dl > div {
-  display: flex;
-  align-items: baseline;
-  gap: var(--kern-metric-space-x-small, 0.25rem);
+  display: grid;
+  gap: var(--kern-metric-space-2x-small, 0.125rem);
   font-size: 0.8125rem;
 }
 
@@ -807,7 +812,8 @@ body {
 .depth-profile__legend {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  grid-column: 2;
+  align-items: flex-start;
   gap: var(--kern-metric-space-x-small, 0.25rem);
 }
 
@@ -853,28 +859,13 @@ body {
   border-radius: var(--kern-metric-border-radius-small, 2px);
 }
 
-/* Current readings, by depth ---------------------------------------------- */
-/* A few short columns: left full-width the numbers strand themselves against
-   the far edge, and comparing a row means crossing the whole page. */
-.depth-readings {
-  max-width: 34rem;
-}
-
-.depth-readings__value {
-  display: inline-flex;
+.depth-profile__notes {
+  display: flex;
   align-items: center;
-  gap: var(--kern-metric-space-x-small, 0.25rem);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Reads the depth structure at a glance, on the same ramp as the profile
-   heatmap. Decorative only — the number beside it carries the value. */
-.depth-readings__swatch {
-  width: 0.75rem;
-  height: 0.75rem;
-  flex: none;
-  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
-  border-radius: var(--kern-metric-border-radius-small, 2px);
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-x-small, 0.25rem)
+    var(--kern-metric-space-default, 1rem);
+  margin-top: var(--kern-metric-space-small, 0.5rem);
 }
 
 .depth-profile__legend-note {
@@ -890,9 +881,30 @@ body {
   border-radius: var(--kern-metric-border-radius-small, 2px);
 }
 
+/* Current readings, by depth ---------------------------------------------- */
+/* A few short columns: left full-width the numbers strand themselves against
+   the far edge, and comparing a row means crossing the whole page. */
+.depth-readings {
+  max-width: 34rem;
+}
+
+.depth-readings__caption {
+  caption-side: bottom;
+  padding-top: var(--kern-metric-space-small, 0.5rem);
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  font-size: 0.875rem;
+  font-weight: var(--kern-typography-font-weight-regular, 400);
+  text-align: left;
+}
+
 @media (max-width: 40rem) {
+  .depth-profile .chart__header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .depth-profile__legend {
-    align-items: flex-start;
+    grid-column: 1;
+    grid-row: auto;
     width: 100%;
   }
 }

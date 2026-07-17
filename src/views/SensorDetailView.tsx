@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
-import { KernButton } from "@kern-ux-annex/kern-react-kit";
+import { KernButton, KernRadioGroup } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -348,6 +348,7 @@ function DepthProfileSection({
 }) {
   const { t } = useTranslation("detail");
   const { t: tc } = useTranslation("common");
+  const pickerId = useId().replace(/:/g, "");
   const [selectedKey, setSelectedKey] = useState(profiles[0].key);
   const profile = profiles.find((p) => p.key === selectedKey) ?? profiles[0];
   const rows = useAsync(
@@ -362,6 +363,12 @@ function DepthProfileSection({
     [archiveLayerId, sensor.deviceId, profile.key],
   );
 
+  function selectProfile(key: string) {
+    if (profiles.some((candidate) => candidate.key === key)) {
+      setSelectedKey(key);
+    }
+  }
+
   return (
     <section className="sensor-detail__section sensor-detail__section--plain">
       <div className="section-toolbar">
@@ -372,25 +379,19 @@ function DepthProfileSection({
           </p>
         </div>
         {profiles.length > 1 && (
-          <div className="field kern-form-input">
-            <label className="kern-label" htmlFor="depth-profile-select">
-              {t("profile.quantity")}
-            </label>
-            <div className="kern-form-input__select-wrapper">
-              <select
-                id="depth-profile-select"
-                className="kern-form-input__select"
-                value={profile.key}
-                onChange={(e) => setSelectedKey(e.target.value)}
-              >
-                {profiles.map((p) => (
-                  <option key={p.key} value={p.key}>
-                    {tc(depthProfileLabelKey(p.key))}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <KernRadioGroup
+            className="depth-profile-picker"
+            name={`${pickerId}-quantity`}
+            legend={t("profile.quantity")}
+            selected={profile.key}
+            horizontal
+            items={profiles.map((p, index) => ({
+              id: `${pickerId}-quantity-${index}`,
+              value: p.key,
+              label: tc(depthProfileLabelKey(p.key)),
+            }))}
+            onChange={selectProfile}
+          />
         )}
       </div>
       <AsyncBoundary

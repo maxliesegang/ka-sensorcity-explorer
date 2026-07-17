@@ -12,7 +12,13 @@ import type {
   DepthProfileGrid,
 } from "./depthProfile";
 
-export type DepthProfileMode = "absolute" | "development";
+export const DEPTH_PROFILE_MODES = ["absolute", "development"] as const;
+export type DepthProfileMode = (typeof DEPTH_PROFILE_MODES)[number];
+
+/** Narrow the string emitted by form controls to a supported profile mode. */
+export function isDepthProfileMode(value: string): value is DepthProfileMode {
+  return DEPTH_PROFILE_MODES.some((mode) => mode === value);
+}
 
 export interface DepthProfileBandChange {
   field: string;
