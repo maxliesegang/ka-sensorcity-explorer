@@ -76,11 +76,24 @@ export default {
       // Doubles as the legend label for neutral cells, so it is capitalized;
       // it also lands in the `reading` value slot ("depth 0: No reading").
       noReading: "No reading",
+      // Legend label for the rail under the plot, so it is capitalized.
+      interpolated: "Interpolated across missing readings",
+      // Marks a filled-in value wherever cells are read one at a time (the
+      // column readout, the data table) and the legend is too far away to help.
+      interpolatedValue: "{{value}} (interpolated)",
       reading: "depth {{band}}: {{value}}",
       span: "{{from}} to {{to}}",
       stepHint: "use arrow keys to step through time",
       summary: "{{bands}} depth bands · {{count}} readings · {{span}}",
-      desc: "Heatmap of {{label}}: {{bands}} bands from {{count}} readings, values ranging from {{min}} to {{max}}, {{from}} to {{to}}. Colour shows the reading; deeper colour means a higher value.",
+      mode: {
+        label: "Profile display",
+        absolute: "Absolute values",
+        development: "Change",
+      },
+      change24h: "Change over the latest 24 hours",
+      medianNote: "Compared with each depth's median",
+      descAbsolute: "Heatmap of {{label}}: {{bands}} bands from {{count}} readings, values ranging from {{min}} to {{max}}, {{from}} to {{to}}. Colour shows the reading; deeper colour means a higher value.",
+      descDevelopment: "Heatmap of change in {{label}}: {{bands}} bands from {{count}} readings, deviations from each depth's median ranging from {{min}} to {{max}}, {{from}} to {{to}}. Colour shows the direction and size of change.",
     },
   },
   // Shared by everything that shows stacked depths — the profile heatmap's axis

@@ -1,4 +1,4 @@
-// Sequential colour scales for the depth-profile heatmap.
+// Colour scales for the depth-profile heatmap.
 //
 // A heatmap cell encodes magnitude, so each ramp is a single hue stepped
 // light→dark: lightness carries "how much" and the hue only says which quantity
@@ -35,6 +35,27 @@ const RAMP_RGB: Record<DepthProfileRamp, Rgb[]> = {
   temperature: RAMP_HEX.temperature.map(hexToRgb),
 };
 
+// Diverging ramps for median-relative development: negative → neutral →
+// positive. Moisture uses dry brown → wet blue; temperature uses the familiar
+// cool blue → warm red. Both have a light centre so zero is unmistakable.
+const CHANGE_RAMP_HEX: Record<DepthProfileRamp, string[]> = {
+  moisture: ["#8c510a", "#bf812d", "#dfc27d", "#f7f7f7", "#c6dbef", "#6baed6", "#2171b5"],
+  temperature: ["#2166ac", "#67a9cf", "#d1e5f0", "#f7f7f7", "#fddbc7", "#ef8a62", "#b2182b"],
+};
+
+const CHANGE_RAMP_RGB: Record<DepthProfileRamp, Rgb[]> = {
+  moisture: CHANGE_RAMP_HEX.moisture.map(hexToRgb),
+  temperature: CHANGE_RAMP_HEX.temperature.map(hexToRgb),
+};
+
+// A tiny change should not consume the full ramp and look dramatic. These
+// floors use the unit each configured ramp represents: percentage points for
+// moisture and degrees Celsius for temperature.
+const MIN_CHANGE_HALF_SPAN: Record<DepthProfileRamp, number> = {
+  moisture: 2,
+  temperature: 1,
+};
+
 export interface DepthProfileScale {
   min: number;
   max: number;
@@ -62,6 +83,33 @@ export function buildDepthProfileScale(
     // A flat series has no range to spread; show it mid-ramp rather than
     // letting a divide-by-zero pick an arbitrary end.
     const u = span > 0 ? clamp01((value - min) / span) : 0.5;
+    return rgbToCss(sampleRamp(stops, u));
+  }
+
+  return { min, max, css, gradient: rampGradient(stops) };
+}
+
+/**
+ * Build a stabilised diverging scale for change around a band's median.
+ * Equal negative and positive deltas always have equal visual weight, and zero
+ * always lands at the neutral centre. Values beyond the domain clamp naturally.
+ */
+export function buildDepthProfileChangeScale(
+  ramp: DepthProfileRamp,
+  dataMin: number,
+  dataMax: number,
+): DepthProfileScale {
+  const stops = CHANGE_RAMP_RGB[ramp];
+  const halfSpan = Math.max(
+    Math.abs(dataMin),
+    Math.abs(dataMax),
+    MIN_CHANGE_HALF_SPAN[ramp],
+  );
+  const min = -halfSpan;
+  const max = halfSpan;
+
+  function css(value: number): string {
+    const u = clamp01(0.5 + 0.5 * (value / halfSpan));
     return rgbToCss(sampleRamp(stops, u));
   }
 

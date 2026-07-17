@@ -30,6 +30,9 @@ Built with **Vite + React + TypeScript**, styled with the
   depth table rather than one card per field, and get a **depth profile** tab:
   a depth-vs-time heatmap of every band at once, which is what shows rain
   soaking downward, or the daily temperature swing damping out with depth.
+  It can show absolute values or centre each band on its own median to reveal
+  development that would otherwise be hidden by fixed differences between
+  probe levels, alongside the latest 24-hour change per band.
 - **Query explorer** — a small UI over the ArcGIS `/query` endpoint with a
   copyable request URL, for ad-hoc data exploration.
 - **About** — project background, data sources, and a light/dark/system theme
@@ -155,6 +158,16 @@ via the `categoryLabelKey` / `measurementLabelKey` / `depthProfileLabelKey` /
   profile needs an `archiveLayerId` — it is drawn from archive history. Pick its
   `ramp` from the sequential scales in
   [`src/utils/depthProfileScale.ts`](src/utils/depthProfileScale.ts).
+- **Own current-readings display for a sensor type** — by default a type's
+  current readings are a card per measurement; a category declaring
+  `depthProfiles` instead reads as a depth × quantity table. To add a third, put
+  a component taking `ReadingsPanelProps` in
+  [`src/components/readings/`](src/components/readings/) and give
+  [`getReadingsPanel`](src/components/readings/panel.ts) a clause selecting it.
+  Prefer selecting on what a category *declares* over its key, so a future
+  category with the same shape is covered without another edit. Only the readings
+  body is the panel's — the heading, last-measured stamp and device facts around
+  it stay the same for every type.
 - **New external history source** — for a measurement with no SensorCity
   archive, add an entry to
   [`src/config/historySources.ts`](src/config/historySources.ts) matching the

@@ -73,11 +73,21 @@ export default {
     pointAt: "{{time}}: {{value}}",
     profile: {
       noReading: "Kein Messwert",
+      interpolated: "Über fehlende Messwerte interpoliert",
+      interpolatedValue: "{{value}} (interpoliert)",
       reading: "Tiefe {{band}}: {{value}}",
       span: "{{from}} bis {{to}}",
       stepHint: "mit den Pfeiltasten durch die Zeit blättern",
       summary: "{{bands}} Tiefenstufen · {{count}} Messungen · {{span}}",
-      desc: "Heatmap von {{label}}: {{bands}} Stufen aus {{count}} Messungen, Werte von {{min}} bis {{max}}, {{from}} bis {{to}}. Die Farbe zeigt den Messwert; je kräftiger die Farbe, desto höher der Wert.",
+      mode: {
+        label: "Darstellung des Tiefenprofils",
+        absolute: "Absolute Werte",
+        development: "Entwicklung",
+      },
+      change24h: "Änderung in den letzten 24 Stunden",
+      medianNote: "Verglichen mit dem Median jeder Tiefenstufe",
+      descAbsolute: "Heatmap von {{label}}: {{bands}} Stufen aus {{count}} Messungen, Werte von {{min}} bis {{max}}, {{from}} bis {{to}}. Die Farbe zeigt den Messwert; je kräftiger die Farbe, desto höher der Wert.",
+      descDevelopment: "Heatmap der Entwicklung von {{label}}: {{bands}} Stufen aus {{count}} Messungen, Abweichungen vom Median jeder Tiefenstufe von {{min}} bis {{max}}, {{from}} bis {{to}}. Die Farbe zeigt Richtung und Stärke der Änderung.",
     },
   },
   depth: {

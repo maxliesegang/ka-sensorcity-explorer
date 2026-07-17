@@ -3,10 +3,11 @@
 // Archive rows arrive at whatever cadence the probe reported, which is uneven
 // and gappy. Plotting one column per row would stretch quiet stretches and
 // squeeze busy ones, so the series is resampled onto evenly spaced time columns
-// and averaged within each. That keeps the x-axis linear in time (a gap reads as
-// a gap), and caps the cell count regardless of how much history is retained.
+// and averaged within each. That keeps the x-axis linear in time, and caps the
+// cell count regardless of how much history is retained.
 //
-// The column width is the whole subtlety here — see CADENCE_HEADROOM.
+// The two subtleties are the column width (see CADENCE_HEADROOM) and what
+// happens to a column no reading landed in (see MAX_INTERPOLATED_COLUMNS).
 
 import type { HistoryRow } from "../api/sensorcity";
 import type { DepthProfile } from "../types";
@@ -17,12 +18,28 @@ export interface DepthProfileColumn {
   to: number;
 }
 
+/**
+ * One cell of a band's row. Carries where its value came from, because the two
+ * cases must not be presented as equally solid: a chart that colours them alike
+ * without saying so is claiming readings the probe never took.
+ */
+export interface DepthProfileCell {
+  /** The column's mean reading, or the value interpolated across a short gap. */
+  value: number;
+  /**
+   * True where no reading landed in this column and `value` was interpolated
+   * from the nearest reported columns either side.
+   */
+  isInterpolated: boolean;
+}
+
 /** One depth band's row of cells, parallel to {@link DepthProfileGrid.columns}. */
 export interface DepthProfileBandRow {
   field: string;
   band: number;
-  /** Mean of the readings in each column; null where the band has no reading. */
-  cells: (number | null)[];
+  /** Null only where no value could be established at all — see
+   * {@link MAX_INTERPOLATED_COLUMNS}. */
+  cells: (DepthProfileCell | null)[];
 }
 
 export interface DepthProfileGrid {
@@ -54,6 +71,23 @@ const DEFAULT_COLUMNS = 180;
  */
 const CADENCE_HEADROOM = 1.25;
 
+/**
+ * The widest run of empty columns still bridged by interpolation.
+ *
+ * A probe that misses a couple of reports has not stopped measuring, but drawing
+ * those columns as absence puts a bar through the middle of the heatmap, and the
+ * eye cannot carry a trend across it — which is the one thing a depth profile is
+ * read for. Interpolating a short dropout restores the comparison, and the value
+ * either side genuinely does constrain what was missed.
+ *
+ * A long outage constrains nothing: the probe could have done anything for a
+ * week, and a smooth ramp across it would be a fabrication the colour presents
+ * as data. Those stay empty and read as the outages they are. Columns are the
+ * unit rather than hours because a column is never narrower than the probe's own
+ * cadence (see {@link CADENCE_HEADROOM}), so this is a bound on missed reports.
+ */
+const MAX_INTERPOLATED_COLUMNS = 4;
+
 /** Median gap between consecutive rows — the probe's reporting cadence. */
 function medianInterval(rows: readonly HistoryRow[]): number {
   if (rows.length < 2) return 0;
@@ -75,6 +109,39 @@ function cadenceColumns(rows: readonly HistoryRow[], span: number): number {
   const cadence = medianInterval(rows);
   if (cadence <= 0) return rows.length;
   return Math.max(1, Math.floor(span / (cadence * CADENCE_HEADROOM)));
+}
+
+/**
+ * One band's column means turned into cells, bridging short gaps by linear
+ * interpolation in time.
+ *
+ * A gap is only bridged when it is reported on *both* sides and no wider than
+ * {@link MAX_INTERPOLATED_COLUMNS}. A leading or trailing gap therefore never is
+ * — extrapolating past the ends of the series would be invention, not inference.
+ */
+function buildCells(means: readonly (number | null)[]): (DepthProfileCell | null)[] {
+  const cells: (DepthProfileCell | null)[] = means.map((value) =>
+    value == null ? null : { value, isInterpolated: false },
+  );
+
+  let previous = -1;
+  for (let index = 0; index < means.length; index++) {
+    const end = means[index];
+    if (end == null) continue;
+    const width = index - previous - 1;
+    const start = previous >= 0 ? means[previous] : null;
+    if (start != null && width > 0 && width <= MAX_INTERPOLATED_COLUMNS) {
+      for (let step = 1; step <= width; step++) {
+        cells[previous + step] = {
+          value: start + ((end - start) * step) / (width + 1),
+          isInterpolated: true,
+        };
+      }
+    }
+    previous = index;
+  }
+
+  return cells;
 }
 
 /**
@@ -121,20 +188,22 @@ export function buildDepthProfileGrid(
     });
   }
 
+  // The range comes from the measured means alone. Interpolated values need no
+  // say in it: each lies between the two readings it was drawn from, so it is
+  // already inside the range they set.
   let min = Infinity;
   let max = -Infinity;
-  const bands: DepthProfileBandRow[] = profile.bands.map((band, index) => ({
-    field: band.field,
-    band: band.band,
-    cells: Array.from({ length: columnCount }, (_, column) => {
+  const bands: DepthProfileBandRow[] = profile.bands.map((band, index) => {
+    const means = Array.from({ length: columnCount }, (_, column) => {
       const count = counts[index][column];
       if (count === 0) return null;
       const mean = sums[index][column] / count;
       if (mean < min) min = mean;
       if (mean > max) max = mean;
       return mean;
-    }),
-  }));
+    });
+    return { field: band.field, band: band.band, cells: buildCells(means) };
+  });
 
   if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
 

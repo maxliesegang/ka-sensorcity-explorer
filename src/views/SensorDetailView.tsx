@@ -7,13 +7,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { resolveHistorySource } from "../api/history";
 import { fetchHistoryRows, fetchSensor } from "../api/sensorcity";
 import type { HistoryRow } from "../api/sensorcity";
-import { CurrentDepthReadings } from "../components/CurrentDepthReadings";
 import { DepthProfileChart } from "../components/DepthProfileChart";
 import { DetailTabs } from "../components/DetailTabs";
 import type { DetailTabItem } from "../components/DetailTabs";
 import { LineChart } from "../components/LineChart";
 import { SensorHistoryAnalysis } from "../components/SensorHistoryAnalysis";
 import { SensorLocationSection } from "../components/SensorLocationSection";
+import { getReadingsPanel } from "../components/readings/panel";
 import { AsyncBoundary, Empty } from "../components/Status";
 import {
   getCategoryColor,
@@ -26,7 +26,7 @@ import { useAsync } from "../hooks/useAsync";
 import type { Category, DepthProfile, Sensor } from "../types";
 import { buildDepthProfileGrid } from "../utils/depthProfile";
 import { formatTimestamp, formatValue, timeAgo } from "../utils/format";
-import { getDepthProfiles, getUnbandedMeasurements } from "../utils/sensorMeasurements";
+import { getDepthProfiles } from "../utils/sensorMeasurements";
 
 /** Attribute keys that hold epoch-ms timestamps and should be formatted as dates. */
 const TIMESTAMP_FIELDS = new Set(["measured_at", "inserted_at"]);
@@ -171,10 +171,9 @@ function CurrentReadingsSection({
   category: Category | undefined;
 }) {
   const { t } = useTranslation("detail");
-  const { t: tc } = useTranslation("common");
-  // Depth-banded families read as a table; anything else stays a card.
-  const profiles = getDepthProfiles(category);
-  const unbanded = getUnbandedMeasurements(category);
+  // How the readings themselves are drawn is the sensor type's business; the
+  // section chrome around them is the same for every type.
+  const ReadingsPanel = getReadingsPanel(category);
 
   return (
     <section className="sensor-detail__section sensor-detail__section--plain">
@@ -189,23 +188,7 @@ function CurrentReadingsSection({
           {t("lastMeasuredAt", { date: formatTimestamp(sensor.measuredAt) })}
         </span>
       </div>
-      {profiles.length > 0 && (
-        <CurrentDepthReadings sensor={sensor} profiles={profiles} />
-      )}
-      {unbanded.length > 0 && (
-        <div className="reading-grid reading-grid--featured">
-          {unbanded.map((m) => (
-            <div className="reading-card" key={m.field}>
-              <span className="reading-card__label">
-                {tc(measurementLabelKey(m.field))}
-              </span>
-              <span className="reading-card__value">
-                {formatValue(sensor.attributes[m.field], m.unit)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      <ReadingsPanel sensor={sensor} category={category} />
       <dl className="kern-description-list detail-facts">
         <div className="kern-description-list-item">
           <dt className="kern-description-list-item__key">
@@ -441,7 +424,10 @@ function DepthProfilePanel({
   const grid = useMemo(() => buildDepthProfileGrid(rows, profile), [rows, profile]);
 
   if (grid == null) return <Empty label={t("noHistory")} />;
-  return <DepthProfileChart grid={grid} profile={profile} label={label} />;
+  // Each quantity opens in the mode that best fits its semantics (moisture as
+  // development, temperature as absolute), so switching quantity remounts the
+  // chart instead of carrying the previous quantity's manual choice across.
+  return <DepthProfileChart grid={grid} profile={profile} label={label} key={profile.key} />;
 }
 
 /** Raw attribute dump, skipping null/empty values. */

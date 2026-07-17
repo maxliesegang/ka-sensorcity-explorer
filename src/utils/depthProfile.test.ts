@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { HistoryRow } from "../api/sensorcity";
 import type { DepthProfile } from "../types";
 import { buildDepthProfileGrid } from "./depthProfile";
+import type { DepthProfileGrid } from "./depthProfile";
 
 const HOUR = 3_600_000;
 
@@ -19,6 +20,11 @@ const profile: DepthProfile = {
 
 function row(hoursFromStart: number, values: (number | null)[]): HistoryRow {
   return { timestamp: hoursFromStart * HOUR, values };
+}
+
+/** One band's cell values, nulls kept — what most assertions here are about. */
+function cellValues(grid: DepthProfileGrid | null, band: number) {
+  return grid?.bands[band].cells.map((cell) => cell?.value ?? null);
 }
 
 describe("buildDepthProfileGrid", () => {
@@ -42,8 +48,8 @@ describe("buildDepthProfileGrid", () => {
     const grid = buildDepthProfileGrid(rows, profile, { columns: 1 });
 
     expect(grid?.columns).toHaveLength(1);
-    expect(grid?.bands[0].cells).toEqual([15]);
-    expect(grid?.bands[2].cells).toEqual([35]);
+    expect(cellValues(grid, 0)).toEqual([15]);
+    expect(cellValues(grid, 2)).toEqual([35]);
   });
 
   it("spaces columns evenly in time and lands the newest row in the last one", () => {
@@ -61,12 +67,13 @@ describe("buildDepthProfileGrid", () => {
     ]);
     // The newest reading (12h) sits exactly on the upper bound, so the last
     // column is closed and averages 9..12 rather than dropping it past the end.
-    expect(grid?.bands[0].cells).toEqual([1, 4, 7, 10.5]);
+    expect(cellValues(grid, 0)).toEqual([1, 4, 7, 10.5]);
   });
 
-  it("leaves a reporting gap null rather than interpolating across it", () => {
+  it("interpolates a short reporting gap, marking what it filled in", () => {
     // Four readings clustered at each end of a six-hour span: the two columns
-    // in between must stay empty so the outage reads as an outage.
+    // in between are a short dropout, bridged so the trend stays comparable
+    // across it — and flagged, because the probe reported nothing there.
     const rows = [
       row(0, [1, 1, 1]),
       row(1, [3, 3, 3]),
@@ -75,7 +82,39 @@ describe("buildDepthProfileGrid", () => {
     ];
     const grid = buildDepthProfileGrid(rows, profile, { columns: 4 });
 
-    expect(grid?.bands[0].cells).toEqual([2, null, null, 5]);
+    expect(grid?.bands[0].cells).toEqual([
+      { value: 2, isInterpolated: false },
+      { value: 3, isInterpolated: true },
+      { value: 4, isInterpolated: true },
+      { value: 5, isInterpolated: false },
+    ]);
+  });
+
+  it("leaves a long outage empty rather than inventing a ramp across it", () => {
+    // Hourly readings, then a 16-hour silence, then hourly again. Nothing
+    // constrains what the probe did in between, so those columns stay empty and
+    // read as the outage they are.
+    const rows = [0, 1, 2, 3, 20, 21, 22, 23].map((h) => row(h, [h, h, h]));
+    const grid = buildDepthProfileGrid(rows, profile, { columns: 24 });
+    const cells = grid!.bands[0].cells;
+
+    expect(cells.some((cell) => cell == null)).toBe(true);
+    expect(cells.every((cell) => cell == null || !cell.isInterpolated)).toBe(true);
+  });
+
+  it("never extrapolates past the readings at either end", () => {
+    // This band reports only in the middle of the span. The columns before its
+    // first reading and after its last have a value on one side only, which
+    // infers nothing — a one-sided gap is never filled, however short.
+    const rows = Array.from({ length: 12 }, (_, h) =>
+      row(h, [h >= 4 && h <= 7 ? h : null, 1, 1]),
+    );
+    const grid = buildDepthProfileGrid(rows, profile, { columns: 12 });
+    const cells = grid!.bands[0].cells;
+
+    expect(cells[0]).toBeNull();
+    expect(cells[cells.length - 1]).toBeNull();
+    expect(cells.some((cell) => cell != null)).toBe(true);
   });
 
   it("tracks a band that reports while its neighbours do not", () => {
@@ -85,8 +124,8 @@ describe("buildDepthProfileGrid", () => {
     ];
     const grid = buildDepthProfileGrid(rows, profile, { columns: 2 });
 
-    expect(grid?.bands[0].cells).toEqual([null, null]);
-    expect(grid?.bands[1].cells).toEqual([5, 7]);
+    expect(cellValues(grid, 0)).toEqual([null, null]);
+    expect(cellValues(grid, 1)).toEqual([5, 7]);
     expect(grid?.min).toBe(5);
     expect(grid?.max).toBe(7);
   });
@@ -110,7 +149,7 @@ describe("buildDepthProfileGrid", () => {
     );
 
     expect(grid?.columns).toEqual([{ from: 2 * HOUR, to: 2 * HOUR }]);
-    expect(grid?.bands[0].cells).toEqual([15]);
+    expect(cellValues(grid, 0)).toEqual([15]);
   });
 
   it("never cuts columns finer than the probe's reporting cadence", () => {

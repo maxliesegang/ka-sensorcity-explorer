@@ -761,6 +761,49 @@ body {
 }
 
 /* Depth profile heatmap --------------------------------------------------- */
+.depth-profile .chart__header {
+  flex-wrap: wrap;
+}
+
+.depth-profile__heading {
+  flex: 1 1 28rem;
+  min-width: 0;
+}
+
+.depth-profile__modes {
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+.depth-profile__change-summary {
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+.depth-profile__change-summary dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-x-small, 0.25rem)
+    var(--kern-metric-space-default, 1rem);
+  margin: var(--kern-metric-space-x-small, 0.25rem) 0 0;
+}
+
+.depth-profile__change-summary dl > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  font-size: 0.8125rem;
+}
+
+.depth-profile__change-summary dt {
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.depth-profile__change-summary dd {
+  margin: 0;
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  font-variant-numeric: tabular-nums;
+}
+
 .depth-profile__legend {
   display: flex;
   flex-direction: column;
@@ -791,6 +834,23 @@ body {
 .depth-profile__gap-swatch {
   fill: var(--kern-color-layout-border, #dadce6);
   background: var(--kern-color-layout-border, #dadce6);
+}
+
+/* The rail marking interpolated columns, and its legend swatch. Darker than the
+   "no reading" neutral because it must be findable against the page in the
+   margin, where nothing else competes for attention — inside the plot this
+   weight would shout. Same bar shape in the legend as on the axis, so the two
+   are recognisably the same mark. */
+.depth-profile__filled-mark,
+.depth-profile__filled-swatch {
+  fill: var(--kern-color-layout-border-contextual, #a5aac3);
+  background: var(--kern-color-layout-border-contextual, #a5aac3);
+}
+
+.depth-profile__filled-swatch {
+  width: 0.75rem;
+  height: 0.1875rem;
+  border-radius: var(--kern-metric-border-radius-small, 2px);
 }
 
 /* Current readings, by depth ---------------------------------------------- */
@@ -833,6 +893,7 @@ body {
 @media (max-width: 40rem) {
   .depth-profile__legend {
     align-items: flex-start;
+    width: 100%;
   }
 }
 

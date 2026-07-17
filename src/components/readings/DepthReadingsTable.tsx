@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { depthProfileLabelKey } from "../config/layers";
-import type { DepthProfile, Sensor } from "../types";
-import { buildDepthProfileScale } from "../utils/depthProfileScale";
-import { formatValue } from "../utils/format";
-import { getBandNumbers, getReading } from "../utils/sensorMeasurements";
+import { depthProfileLabelKey } from "../../config/layers";
+import type { DepthProfile, Sensor } from "../../types";
+import { buildDepthProfileScale } from "../../utils/depthProfileScale";
+import { formatValue } from "../../utils/format";
+import { getBandNumbers, getReading } from "../../utils/sensorMeasurements";
 
 interface Props {
   sensor: Sensor;
@@ -21,8 +21,11 @@ interface Props {
  * as 12 unrelated numbers whose wrap order puts the deepest moisture beside the
  * shallowest temperature. Here each column reads down as a profile, and each row
  * compares the quantities at one depth.
+ *
+ * Renders nothing without profiles, on the same terms as `MeasurementCards` —
+ * callers pass what the category declares without guarding.
  */
-export function CurrentDepthReadings({ sensor, profiles }: Props) {
+export function DepthReadingsTable({ sensor, profiles }: Props) {
   const { t } = useTranslation("common");
   const { t: td } = useTranslation("detail");
   const bandNumbers = useMemo(() => getBandNumbers(profiles), [profiles]);
@@ -42,6 +45,9 @@ export function CurrentDepthReadings({ sensor, profiles }: Props) {
       }),
     [profiles, sensor],
   );
+
+  // After the hooks, never before them.
+  if (profiles.length === 0) return null;
 
   return (
     <div className="kern-table-responsive table-scroll">
