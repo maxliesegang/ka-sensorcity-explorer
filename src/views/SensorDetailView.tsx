@@ -13,7 +13,7 @@ import { SensorHistoryAnalysis } from "../components/SensorHistoryAnalysis";
 import { SensorLocationSection } from "../components/SensorLocationSection";
 import { AsyncBoundary, Empty } from "../components/Status";
 import {
-  categoryColor,
+  getCategoryColor,
   categoryLabelKey,
   getCategory,
   measurementLabelKey,
@@ -106,14 +106,14 @@ function SensorDetail({ sensor }: { sensor: Sensor }) {
   return (
     <div
       className="sensor-detail stack"
-      style={{ "--category-color": categoryColor(sensor.category) } as CSSProperties}
+      style={{ "--category-color": getCategoryColor(sensor.category) } as CSSProperties}
     >
       <header className="detail-hero">
         <div className="detail-hero__main">
           <span className="legend-item">
             <span
               className="cat-dot"
-              style={{ background: categoryColor(sensor.category) }}
+              style={{ background: getCategoryColor(sensor.category) }}
               aria-hidden="true"
             />
             {label}
@@ -301,7 +301,7 @@ function HistorySection({
                     ? tc(measurementLabelKey(selected.field))
                     : tc("chart.measurement")
                 }
-                color={categoryColor(sensor.category)}
+                color={getCategoryColor(sensor.category)}
               />
               <SensorHistoryAnalysis
                 points={points}
@@ -311,7 +311,7 @@ function HistorySection({
                     ? tc(measurementLabelKey(selected.field))
                     : tc("chart.measurement")
                 }
-                color={categoryColor(sensor.category)}
+                color={getCategoryColor(sensor.category)}
               />
             </>
           )

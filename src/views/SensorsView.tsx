@@ -11,7 +11,7 @@ import { fetchSensors } from "../api/sensorcity";
 import { AsyncBoundary, Empty } from "../components/Status";
 import {
   CATEGORIES,
-  categoryColor,
+  getCategoryColor,
   categoryLabelKey,
   measurementLabelKey,
 } from "../config/layers";
@@ -20,8 +20,8 @@ import type { Sensor } from "../types";
 import { timeAgo } from "../utils/format";
 import {
   formatPrimaryMeasurementValue,
-  primaryMeasurement,
-  primaryMeasurementValue,
+  getPrimaryMeasurement,
+  getPrimaryMeasurementValue,
 } from "../utils/sensorMeasurements";
 
 type SortKey = "name" | "category" | "value" | "measuredAt";
@@ -55,8 +55,8 @@ function compareSensors(
     );
   } else if (key === "value") {
     result = numericCompare(
-      primaryMeasurementValue(firstSensor),
-      primaryMeasurementValue(secondSensor),
+      getPrimaryMeasurementValue(firstSensor),
+      getPrimaryMeasurementValue(secondSensor),
       dir,
     );
   } else if (key === "category") {
@@ -154,14 +154,14 @@ function SortHeader({
   sortKey,
   sortDir,
   onSort,
-  numeric,
+  isNumeric,
 }: {
   label: string;
   column: SortKey;
   sortKey: SortKey;
   sortDir: SortDir;
   onSort: (k: SortKey) => void;
-  numeric?: boolean;
+  isNumeric?: boolean;
 }) {
   const active = sortKey === column;
   const icon = active
@@ -171,7 +171,7 @@ function SortHeader({
     : "autorenew";
   return (
     <th
-      className={`kern-table__header${numeric ? " kern-table__header--numeric" : ""}`}
+      className={`kern-table__header${isNumeric ? " kern-table__header--numeric" : ""}`}
       aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
       scope="col"
     >
@@ -442,7 +442,7 @@ function SensorExplorer({
                   sortKey={sortKey}
                   sortDir={sortDir}
                   onSort={onSort}
-                  numeric
+                  isNumeric
                 />
                 <SortHeader
                   label={t("columns.lastReading")}
@@ -450,7 +450,7 @@ function SensorExplorer({
                   sortKey={sortKey}
                   sortDir={sortDir}
                   onSort={onSort}
-                  numeric
+                  isNumeric
                 />
               </tr>
             </thead>
@@ -466,7 +466,7 @@ function SensorExplorer({
                     <span className="legend-item">
                       <span
                         className="cat-dot"
-                        style={{ background: categoryColor(sensor.category) }}
+                        style={{ background: getCategoryColor(sensor.category) }}
                         aria-hidden="true"
                       />
                       {tc(categoryLabelKey(sensor.category))}
@@ -491,7 +491,7 @@ function SensorExplorer({
 function SensorCard({ sensor }: { sensor: Sensor }) {
   const { t } = useTranslation("sensors");
   const { t: tc } = useTranslation("common");
-  const primary = primaryMeasurement(sensor);
+  const primary = getPrimaryMeasurement(sensor);
 
   return (
     <Link className="sensor-card" to={`/sensor/${sensor.objectId}`}>
@@ -499,7 +499,7 @@ function SensorCard({ sensor }: { sensor: Sensor }) {
         <span className="legend-item">
           <span
             className="cat-dot"
-            style={{ background: categoryColor(sensor.category) }}
+            style={{ background: getCategoryColor(sensor.category) }}
             aria-hidden="true"
           />
           {tc(categoryLabelKey(sensor.category))}

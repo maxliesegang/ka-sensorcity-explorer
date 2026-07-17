@@ -10,7 +10,7 @@ import { fetchSensors } from "../api/sensorcity";
 import { AsyncBoundary } from "../components/Status";
 import {
   CATEGORIES,
-  categoryColor,
+  getCategoryColor,
   categoryLabelKey,
   measurementLabelKey,
 } from "../config/layers";
@@ -103,7 +103,7 @@ function PulseDashboard({ sensors }: { sensors: Sensor[] }) {
             aria-labelledby={`signal-card-${category.key}`}
             style={
               {
-                "--category-color": categoryColor(category.key),
+                "--category-color": getCategoryColor(category.key),
               } as CSSProperties
             }
           >

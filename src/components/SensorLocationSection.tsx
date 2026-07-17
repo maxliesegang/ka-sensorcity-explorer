@@ -4,7 +4,7 @@ import { KernButton } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 
 import { fetchSensors } from "../api/sensorcity";
-import { categoryColor, categoryLabelKey } from "../config/layers";
+import { getCategoryColor, categoryLabelKey } from "../config/layers";
 import { useAsync } from "../hooks/useAsync";
 import { DEFAULT_ZOOM, KARLSRUHE, useLeafletMap } from "../hooks/useLeafletMap";
 import type { Sensor } from "../types";
@@ -64,7 +64,7 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
       if (!latLng) continue;
 
       const isSelected = item.objectId === sensor.objectId;
-      const color = categoryColor(item.category);
+      const color = getCategoryColor(item.category);
       const label = tc(categoryLabelKey(item.category));
       const marker = L.circleMarker(latLng, {
         radius: isSelected ? 10 : 5,

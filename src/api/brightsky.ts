@@ -61,7 +61,7 @@ function toDateParam(d: Date): string {
  * [fromDate, toDate] in a single CORS request. Null temperatures are dropped;
  * the result is sorted ascending by time.
  */
-export async function fetchRheinstetterHourly(
+export async function fetchRheinstettenHourly(
   fromDate: Date,
   toDate: Date,
   signal?: AbortSignal,
@@ -106,7 +106,7 @@ export async function fetchRheinstetterHourly(
 }
 
 /** Fetch the latest Rheinstetten observation from Bright Sky's live endpoint. */
-export async function fetchRheinstetterCurrent(
+export async function fetchRheinstettenCurrent(
   signal?: AbortSignal,
 ): Promise<DwdHourlyPoint | null> {
   if (isDemoMode()) return (await loadDemoApi()).brightskyCurrent();

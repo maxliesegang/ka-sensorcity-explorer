@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type {
-  ArchivedTemperatureFieldPoint,
+  HistoricalTemperatureFieldPoint,
   TemperatureFieldSnapshot,
 } from "../api/temperatureInsights";
 import { DWD_BASELINE_ID, getBaselineLabel } from "../config/temperatureBaselines";
@@ -40,7 +40,7 @@ import {
 import { TemperatureLegend } from "./TemperatureLegend";
 import { TemperatureBaselineControls } from "./TemperatureBaselineControls";
 import {
-  fetchRheinstetterHourly,
+  fetchRheinstettenHourly,
   nearestPoint,
   observedOnly,
 } from "../api/brightsky";
@@ -53,7 +53,7 @@ interface Props {
 
 const UNIT = "°C";
 
-function toBaselineReading(point: ArchivedTemperatureFieldPoint): TemperatureBaselineReading {
+function toBaselineReading(point: HistoricalTemperatureFieldPoint): TemperatureBaselineReading {
   return {
     id: String(point.objectId),
     label: point.name,
@@ -122,7 +122,7 @@ export function HistoricalTemperatureField({
   const lastSnapshotTime = snapshots.length > 0 ? snapshots[snapshots.length - 1].timestamp : 0;
   const dwdBaseline = useAsync(
     (signal) =>
-      fetchRheinstetterHourly(new Date(firstSnapshotTime), new Date(lastSnapshotTime), signal),
+      fetchRheinstettenHourly(new Date(firstSnapshotTime), new Date(lastSnapshotTime), signal),
     [firstSnapshotTime, lastSnapshotTime],
     { enabled: isDwdBaselineSelected },
   );
@@ -173,7 +173,7 @@ export function HistoricalTemperatureField({
       return;
     }
 
-    function bindPoint(layer: L.Layer, point: ArchivedTemperatureFieldPoint): void {
+    function bindPoint(layer: L.Layer, point: HistoricalTemperatureFieldPoint): void {
       const value = formatValue(point.temperature, UNIT);
       layer
         .bindTooltip(`${point.name}: ${value}`)

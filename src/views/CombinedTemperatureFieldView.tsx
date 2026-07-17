@@ -35,10 +35,11 @@ import {
 import { TemperatureBaselineControls } from "../components/TemperatureBaselineControls";
 import { useTemperatureFieldModel } from "../hooks/useTemperatureFieldModel";
 import { formatSignedDelta, formatTime, formatValue } from "../utils/format";
-import { getLiveTemperatureFieldPoints } from "../utils/liveTemperatureObservations";
+import { getLiveTemperatureFieldPoints } from "../utils/liveTemperatureReadings";
 import {
   combineTemperaturePoints,
   type CombinedTemperaturePoint,
+  type TemperatureProvider,
 } from "../utils/combinedTemperatureField";
 
 const UNIT = "°C";
@@ -70,26 +71,28 @@ export function CombinedTemperatureFieldView() {
     () =>
       combineTemperaturePoints(sensorCityPoints, [
         {
-          source: "opensensemap",
+          provider: "opensensemap",
           idPrefix: "osm",
           readings: openSenseMap.data ?? [],
           hrefFor: (id) => `https://opensensemap.org/explore/${id}`,
         },
         {
-          source: "sensorcommunity",
+          provider: "sensorcommunity",
           idPrefix: "sc",
           readings: sensorCommunity.data ?? [],
         },
       ]),
     [sensorCityPoints, openSenseMap.data, sensorCommunity.data],
   );
-  const sourceCounts = useMemo(() => {
-    const counts = { sensorCity: 0, openSenseMap: 0, sensorCommunity: 0 };
-    for (const point of combinedPoints) {
-      if (point.source === "sensorcity") counts.sensorCity++;
-      else if (point.source === "opensensemap") counts.openSenseMap++;
-      else counts.sensorCommunity++;
-    }
+  // Keyed by the provider union rather than by hand-written names, so adding a
+  // provider is a compile error here instead of a silent miscount.
+  const providerCounts = useMemo(() => {
+    const counts: Record<TemperatureProvider, number> = {
+      sensorcity: 0,
+      opensensemap: 0,
+      sensorcommunity: 0,
+    };
+    for (const point of combinedPoints) counts[point.provider]++;
     return counts;
   }, [combinedPoints]);
 
@@ -140,7 +143,7 @@ export function CombinedTemperatureFieldView() {
 
     /** Bind the shared sensor tooltip + popup to a Leaflet layer. */
     function bindPoint(layer: L.Layer, point: CombinedTemperaturePoint): void {
-      const sourceLabel = t(`combined.source.${point.source}`);
+      const providerLabel = t(`combined.provider.${point.provider}`);
       // Hide the "set as reference" button when this point is already the active
       // deviation baseline (it's the highlighted marker).
       const isCurrentBaseline = mode === "deviation" && baselineId === point.id;
@@ -150,7 +153,7 @@ export function CombinedTemperatureFieldView() {
       const cta = href
         ? point.detailHref
           ? t("popup.viewDetails")
-          : t("combined.viewOnSource", { source: sourceLabel })
+          : t("combined.viewOnProvider", { provider: providerLabel })
         : undefined;
 
       layer
@@ -161,7 +164,7 @@ export function CombinedTemperatureFieldView() {
         .bindPopup(
           sensorPopupHtml({
             color: colorFor(point.temperature),
-            label: sourceLabel,
+            label: providerLabel,
             name: point.name,
             meta: `${point.temperature.toFixed(1)} °C`,
             readingTime: point.measuredAt,
@@ -266,11 +269,9 @@ export function CombinedTemperatureFieldView() {
           <span className="kern-body kern-body--small">{mapStatus}</span>
           {!sensors.loading && !sensors.error && (
             <span className="kern-body kern-body--small kern-body--muted">
-              {t("combined.sourceBreakdown", {
-                city: sourceCounts.sensorCity,
-                opensensemap: sourceCounts.openSenseMap,
-                sensorcommunity: sourceCounts.sensorCommunity,
-              })}
+              {/* Counts are keyed by provider, which is exactly the set of
+                  interpolation params the breakdown string expects. */}
+              {t("combined.providerBreakdown", providerCounts)}
             </span>
           )}
           {(openSenseMap.error || sensorCommunity.error) && (

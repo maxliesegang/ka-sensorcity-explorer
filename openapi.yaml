@@ -16,9 +16,8 @@ info:
     |----|------|------|---------------|
     | 1 | `Sensordaten_Update` | live (latest value per sensor) | current only |
     | 2 | `NodeRED_Temperatur_Archiv` | archive | ~5 weeks rolling |
-    | 3 | `NodeRED_TSK_Archiv` | archive | ~5 months rolling |
-    | 4 | `NodeRED_Regenschreiber_Archiv` | archive | ~2 months rolling |
-    | 5 | `NodeRED_Bodensensoren_Archiv` | archive | ~2 months rolling |
+    | 3 | `NodeRED_Regenschreiber_Archiv` | archive | ~2 months rolling |
+    | 4 | `NodeRED_Bodensensoren_Archiv` | archive | ~2 months rolling |
 
     Archives are **rolling windows** — old rows drop off.
 
@@ -265,7 +264,7 @@ paths:
                           objectid: 42
                           device_id: 25865bf9-41f8-453a-b44f-157901d81df0
                           name: 003 - Kreuzung Herrenalber Strasse - Battstrasse
-                          beschreibung: Temperatur
+                          beschreibung: Temperatur-Sensor
                           measured_at: 1780272000000
                           temp: 21.4
                           luftfeuchte: 58.2
@@ -281,8 +280,8 @@ paths:
                       - { name: beschreibung, type: esriFieldTypeString, alias: beschreibung }
                       - { name: cnt, type: esriFieldTypeInteger, alias: cnt }
                     features:
-                      - attributes: { beschreibung: Temperatur, cnt: 120 }
-                      - attributes: { beschreibung: TSK-Container, cnt: 60 }
+                      - attributes: { beschreibung: Temperatur-Sensor, cnt: 95 }
+                      - attributes: { beschreibung: Boden-Sensor, cnt: 99 }
                 error:
                   summary: Error envelope (HTTP 200)
                   value:
@@ -332,7 +331,7 @@ components:
       description: FeatureServer layer id.
       schema:
         type: integer
-        enum: [1, 2, 3, 4, 5]
+        enum: [1, 2, 3, 4]
       examples:
         live:
           summary: Live latest-value layer
@@ -391,8 +390,7 @@ components:
           type: string
           description: Sensor category (live layer 1).
           enum:
-            - Temperatur
-            - TSK-Container
+            - Temperatur-Sensor
             - Regenschreiber
             - Boden-Sensor
             - Wasserpegel-Sensor

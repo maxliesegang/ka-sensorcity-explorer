@@ -7,7 +7,7 @@
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { fetchRheinstetterCurrent, latestObservation } from "../api/brightsky";
+import { fetchRheinstettenCurrent, latestObservation } from "../api/brightsky";
 import { DWD_BASELINE_ID, getBaselineLabel } from "../config/temperatureBaselines";
 import { useAsync } from "./useAsync";
 import { useTemperatureBaselineSelection } from "./useTemperatureBaselineSelection";
@@ -59,7 +59,7 @@ export function useTemperatureFieldModel(
 
   // The DWD Rheinstetten baseline is fetched lazily — only while it's selected.
   const isDwdBaselineSelected = mode === "deviation" && baselineId === DWD_BASELINE_ID;
-  const dwdBaseline = useAsync(fetchRheinstetterCurrent, [], {
+  const dwdBaseline = useAsync(fetchRheinstettenCurrent, [], {
     enabled: isDwdBaselineSelected,
   });
 

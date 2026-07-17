@@ -8,7 +8,7 @@ import { KernAlert, KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-
 import { useTranslation } from "react-i18next";
 import { MAX_RECORD_COUNT, query, queryUrl } from "../api/arcgis";
 import type { QueryParams } from "../api/arcgis";
-import { LAYERS } from "../config/layers";
+import { LAYERS, TEMPERATURE_CATEGORY_KEY } from "../config/layers";
 import { Empty, ErrorMessage, Loading } from "../components/Status";
 import type { AttributeValue, Feature, QueryResponse } from "../types";
 
@@ -24,17 +24,10 @@ const PRESETS = [
   {
     key: "weatherStations",
     layerId: 1,
-    where: "beschreibung='Temperatur'",
-    outFields: "objectid,name,temp,luftfeuchte,pm10,pm25,measured_at",
+    where: `beschreibung='${TEMPERATURE_CATEGORY_KEY}'`,
+    // Particulates (pm10/pm25) are archive-only — the live layer has no such fields.
+    outFields: "objectid,name,temp,luftfeuchte,press,sonnenstrahlung,measured_at",
     orderByFields: "measured_at DESC",
-    resultRecordCount: 50,
-  },
-  {
-    key: "fullContainers",
-    layerId: 1,
-    where: "beschreibung='TSK-Container' AND fillinglvl_percent >= 75",
-    outFields: "objectid,name,fillinglvl_percent,measured_at",
-    orderByFields: "fillinglvl_percent DESC",
     resultRecordCount: 50,
   },
 ];

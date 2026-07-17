@@ -73,8 +73,8 @@ export interface Sensor {
   objectId: number;
   deviceId: string;
   name: string;
+  /** The live layer's `beschreibung` value; keys into `CATEGORIES`. */
   category: string;
-  description: string;
   lat: number | null;
   lon: number | null;
   measuredAt: number | null;

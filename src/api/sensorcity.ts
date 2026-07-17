@@ -17,7 +17,6 @@ function toSensor(feature: Feature): Sensor {
     deviceId: String(attributes.device_id ?? ""),
     name: String(attributes.name ?? "Unnamed sensor"),
     category: String(attributes.beschreibung ?? "Unknown"),
-    description: String(attributes.beschreibung ?? ""),
     lat: toFiniteNumber(attributes.lat) ?? (feature.geometry ? feature.geometry.y : null),
     lon: toFiniteNumber(attributes.lon) ?? (feature.geometry ? feature.geometry.x : null),
     measuredAt: toFiniteNumber(attributes.measured_at),

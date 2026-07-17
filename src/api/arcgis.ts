@@ -145,8 +145,13 @@ export async function queryAll(
   return out.slice(0, maxRows);
 }
 
-/** Fetch a layer's field metadata. */
-export async function getLayerFields(
+/**
+ * Fetch a layer's field metadata. Hits `/{layerId}?f=json` rather than `/query`,
+ * hence `fetch*` rather than this module's `query*` verb.
+ *
+ * Part of the generic client's surface; nothing in the app calls it today.
+ */
+export async function fetchLayerFields(
   layerId: number,
   signal?: AbortSignal,
 ): Promise<FieldInfo[]> {

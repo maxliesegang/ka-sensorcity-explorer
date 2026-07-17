@@ -303,20 +303,20 @@ type SortDir = "asc" | "desc";
 interface ColumnDef {
   key: SortKey;
   labelKey: string;
-  numeric: boolean;
+  isNumeric: boolean;
 }
 
 const COLUMNS: ColumnDef[] = [
-  { key: "name", labelKey: "insights.table.sensor", numeric: false },
-  { key: "current", labelKey: "insights.table.now", numeric: true },
-  { key: "min", labelKey: "insights.table.min", numeric: true },
-  { key: "max", labelKey: "insights.table.max", numeric: true },
-  { key: "mean", labelKey: "insights.table.average", numeric: true },
-  { key: "range", labelKey: "insights.table.range", numeric: true },
-  { key: "deviationNow", labelKey: "insights.table.vsCity", numeric: true },
+  { key: "name", labelKey: "insights.table.sensor", isNumeric: false },
+  { key: "current", labelKey: "insights.table.now", isNumeric: true },
+  { key: "min", labelKey: "insights.table.min", isNumeric: true },
+  { key: "max", labelKey: "insights.table.max", isNumeric: true },
+  { key: "mean", labelKey: "insights.table.average", isNumeric: true },
+  { key: "range", labelKey: "insights.table.range", isNumeric: true },
+  { key: "deviationNow", labelKey: "insights.table.vsCity", isNumeric: true },
 ];
 
-/** Compare two rows by a column, keeping null numeric values last in either direction. */
+/** Compare two rows by a column, keeping null isNumeric values last in either direction. */
 function compareRows(
   a: TemperatureSensorStats,
   b: TemperatureSensorStats,
@@ -358,11 +358,11 @@ const RankingTable = memo(function RankingTable({
     [rows, sort],
   );
 
-  function toggleSort(key: SortKey, numeric: boolean) {
+  function toggleSort(key: SortKey, isNumeric: boolean) {
     setSort((s) =>
       s.key === key
         ? { key, dir: s.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: numeric ? "desc" : "asc" },
+        : { key, dir: isNumeric ? "desc" : "asc" },
     );
   }
 
@@ -379,7 +379,7 @@ const RankingTable = memo(function RankingTable({
                   key={col.key}
                   className={
                     "kern-table__header" +
-                    (col.numeric ? " kern-table__header--numeric" : "")
+                    (col.isNumeric ? " kern-table__header--numeric" : "")
                   }
                   scope="col"
                   aria-sort={
@@ -389,7 +389,7 @@ const RankingTable = memo(function RankingTable({
                   <button
                     type="button"
                     className="temp-insights__sort"
-                    onClick={() => toggleSort(col.key, col.numeric)}
+                    onClick={() => toggleSort(col.key, col.isNumeric)}
                     aria-label={t("insights.table.sortBy", { column: t(col.labelKey) })}
                   >
                     <span>{t(col.labelKey)}</span>

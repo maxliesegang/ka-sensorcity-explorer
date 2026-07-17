@@ -12,7 +12,7 @@ import { fetchSensors } from "../api/sensorcity";
 import { AsyncBoundary } from "../components/Status";
 import {
   CATEGORIES,
-  categoryColor,
+  getCategoryColor,
   categoryLabelKey,
 } from "../config/layers";
 import { useAsync } from "../hooks/useAsync";
@@ -74,7 +74,7 @@ export function MapView() {
       if (!visibleCategories[sensor.category]) continue;
 
       const latLng: L.LatLngTuple = [sensor.lat, sensor.lon];
-      const color = categoryColor(sensor.category);
+      const color = getCategoryColor(sensor.category);
       const label = tc(categoryLabelKey(sensor.category));
       const marker = L.circleMarker(latLng, {
         ...MARKER_STYLES.rest,

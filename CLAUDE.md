@@ -8,10 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev        # Vite dev server
 npm run build      # tsc typecheck + production build to dist/
 npm run preview    # serve the production build
-npm run typecheck  # tsc --noEmit (the only "test" — there is no test runner)
+npm run typecheck  # tsc --noEmit
+npm test           # vitest run
 ```
 
-There is no linter or test framework configured. `tsc` (strict, with `noUnusedLocals`/`noUnusedParameters`) is the correctness gate; `npm run build` runs it before bundling.
+There is no linter configured. `tsc` (strict, with `noUnusedLocals`/`noUnusedParameters`) plus the vitest suite are the correctness gates; `npm run build` runs `tsc` before bundling.
 
 ## Architecture
 
@@ -22,7 +23,7 @@ The three-layer data flow is the key thing to understand:
 1. **`src/api/arcgis.ts`** — generic, domain-agnostic FeatureServer client. Knows nothing about SensorCity. Two non-obvious behaviors to respect:
    - ArcGIS returns query errors as **HTTP 200 with an `{ error }` envelope**; `fetchJson` checks for this, so always go through it rather than calling `fetch` directly.
    - `MAX_RECORD_COUNT` is a hard 2000-row service cap per page. `queryAll` paginates via `exceededTransferLimit` and **requires a stable `orderByFields`** (defaults to `objectid ASC`) for correct paging.
-2. **`src/config/layers.ts`** — the entire data model: the 5 FeatureServer layers, plus `CATEGORIES` keyed by the live layer's `beschreibung` field, each mapping to its archive layer id and the measurements to display. **This is the primary place to extend the app** (see README's "Extending"); map, legend, detail and query views all read from it. Only stable ids/structure live here — **display labels are NOT stored here**; they live in i18n `common` (see below) and resolve via the `categoryLabelKey` / `measurementLabelKey` / `layerLabelKey` helpers. Adding a category/measurement therefore also needs a matching label entry in both locale `common` files.
+2. **`src/config/layers.ts`** — the entire data model: the 4 FeatureServer layers, plus `CATEGORIES` keyed by the live layer's `beschreibung` field, each mapping to its archive layer id and the measurements to display. The `beschreibung` values are upstream strings that have been renamed before (`Temperatur` → `Temperatur-Sensor`, July 2026) and mismatches fail *silently* — lookups and filters yield empty rather than throwing — so the weather key is exported as `TEMPERATURE_CATEGORY_KEY` rather than repeated as a literal. **This is the primary place to extend the app** (see README's "Extending"); map, legend, detail and query views all read from it. Only stable ids/structure live here — **display labels are NOT stored here**; they live in i18n `common` (see below) and resolve via the `categoryLabelKey` / `measurementLabelKey` / `layerLabelKey` helpers. Adding a category/measurement therefore also needs a matching label entry in both locale `common` files.
 3. **`src/api/sensorcity.ts`** — domain access built on the generic client. Normalizes raw features into `Sensor` objects (`toSensor`), fetches per-device history from archive layers, and computes category counts via `outStatistics`. Note `fetchHistory` escapes the device id into a SQL `WHERE` clause.
 
 ### History sources (SensorCity vs external)
@@ -30,7 +31,7 @@ The three-layer data flow is the key thing to understand:
 Not every category has a SensorCity archive layer — `Wasserpegel-Sensor`, for example, is published only on the live layer (no `archiveLayerId`). History fetching is therefore routed through a small provider abstraction rather than calling `fetchHistory` directly:
 
 - **`src/api/history.ts`** — `resolveHistorySource(sensor, category, field)` returns the SensorCity archive fetcher when the category has an `archiveLayerId`, otherwise falls back to a matching external provider. This is what the detail view calls.
-- **`src/config/historySources.ts`** — declarative map of `(category, field, deviceId) → external provider`. Adding an external history source for a sensor is a config entry here.
+- **`src/config/historySources.ts`** — declarative map of `(category, field, deviceId) → external provider`. Adding an external history source for a sensor is a config entry here, plus one `EXTERNAL_FETCHERS` entry in `history.ts` saying how to read that provider (a `Record` over the provider union, so a missing one is a compile error). `resolveHistorySource` itself stays provider-agnostic.
 - **`src/api/pegelonline.ts`** — PEGELONLINE water-level client (plain `fetch`, different origin than ArcGIS).
 - **`src/api/brightsky.ts`** — DWD Rheinstetten (station 04177) hourly/current temperatures via Bright Sky. This is the "undisturbed" out-of-city baseline for the temperature field's deviation mode; it carefully distinguishes genuine observations from forecast-padded hours (`observed` flag).
 - **`src/api/temperatureInsights.ts`** — cross-sensor temperature analytics built on the domain client: per-sensor stats, city spread series, and the geolocated frames the temperature field replays. Fetches every temperature sensor's archive with bounded concurrency.
@@ -41,10 +42,24 @@ Views (`src/views/`) are one-per-route, wired in `src/App.tsx`: Overview (`/`), 
 
 **i18n (`src/i18n/`)** — English/German via react-i18next. Each view has its own namespace (`overview`, `sensors`, `map`, …); shared chrome and domain labels live in `common`. Dictionaries are TS modules under `locales/<lang>/<namespace>.ts`, registered in `resources.ts`. Use `useTranslation("<ns>")` for view text and `useTranslation("common")` for domain labels. **Keep the EN and DE files structurally identical** (the same nested keys); `format.ts` reads the active language from the i18n singleton, so localized formatters re-run when callers subscribe via `useTranslation`.
 
+## Naming rules
+
+These are conventions the codebase already follows; keep new code consistent with them.
+
+- **German stops at the API boundary.** The upstream feed is German (`beschreibung`, `measured_at`, `bodenfeuchte`, `pegel`). German is permitted *only* as opaque wire identifiers — attribute names, `Category.key` values, `Measurement.field` values — and inside `QueryView`'s raw `where`/`outFields` strings, where showing the literal request is the feature. `toSensor()` in `src/api/sensorcity.ts` is the boundary; nothing German crosses it. Domain types, hooks, components and views are English throughout.
+  - Consequence: those German field names double as i18n keys (`measurements.luftfeuchte.label`). That is why upstream strings must each have exactly one home in `config/layers.ts` — see `TEMPERATURE_CATEGORY_KEY` / `TEMPERATURE_FIELD_KEY`. A rename upstream fails *silently* (filters yield empty rather than throwing).
+- **archive / history / series** are three distinct levels: *archive* = the upstream layer (`archiveLayerId`), *history* = the fetched result (`fetchHistory`, `resolveHistorySource`), *series* = a chart-ready sequence (`spreadSeries`).
+- **provider / source / kind**: *provider* is the identity of an upstream network (`HistoryProvider`, `TemperatureProvider` — `"sensorcity" | "pegelonline" | …`); *source* is a descriptor bundle that **has** a provider (`ExternalHistorySource`, `HistorySourceInfo`); *kind* is reserved for discriminated-union tags (`legend.kind`).
+- **reading vs observation**: a *reading* is any sensor value (the user-facing word — `currentReadings`, `LiveTemperatureReading`). *observation* is reserved for `brightsky.ts`, where it carries a real distinction: a genuine DWD measurement as opposed to a forecast-padded hour (`observed`). Don't collapse the two.
+- **Verbs**: `query*` = raw ArcGIS `/query` transport (`api/arcgis.ts`); `fetch*` = any domain-level network read; `get*` = pure in-memory lookup (`getCategory`, `getCategoryColor`, `getPrimaryMeasurement`, `getLiveTemperatureReadings`). Booleans are predicate-shaped (`is*` / `has*`), except where a name is fixed by something outside the app: wire fields (`exceededTransferLimit`, `returnGeometry`), library props (`NavLink`'s `end`), and `useAsync`'s `loading`.
+  - Two deliberate exemptions to the verbs rule: `demo/api.ts` mirrors the surface it stubs, so its exports are named after their real counterparts (`history`, `count`, `layerFields`) rather than verb-prefixed; and pure math/array helpers (`mean`, `nearestPoint`, `observedOnly`) are not lookups and take no `get*`.
+
 ## Conventions & gotchas
 
 - **HashRouter + relative `base: "./"`** (vite.config.ts) is deliberate — it keeps the build portable to any `https://<user>.github.io/<repo>/` GitHub Pages path. Don't switch to BrowserRouter or hardcode a base.
 - Archive layers are **rolling windows** (weeks to months), so history is inherently limited to what the service currently retains — not a bug.
+- **The upstream service is not stable and breaks silently.** It has renamed a category (`Temperatur` → `Temperatur-Sensor`), deleted a layer and renumbered the rest, and migrated soil sensors onto depth-banded fields — all without notice, and none of it throws. When something renders empty, check the live feed before the code: `.../FeatureServer?f=json` for layers, and a `groupByFieldsForStatistics=beschreibung` count for category keys. Layers also declare fields they never populate (`pm10`, `pm25`, `windgeschwindigkeit`, UV are all 0 rows), and soil bands 6–7 return sentinels below absolute zero, so a field existing does **not** mean it has data.
+- After changing `config/layers.ts`, re-run `npm run capture:demo` — the demo snapshot is keyed by layer id, category key and field name, and `src/demo/api.ts` returns `?? []` on a miss, so a stale snapshot blanks demo mode silently rather than erroring.
 - Styling uses the **KERN UX** design system via `@kern-ux-annex/kern-react-kit`; Leaflet + OpenStreetMap for the map. Both CSS bundles are imported in `main.tsx`.
 - Deploy is automatic: pushing to `main` triggers `.github/workflows/deploy.yml` → GitHub Pages.
 - `karlsruhe_sensorcity_api.md` is the upstream API reference; consult it before changing data access.

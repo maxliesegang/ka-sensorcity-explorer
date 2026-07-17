@@ -19,17 +19,22 @@ Append `?f=json` to any URL to see its metadata.
 | ID | Name | Records* | History range* | Description |
 |----|------|---------:|----------------|-------------|
 | 1 | `Sensordaten_Update` | live | current only | Latest value per sensor (no history) |
-| 2 | `NodeRED_Temperatur_Archiv` | ~516k | ~5 weeks rolling | Temp, humidity, pressure, PM10/PM2.5, UV, radiation, precipitation, wind |
-| 3 | `NodeRED_TSK_Archiv` | ~91k | ~5 months rolling | Waste-container fill levels |
-| 4 | `NodeRED_Regenschreiber_Archiv` | ~15k | ~2 months rolling | Rain gauge (tipping-bucket "clicks") |
-| 5 | `NodeRED_Bodensensoren_Archiv` | ~1.3k | ~2 months rolling | Soil moisture & temperature |
+| 2 | `NodeRED_Temperatur_Archiv` | ~498k | ~5 weeks rolling | Temp, humidity, pressure, PM10/PM2.5, UV, radiation, precipitation, wind |
+| 3 | `NodeRED_Regenschreiber_Archiv` | ~40k | ~2 months rolling | Rain gauge (tipping-bucket "clicks") |
+| 4 | `NodeRED_Bodensensoren_Archiv` | ~5k | ~2 months rolling | Soil moisture & temperature |
 
-\* Counts and ranges as observed June 2026. Archives are **rolling windows** — old
+\* Counts and ranges as observed July 2026. Archives are **rolling windows** — old
 rows drop off, so pull periodically and accumulate for long-term series.
 
 Water-level gauges (`beschreibung = 'Wasserpegel-Sensor'`) are currently present
 only in layer 1. No dedicated SensorCity archive layer is exposed for their
 history.
+
+> **Upstream change (July 2026).** The service dropped the waste-container
+> dataset: the `NodeRED_TSK_Archiv` layer is gone, the archive layers below it
+> renumbered (Regenschreiber 4→3, Bodensensoren 5→4), and
+> `beschreibung = 'TSK-Container'` now matches zero live rows. In the same
+> revision the weather category was renamed `Temperatur` → `Temperatur-Sensor`.
 
 The app supplements the Maxau/Rhein gauge (`device_id = 9016`) with recent
 water-level history from PEGELONLINE, because that station is also published by
@@ -67,10 +72,16 @@ Standard [ArcGIS Feature Service query](https://developers.arcgis.com/rest/servi
 - `device_id` — stable per-sensor UUID; best key for a single station's history.
 - Measurement fields vary by layer: `temp`, `luftfeuchte` (humidity), `press`,
   `pm10`, `pm25`, `sonnenstrahlung` (solar radiation), `niederschlag` (precip),
-  `windgeschwindigkeit`, `fillinglvl_percent`, `clicks`,
-  `bodenfeuchte`, `bodentemperatur`, `pegel` (water level, cm). The soil layers also expose
-  `soil_moisture_at_depth_0..7` and `soil_temperature_at_depth_0..7`, but these
-  may be empty for the current SensorCity feed.
+  `windgeschwindigkeit`, `fillinglvl_percent`, `clicks`, `pegel` (water level, cm).
+  The soil layers expose `soil_moisture_at_depth_0..7` and
+  `soil_temperature_at_depth_0..7` — note the field suffix is the band number
+  followed by a literal `1` (`soil_moisture_at_depth_01` is band 0,
+  `..._71` is band 7). As of July 2026 these carry the soil feed (97 of 99
+  sensors); the older flat `bodenfeuchte` / `bodentemperatur` fields still exist
+  but are now empty for all but 2 sensors.
+  **Only bands 0–5 hold readings.** Bands 6 and 7 return the device's
+  not-connected sentinel on every reporting probe — `-328` °C (below absolute
+  zero) and `-5` % moisture. Filter them out rather than plotting them.
 
 ---
 

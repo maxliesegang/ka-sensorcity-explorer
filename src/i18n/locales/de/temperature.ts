@@ -38,14 +38,14 @@ export default {
       "Eine Live-Temperaturkarte, die das städtische SensorCity-Netz mit nahegelegenen Bürgerstationen von openSenseMap und sensor.community verbindet, damit das Feld überall dort gefüllt ist, wo gemessen wird.",
     introLinkPrefix: "Lieber nur das Stadtnetz? ",
     introLink: "Temperaturkarte nur mit Stadtsensoren öffnen",
-    source: {
+    provider: {
       sensorcity: "SensorCity-Sensor",
       opensensemap: "openSenseMap-Community-Sensor",
       sensorcommunity: "sensor.community-Sensor",
     },
-    viewOnSource: "Auf {{source}} ansehen",
-    sourceBreakdown:
-      "{{city}} Stadt · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
+    viewOnProvider: "Auf {{provider}} ansehen",
+    providerBreakdown:
+      "{{sensorcity}} Stadt · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
     communityUnavailable:
       "Einige Community-Sensordaten sind derzeit nicht verfügbar; angezeigt wird, was geladen wurde.",
     attribution:

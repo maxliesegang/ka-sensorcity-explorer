@@ -12,7 +12,7 @@ Built with **Vite + React + TypeScript**, styled with the
 ## Features
 
 - **Overview** — live sensor count, per-category breakdown, and the data model
-  (all five FeatureServer layers).
+  (all four FeatureServer layers).
 - **Sensors** — a searchable, sortable, filterable list of every live sensor
   (table and card views), each linking to its detail page. The
   keyboard/screen-reader-friendly counterpart to the map.

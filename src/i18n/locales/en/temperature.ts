@@ -37,14 +37,14 @@ export default {
       "A live temperature map that blends the city's SensorCity network with nearby openSenseMap and sensor.community citizen stations, so the field is filled in wherever someone is measuring.",
     introLinkPrefix: "Prefer the city network alone? ",
     introLink: "Open the city-only temperature map",
-    source: {
+    provider: {
       sensorcity: "SensorCity sensor",
       opensensemap: "openSenseMap community sensor",
       sensorcommunity: "sensor.community sensor",
     },
-    viewOnSource: "View on {{source}}",
-    sourceBreakdown:
-      "{{city}} city · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
+    viewOnProvider: "View on {{provider}}",
+    providerBreakdown:
+      "{{sensorcity}} city · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
     communityUnavailable:
       "Some community sensor data is unavailable right now; showing what loaded.",
     attribution:

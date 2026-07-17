@@ -7,7 +7,7 @@
 // `common` namespace, keyed by the stable ids below (layer `id`, category `key`,
 // measurement `field`). Use the `*LabelKey` helpers to resolve them with `t()`.
 
-import type { Category, LayerInfo } from "../types";
+import type { Category, LayerInfo, Measurement } from "../types";
 
 /** The live "latest value per sensor" layer. */
 export const LIVE_LAYER_ID = 1;
@@ -16,10 +16,45 @@ export const LIVE_LAYER_ID = 1;
 export const LAYERS: LayerInfo[] = [
   { id: 1, name: "Sensordaten_Update", live: true },
   { id: 2, name: "NodeRED_Temperatur_Archiv", live: false },
-  { id: 3, name: "NodeRED_TSK_Archiv", live: false },
-  { id: 4, name: "NodeRED_Regenschreiber_Archiv", live: false },
-  { id: 5, name: "NodeRED_Bodensensoren_Archiv", live: false },
+  { id: 3, name: "NodeRED_Regenschreiber_Archiv", live: false },
+  { id: 4, name: "NodeRED_Bodensensoren_Archiv", live: false },
 ];
+
+/**
+ * The weather/air category key — the only category carrying air temperature.
+ * Exported because several modules filter on it; an upstream rename of this
+ * `beschreibung` value fails silently (lookups and filters yield empty rather
+ * than throwing), so it must have exactly one home.
+ */
+export const TEMPERATURE_CATEGORY_KEY = "Temperatur-Sensor";
+
+/** The air-temperature measurement field, on both the live and archive layers. */
+export const TEMPERATURE_FIELD_KEY = "temp";
+
+/**
+ * Soil probe depth bands, shallow→deep, as used in the `*_at_depth_<band>1` fields.
+ *
+ * The feed defines 8 bands but only 0–5 carry readings: every one of the 97
+ * reporting probes returns the device's not-connected sentinel for bands 6 and 7
+ * (-328 °C, below absolute zero, and -5 % moisture). They are excluded rather
+ * than rendered as impossible values.
+ */
+export const SOIL_DEPTH_BANDS = [0, 1, 2, 3, 4, 5] as const;
+
+/**
+ * One measurement per depth band for a soil field family. The upstream suffix is
+ * the band number followed by a literal `1` (band 0 → `..._at_depth_01`, band 5 →
+ * `..._at_depth_51`) — kept here so that quirk has a single home.
+ */
+function soilBandMeasurements(
+  family: "soil_moisture" | "soil_temperature",
+  unit: string,
+): Measurement[] {
+  return SOIL_DEPTH_BANDS.map((band) => ({
+    field: `${family}_at_depth_${band}1`,
+    unit,
+  }));
+}
 
 /**
  * Sensor categories keyed by the live layer's `beschreibung` value. Each maps
@@ -33,42 +68,37 @@ export const LAYERS: LayerInfo[] = [
  */
 export const CATEGORIES: Category[] = [
   {
-    key: "Temperatur",
+    key: TEMPERATURE_CATEGORY_KEY,
     color: "#1f77b4",
     archiveLayerId: 2,
+    // `pm10`, `pm25`, `windgeschwindigkeit`, `uv_a_strahlung` and `uv_b_strahlung`
+    // are declared by the archive layer but hold no rows at all (0 of ~498k), and
+    // the live layer does not expose them — listing them only renders empty charts.
+    // Add them back here if the city starts publishing them.
     measurements: [
       { field: "temp", unit: "°C" },
       { field: "luftfeuchte", unit: "%" },
       { field: "press", unit: "Pa" },
-      { field: "pm10", unit: "µg/m³" },
-      { field: "pm25", unit: "µg/m³" },
       { field: "sonnenstrahlung", unit: "W/m²" },
       { field: "niederschlag", unit: "mm" },
-      { field: "windgeschwindigkeit", unit: "m/s" },
-    ],
-  },
-  {
-    key: "TSK-Container",
-    color: "#2e7d32",
-    archiveLayerId: 3,
-    measurements: [
-      { field: "fillinglvl_percent", unit: "%" },
-      { field: "temp", unit: "°C" },
     ],
   },
   {
     key: "Regenschreiber",
     color: "#8b5fc7",
-    archiveLayerId: 4,
+    archiveLayerId: 3,
     measurements: [{ field: "clicks", unit: "" }],
   },
   {
     key: "Boden-Sensor",
     color: "#a9705a",
-    archiveLayerId: 5,
+    archiveLayerId: 4,
+    // Probes report stacked depth bands (shallow→deep). The older flat
+    // `bodenfeuchte`/`bodentemperatur` fields still exist upstream but are now
+    // empty for all but 2 of 99 sensors, so the bands are the real feed.
     measurements: [
-      { field: "bodenfeuchte", unit: "%" },
-      { field: "bodentemperatur", unit: "°C" },
+      ...soilBandMeasurements("soil_moisture", "%"),
+      ...soilBandMeasurements("soil_temperature", "°C"),
     ],
   },
   {
@@ -88,7 +118,7 @@ export function getCategory(key: string): Category | undefined {
 /** Fallback colour for unknown categories. */
 export const DEFAULT_COLOR = "#777";
 
-export function categoryColor(key: string): string {
+export function getCategoryColor(key: string): string {
   return CATEGORY_BY_KEY.get(key)?.color ?? DEFAULT_COLOR;
 }
 

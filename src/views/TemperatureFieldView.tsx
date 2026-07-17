@@ -1,4 +1,4 @@
-// Temperature field of live "Temperatur" sensors, drawn as nearest-sensor
+// Temperature field of live weather/air sensors, drawn as nearest-sensor
 // (Thiessen / Voronoi) regions: each cell is filled with its sensor's colour so
 // hotter and colder parts of the city read at a glance. The source sensors are
 // drawn above as coloured markers. The colour scale is anchored to the current
@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { fetchSensors } from "../api/sensorcity";
 import { fetchTemperatureInsights } from "../api/temperatureInsights";
-import { categoryLabelKey } from "../config/layers";
+import { categoryLabelKey, TEMPERATURE_CATEGORY_KEY } from "../config/layers";
 import { AsyncBoundary } from "../components/Status";
 import { TemperatureLegend } from "../components/TemperatureLegend";
 import {
@@ -41,11 +41,11 @@ import { TemperatureBaselineControls } from "../components/TemperatureBaselineCo
 import { useTemperatureFieldModel } from "../hooks/useTemperatureFieldModel";
 import { formatSignedDelta, formatTime, formatValue } from "../utils/format";
 import {
-  summarizeLiveTemperatureObservations,
-  getLiveTemperatureObservations,
+  summarizeLiveTemperatureReadings,
+  getLiveTemperatureReadings,
   getLiveTemperatureFieldPoints,
   type LiveTemperatureFieldPoint,
-} from "../utils/liveTemperatureObservations";
+} from "../utils/liveTemperatureReadings";
 
 const UNIT = "°C";
 
@@ -75,22 +75,22 @@ export function TemperatureFieldView() {
     () => (sensors.data ? getLiveTemperatureFieldPoints(sensors.data) : []),
     [sensors.data],
   );
-  const liveTemperatureObservations = useMemo(
-    () => (sensors.data ? getLiveTemperatureObservations(sensors.data) : []),
+  const liveTemperatureReadings = useMemo(
+    () => (sensors.data ? getLiveTemperatureReadings(sensors.data) : []),
     [sensors.data],
   );
   const liveTemperatureSummary = useMemo(
-    () => summarizeLiveTemperatureObservations(liveTemperatureObservations),
-    [liveTemperatureObservations],
+    () => summarizeLiveTemperatureReadings(liveTemperatureReadings),
+    [liveTemperatureReadings],
   );
   const baselineReadings = useMemo(
     () =>
-      liveTemperatureObservations.map(({ sensor, temperature }) => ({
+      liveTemperatureReadings.map(({ sensor, temperature }) => ({
         id: String(sensor.objectId),
         label: sensor.name,
         temperature,
       })),
-    [liveTemperatureObservations],
+    [liveTemperatureReadings],
   );
 
   const {
@@ -126,7 +126,7 @@ export function TemperatureFieldView() {
       return;
     }
 
-    const temperatureCategoryLabel = tc(categoryLabelKey("Temperatur"));
+    const temperatureCategoryLabel = tc(categoryLabelKey(TEMPERATURE_CATEGORY_KEY));
     const attachInteractions = createMarkerInteractions(MARKER_STYLES);
 
     /** Bind the shared sensor tooltip + popup to a Leaflet layer. */
@@ -308,13 +308,13 @@ export function TemperatureFieldView() {
       <section className="temp-insights-shell" aria-label={t("insights.live.heading")}>
         <AsyncBoundary
           state={sensors}
-          isEmpty={(data) => getLiveTemperatureObservations(data).length === 0}
+          isEmpty={(data) => getLiveTemperatureReadings(data).length === 0}
           emptyLabel={t("insights.empty")}
         >
           {() => (
             <TemperatureLiveStats
               current={liveTemperatureSummary}
-              sensorCount={liveTemperatureObservations.length}
+              sensorCount={liveTemperatureReadings.length}
             />
           )}
         </AsyncBoundary>

@@ -2,7 +2,6 @@ export default {
   presets: {
     latestLive: "Latest live sensors",
     weatherStations: "Weather stations",
-    fullContainers: "Full containers",
   },
   presetsAria: "Query presets",
   badge: "Advanced query",

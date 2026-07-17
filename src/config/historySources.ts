@@ -1,9 +1,14 @@
+// Declarative map of (category, field, device) → the external network holding
+// that sensor's history. Adding an external history source is an entry here.
+
+import type { HistoryProvider } from "../api/history";
 import type { Sensor } from "../types";
 
-export type HistoryProvider = "pegelonline";
+/** The external providers; `sensorcity` is the built-in archive, not an entry here. */
+export type ExternalHistoryProvider = Exclude<HistoryProvider, "sensorcity">;
 
 export interface ExternalHistorySource {
-  provider: HistoryProvider;
+  provider: ExternalHistoryProvider;
   /** Live-layer category key, e.g. `Wasserpegel-Sensor`. */
   categoryKey: string;
   /** Measurement field on the SensorCity live layer, e.g. `pegel`. */

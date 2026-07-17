@@ -7,15 +7,15 @@ import type { DemoSnapshot } from "./snapshot";
 // real (multi-MB) dataset or any network.
 const liveFeatures: Feature[] = [
   {
-    attributes: { objectid: 1, name: "A", beschreibung: "Temperatur", temp: 20, fillinglvl_percent: null },
+    attributes: { objectid: 1, name: "A", beschreibung: "Temperatur-Sensor", temp: 20, bodenfeuchte: null },
     geometry: { x: 8.4, y: 49.0 },
   },
   {
-    attributes: { objectid: 2, name: "B", beschreibung: "TSK-Container", temp: null, fillinglvl_percent: 80 },
+    attributes: { objectid: 2, name: "B", beschreibung: "Boden-Sensor", temp: null, bodenfeuchte: 80 },
     geometry: { x: 8.5, y: 49.1 },
   },
   {
-    attributes: { objectid: 3, name: "C", beschreibung: "Temperatur", temp: 25, fillinglvl_percent: null },
+    attributes: { objectid: 3, name: "C", beschreibung: "Temperatur-Sensor", temp: 25, bodenfeuchte: null },
     geometry: { x: 8.6, y: 49.2 },
   },
 ];
@@ -66,13 +66,13 @@ describe("query", () => {
   });
 
   it("filters by an equality clause", async () => {
-    const res = await api.query(1, { where: "beschreibung='Temperatur'" });
+    const res = await api.query(1, { where: "beschreibung='Temperatur-Sensor'" });
     expect(res.features.map((f) => f.attributes.objectid)).toEqual([1, 3]);
   });
 
   it("filters by a compound AND of equality and comparison", async () => {
     const res = await api.query(1, {
-      where: "beschreibung='TSK-Container' AND fillinglvl_percent >= 75",
+      where: "beschreibung='Boden-Sensor' AND bodenfeuchte >= 75",
     });
     expect(res.features.map((f) => f.attributes.objectid)).toEqual([2]);
   });
@@ -97,7 +97,7 @@ describe("query", () => {
     const byCategory = Object.fromEntries(
       res.features.map((f) => [f.attributes.beschreibung, f.attributes.cnt]),
     );
-    expect(byCategory).toEqual({ Temperatur: 2, "TSK-Container": 1 });
+    expect(byCategory).toEqual({ "Temperatur-Sensor": 2, "Boden-Sensor": 1 });
   });
 
   it("serves the raw archive sample for archive layers", async () => {
@@ -113,7 +113,7 @@ describe("query", () => {
 
 describe("count", () => {
   it("counts filtered live features", async () => {
-    expect(await api.count(1, "beschreibung='Temperatur'")).toBe(2);
+    expect(await api.count(1, "beschreibung='Temperatur-Sensor'")).toBe(2);
   });
 
   it("uses the stored total for archive layers", async () => {

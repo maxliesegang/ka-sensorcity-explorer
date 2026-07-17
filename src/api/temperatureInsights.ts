@@ -1,10 +1,15 @@
 // Cross-sensor temperature insights, built on the domain client.
 //
-// Fetches the rolling temperature history for every live "Temperatur" sensor with a
-// device id and derives how those sensors compare — right now (for fresh live
-// readings only) and over time (per-bucket spread series, per-sensor volatility).
+// Fetches the rolling temperature history for every live TEMPERATURE_CATEGORY_KEY
+// sensor with a device id and derives how those sensors compare — right now (for
+// fresh live readings only) and over time (per-bucket spread series, per-sensor
+// volatility).
 
-import { getCategory } from "../config/layers";
+import {
+  getCategory,
+  TEMPERATURE_CATEGORY_KEY,
+  TEMPERATURE_FIELD_KEY,
+} from "../config/layers";
 import type { Sensor } from "../types";
 import { mapWithConcurrency } from "../utils/concurrency";
 import { isRecentlyMeasured } from "../utils/sensorFreshness";
@@ -32,7 +37,7 @@ export interface TemperatureSpreadPoint {
   sensorCount: number; // sensors contributing to this bucket
 }
 
-export interface ArchivedTemperatureFieldPoint {
+export interface HistoricalTemperatureFieldPoint {
   objectId: number;
   name: string;
   lat: number;
@@ -42,7 +47,7 @@ export interface ArchivedTemperatureFieldPoint {
 
 export interface TemperatureFieldSnapshot {
   timestamp: number; // bucket-start epoch ms
-  points: ArchivedTemperatureFieldPoint[]; // geolocated sensor temperatures in this time bucket
+  points: HistoricalTemperatureFieldPoint[]; // geolocated sensor temperatures in this time bucket
 }
 
 export interface TemperatureInsightsData {
@@ -63,8 +68,6 @@ export interface TemperatureInsightsData {
   bucketHours: number; // bucket width used for spreadSeries
 }
 
-const TEMPERATURE_CATEGORY = "Temperatur";
-const TEMPERATURE_FIELD = "temp";
 const BUCKET_HOURS = 1;
 const CONCURRENCY = 6;
 
@@ -82,7 +85,7 @@ const EMPTY_INSIGHTS = (): TemperatureInsightsData => ({
 /** Fresh live temperature for a sensor, or null when stale / not finite. */
 function currentTemperature(sensor: Sensor, now: number): number | null {
   if (!isRecentlyMeasured(sensor, now)) return null;
-  const value = Number(sensor.attributes[TEMPERATURE_FIELD]);
+  const value = Number(sensor.attributes[TEMPERATURE_FIELD_KEY]);
   return Number.isFinite(value) ? value : null;
 }
 
@@ -210,7 +213,7 @@ function buildBucketedHistory(
 ): Pick<TemperatureInsightsData, "spreadSeries" | "fieldSnapshots"> {
   const perSensorBuckets = histories.map((points) => bucketMeans(points, bucketMs));
   const spreadBuckets = new Map<number, number[]>();
-  const fieldBuckets = new Map<number, ArchivedTemperatureFieldPoint[]>();
+  const fieldBuckets = new Map<number, HistoricalTemperatureFieldPoint[]>();
 
   for (let i = 0; i < perSensorBuckets.length; i++) {
     const sensor = sensors[i];
@@ -220,7 +223,7 @@ function buildBucketedHistory(
       else spreadBuckets.set(key, [value]);
 
       if (sensor.lat != null && sensor.lon != null) {
-        const point: ArchivedTemperatureFieldPoint = {
+        const point: HistoricalTemperatureFieldPoint = {
           objectId: sensor.objectId,
           name: sensor.name,
           lat: sensor.lat,
@@ -266,19 +269,19 @@ function buildBucketedHistory(
 }
 
 /**
- * Fetch temperature history for all live "Temperatur" sensors with a device id.
+ * Fetch temperature history for every live weather/air sensor with a device id.
  * Current comparisons use only fresh live readings, while historical stats and
  * map frames use the full retained archive returned by the service.
  */
 export async function fetchTemperatureInsights(
   signal?: AbortSignal,
 ): Promise<TemperatureInsightsData> {
-  const archiveLayerId = getCategory(TEMPERATURE_CATEGORY)?.archiveLayerId;
+  const archiveLayerId = getCategory(TEMPERATURE_CATEGORY_KEY)?.archiveLayerId;
   const sensors = await fetchSensors(signal);
   const now = Date.now();
   const temperatureSensors = sensors.filter(
     (sensor) =>
-      sensor.category === TEMPERATURE_CATEGORY &&
+      sensor.category === TEMPERATURE_CATEGORY_KEY &&
       sensor.deviceId !== "",
   );
   if (temperatureSensors.length === 0 || archiveLayerId == null) {
@@ -290,7 +293,7 @@ export async function fetchTemperatureInsights(
     temperatureSensors,
     CONCURRENCY,
     (sensor) =>
-      fetchHistory(archiveLayerId, sensor.deviceId, TEMPERATURE_FIELD, {}, signal),
+      fetchHistory(archiveLayerId, sensor.deviceId, TEMPERATURE_FIELD_KEY, {}, signal),
   );
 
   const currents = temperatureSensors.map((sensor) => currentTemperature(sensor, now));
