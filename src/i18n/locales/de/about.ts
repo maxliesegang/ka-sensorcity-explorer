@@ -1,24 +1,25 @@
 export default {
   heading: "Über diesen Explorer",
   intro:
-    "Eine kompakte, schreibgeschützte Oberfläche für die öffentlichen SensorCity-Daten Karlsruhes: aktuelle Messwerte, Standorte, Messverläufe und rohe ArcGIS-Abfragen.",
+    "Öffentliche SensorCity-Daten aus Karlsruhe erkunden: aktuelle Messwerte, Standorte, Verläufe und erweiterte Abfragen.",
   whatItDoes: {
     heading: "Was er macht",
-    body: "Die App macht den öffentlichen SensorCity-FeatureServer leichter durchsuchbar. Sie gruppiert Live-Sensoren nach Kategorie, zeigt sie auf einer Karte, bietet eine durchsuchbare Tabelle und zeigt Verlaufsdiagramme, wo Archivschichten verfügbar sind.",
+    body: "Sensoren nach Kategorie finden, auf der Karte oder in einer durchsuchbaren Liste vergleichen und Messverläufe ansehen, sofern Archivdaten verfügbar sind.",
     openMap: "Karte öffnen",
     openQuery: "Abfrage-Explorer öffnen",
   },
   design: {
-    heading: "Design",
-    body: "Die Oberfläche folgt dem nativen KERN-UX-CSS: semantisches HTML, KERN-Typografie, Schaltflächen, Formulare, Tabellen, Hinweise und Design-Tokens. Über die Steuerung unten lässt sich die Sprache wechseln sowie dem Systemdesign folgen oder ein festes helles oder dunkles Design verwenden.",
+    heading: "Darstellung",
+    body: "Deutsch oder Englisch wählen und das Systemdesign, den hellen oder den dunklen Modus verwenden.",
     themeModes: "Designmodi",
     themeModesValue: "System, Hell, Dunkel",
     preference: "Einstellung",
     preferenceValue: "Lokal in diesem Browser gespeichert",
   },
   dataSource: {
+    tableCaption: "SensorCity-Datenebenen und ihr Zweck",
     heading: "Datenquelle",
-    body: "Die Daten stammen vom ArcGIS-FeatureServer der Stadt Karlsruhe (SensorCity). Dieser Explorer ist inoffiziell und sendet ausschließlich Leseanfragen.",
+    body: "Die Stadt Karlsruhe stellt die Daten über ihren öffentlichen SensorCity-ArcGIS-FeatureServer bereit. Dieser inoffizielle Explorer liest den Dienst nur und kann seine Daten nicht verändern.",
     liveLayer_one: "{{count}} Live-Schicht",
     liveLayer_other: "{{count}} Live-Schichten",
     archiveLayer_one: "{{count}} Archivschicht",
@@ -33,11 +34,11 @@ export default {
   },
   privacy: {
     heading: "Datenschutz und Grenzen",
-    body: "Die App erfordert kein Konto und schreibt nicht auf den FeatureServer. Die Design-Einstellung wird im lokalen Browser-Speicher abgelegt. Verfügbarkeit der Sensoren, Aktualisierungsfrequenz und Verlaufstiefe hängen vom öffentlichen Dienst ab.",
+    body: "Es ist kein Konto erforderlich. Sprach- und Design-Einstellung werden in diesem Browser gespeichert. Sensorverfügbarkeit, Aktualisierungsintervalle und historische Abdeckung hängen vom öffentlichen Datendienst ab.",
   },
   experiment: {
     heading: "Experiment",
-    body: "Ein kleiner Versuch, der die städtischen Sensoren mit Bürgerstationen von openSenseMap und sensor.community verbindet, um zu sehen, wie ein dichteres Temperaturfeld aussehen würde.",
+    body: "Städtische Sensoren mit öffentlichen Stationen von openSenseMap und sensor.community kombinieren und eine dichtere Live-Temperaturkarte erkunden.",
     link: "Kombinierte Live-Temperaturkarte ausprobieren",
   },
 } as const;

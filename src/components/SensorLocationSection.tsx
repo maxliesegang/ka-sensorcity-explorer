@@ -157,7 +157,7 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
       <div
         className="map sensor-location__map"
         ref={containerRef}
-        role="application"
+        role="region"
         aria-label={t("location.mapAria", { name: sensor.name })}
       />
     </section>

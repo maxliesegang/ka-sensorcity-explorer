@@ -3,7 +3,7 @@
 // URL, and inspect the returned features as a table. Execution is strictly
 // user-triggered (no auto-run on mount), so we manage our own async state.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { KernAlert, KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { ARCGIS_MAX_PAGE_SIZE, query, queryUrl } from "../api/arcgis";
@@ -11,6 +11,8 @@ import type { QueryParams } from "../api/arcgis";
 import { LAYERS, TEMPERATURE_CATEGORY_KEY } from "../config/layers";
 import { Empty, ErrorMessage, Loading } from "../components/Status";
 import type { AttributeValue, Feature, QueryResponse } from "../types";
+import type { FieldInfo } from "../types";
+import { formatTimestamp } from "../utils/format";
 
 const PRESETS = [
   {
@@ -51,6 +53,24 @@ function cell(value: AttributeValue | undefined): string {
   return value == null ? "—" : String(value);
 }
 
+function isDateField(field: FieldInfo | undefined, name: string): boolean {
+  return field?.type === "esriFieldTypeDate" || name === "measured_at" || name === "inserted_at";
+}
+
+function isNumericField(field: FieldInfo | undefined): boolean {
+  return field?.type != null && /(?:Integer|Double|Single|OID|SmallInteger)$/.test(field.type);
+}
+
+function formatCell(
+  value: AttributeValue | undefined,
+  field: FieldInfo | undefined,
+  name: string,
+): string {
+  return isDateField(field, name) && typeof value === "number"
+    ? formatTimestamp(value)
+    : cell(value);
+}
+
 function download(filename: string, mime: string, content: string) {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
   const a = document.createElement("a");
@@ -89,6 +109,7 @@ export function QueryView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<QueryResponse | null>(null);
+  const [resultRequest, setResultRequest] = useState<{ layerId: number; url: string } | null>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
 
   // Build the request params once so the displayed URL is exactly what `run` hits.
@@ -129,10 +150,12 @@ export function QueryView() {
       const res = await query(layerId, params, controller.signal);
       if (controller.signal.aborted) return;
       setResult(res);
+      setResultRequest({ layerId, url });
     } catch (err) {
       if (controller.signal.aborted) return;
       setError(err instanceof Error ? err.message : String(err));
       setResult(null);
+      setResultRequest(null);
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -142,7 +165,7 @@ export function QueryView() {
     <section className="query-page">
       <div className="view-header view-header--wide">
         <KernBadge label={t("badge")} variant="info" />
-        <h1 className="kern-heading-large">{t("heading")}</h1>
+        <h1 className="kern-heading-medium">{t("heading")}</h1>
         <p className="kern-body kern-body--muted">{t("intro")}</p>
       </div>
 
@@ -161,7 +184,7 @@ export function QueryView() {
       </div>
 
       <form className="query-form" onSubmit={run}>
-        <div className="query-form-grid">
+        <div className="query-form-primary">
           <div className="field kern-form-input query-form-grid__layer">
             <label className="kern-label" htmlFor="q-layer">{t("layer")}</label>
             <div className="kern-form-input__select-wrapper">
@@ -179,7 +202,21 @@ export function QueryView() {
               </select>
             </div>
           </div>
-          <div className="field kern-form-input query-form-grid__wide">
+          <KernButton
+            type="submit"
+            variant="primary"
+            className="query-form-grid__submit"
+            icon="search"
+            label={t("runQuery")}
+          />
+        </div>
+        <details className="query-advanced">
+          <summary className="kern-link">{t("advancedSettings")}</summary>
+          <p className="kern-body kern-body--small kern-body--muted">
+            {t("advancedHint")}
+          </p>
+          <div className="query-form-grid">
+            <div className="field kern-form-input query-form-grid__wide">
             <label className="kern-label" htmlFor="q-where">where</label>
             <input
               id="q-where"
@@ -188,7 +225,7 @@ export function QueryView() {
               onChange={(e) => setWhere(e.target.value)}
             />
           </div>
-          <div className="field kern-form-input query-form-grid__wide">
+            <div className="field kern-form-input query-form-grid__wide">
             <label className="kern-label" htmlFor="q-fields">outFields</label>
             <input
               id="q-fields"
@@ -197,7 +234,7 @@ export function QueryView() {
               onChange={(e) => setOutFields(e.target.value)}
             />
           </div>
-          <div className="field kern-form-input">
+            <div className="field kern-form-input">
             <label className="kern-label" htmlFor="q-order">orderByFields</label>
             <input
               id="q-order"
@@ -207,7 +244,7 @@ export function QueryView() {
               onChange={(e) => setOrderByFields(e.target.value)}
             />
           </div>
-          <div className="field kern-form-input query-form-grid__count">
+            <div className="field kern-form-input query-form-grid__count">
             <label className="kern-label" htmlFor="q-count">resultRecordCount</label>
             <input
               id="q-count"
@@ -219,14 +256,8 @@ export function QueryView() {
               onChange={(e) => setResultRecordCount(Number(e.target.value))}
             />
           </div>
-          <KernButton
-            type="submit"
-            variant="primary"
-            className="query-form-grid__submit"
-            icon="search"
-            label={t("runQuery")}
-          />
-        </div>
+          </div>
+        </details>
       </form>
 
       <div className="url-box request-console" aria-label={t("resolvedUrl")}>
@@ -250,7 +281,7 @@ export function QueryView() {
         <code>{url}</code>
       </div>
 
-      <QueryResult loading={loading} error={error} result={result} />
+      <QueryResult loading={loading} error={error} result={result} request={resultRequest} />
     </section>
   );
 }
@@ -259,25 +290,52 @@ function QueryResult({
   loading,
   error,
   result,
+  request,
 }: {
   loading: boolean;
   error: string | null;
   result: QueryResponse | null;
+  request: { layerId: number; url: string } | null;
 }) {
   const { t } = useTranslation("query");
+  const [page, setPage] = useState(1);
+  const pageSize = 50;
+
+  useEffect(() => setPage(1), [result]);
+
   if (loading) return <Loading label={t("running")} />;
   if (error) return <ErrorMessage error={error} />;
   if (result == null) return null;
   if (result.features.length === 0) return <Empty label={t("noFeatures")} />;
 
   const columns = columnsFor(result.features);
+  const fieldsByName = new Map((result.fields ?? []).map((field) => [field.name, field]));
+  const oidField = result.fields?.find(
+    (field) => field.type === "esriFieldTypeOID" && columns.includes(field.name),
+  );
+  const pageCount = Math.ceil(result.features.length / pageSize);
+  const currentPage = Math.min(page, pageCount);
+  const visibleFeatures = result.features.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
 
   return (
     <>
       <div className="result-bar" role="status" aria-live="polite">
-        <span className="kern-body kern-body--small">
-          {t("rows", { count: result.features.length })}
-        </span>
+        <div>
+          <span className="kern-body kern-body--small">
+            {t("rows", { count: result.features.length })}
+          </span>
+          {request && (
+            <span
+              className="result-context kern-body kern-body--small kern-body--muted"
+              title={request.url}
+            >
+              {t("resultContext", { layer: request.layerId })}
+            </span>
+          )}
+        </div>
         <div className="result-actions">
           <KernButton
             type="button"
@@ -290,14 +348,14 @@ function QueryResult({
                 JSON.stringify(result.features, null, 2),
               )
             }
-            label="JSON"
+            label={t("downloadJson")}
           />
           <KernButton
             type="button"
             variant="secondary"
             className="kern-btn--x-small"
             onClick={() => download("sensorcity-query.csv", "text/csv", toCsv(result.features))}
-            label="CSV"
+            label={t("downloadCsv")}
           />
         </div>
       </div>
@@ -308,26 +366,94 @@ function QueryResult({
           className="alert-stack"
         />
       )}
-      <div className="kern-table-responsive table-scroll">
-        <table className="kern-table kern-table--striped kern-table--small">
+      <div className="kern-table-responsive table-scroll table-scroll--bounded">
+        <table className="kern-table kern-table--striped kern-table--small table--has-identity">
+          <caption className="visually-hidden">
+            {t("tableCaption", {
+              count: result.features.length,
+              layer: request?.layerId ?? "—",
+            })}
+          </caption>
           <thead>
             <tr className="kern-table__row">
-              {columns.map((c) => (
-                <th className="kern-table__header" scope="col" key={c}>{c}</th>
-              ))}
+              {columns.map((c) => {
+                const numeric = isNumericField(fieldsByName.get(c));
+                return (
+                  <th
+                    className={`kern-table__header${numeric ? " kern-table__header--numeric" : ""}${
+                      oidField?.name === c ? " table__identity" : ""
+                    }`}
+                    scope="col"
+                    key={c}
+                  >
+                    {c}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="kern-table__body">
-            {result.features.map((f, i) => (
-              <tr className="kern-table__row" key={i}>
-                {columns.map((c) => (
-                  <td className="kern-table__cell" key={c}>{cell(f.attributes[c])}</td>
-                ))}
+            {visibleFeatures.map((f, i) => (
+              <tr
+                className="kern-table__row"
+                key={oidField ? String(f.attributes[oidField.name]) : `${currentPage}-${i}`}
+              >
+                {columns.map((c) =>
+                  oidField?.name === c ? (
+                    <th
+                      className={`kern-table__cell${
+                        isNumericField(fieldsByName.get(c)) ? " kern-table__cell--numeric" : ""
+                      } table__identity`}
+                      scope="row"
+                      key={c}
+                    >
+                      {formatCell(f.attributes[c], fieldsByName.get(c), c)}
+                    </th>
+                  ) : (
+                    <td
+                      className={`kern-table__cell${
+                        isNumericField(fieldsByName.get(c)) ? " kern-table__cell--numeric" : ""
+                      }`}
+                      key={c}
+                    >
+                      {formatCell(f.attributes[c], fieldsByName.get(c), c)}
+                    </td>
+                  ),
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {pageCount > 1 && (
+        <nav className="table-pagination" aria-label={t("pagination.label")}>
+          <KernButton
+            type="button"
+            variant="tertiary"
+            icon="arrow-back"
+            label={t("pagination.previous")}
+            disabled={currentPage === 1}
+            onClick={() => setPage(currentPage - 1)}
+          />
+          <span className="kern-body kern-body--small">
+            {t("pagination.status", {
+              page: currentPage,
+              pages: pageCount,
+              from: (currentPage - 1) * pageSize + 1,
+              to: Math.min(currentPage * pageSize, result.features.length),
+              total: result.features.length,
+            })}
+          </span>
+          <KernButton
+            type="button"
+            variant="tertiary"
+            icon="arrow-forward"
+            label={t("pagination.next")}
+            disabled={currentPage === pageCount}
+            onClick={() => setPage(currentPage + 1)}
+          />
+        </nav>
+      )}
     </>
   );
 }

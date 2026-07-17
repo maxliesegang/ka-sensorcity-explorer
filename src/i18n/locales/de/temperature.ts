@@ -2,13 +2,13 @@ export default {
   badge: "Stadtklima",
   heading: "Wie warm ist es gerade in Karlsruhe?",
   intro:
-    "Eine Live-Temperaturkarte von Karlsruhe: Jede Fläche wird nach ihrem nächstgelegenen Sensor eingefärbt, sodass warme und kühle Stellen sofort auffallen. Die Farben vergleichen die Sensoren untereinander zum aktuellen Zeitpunkt — am rötesten ist es am wärmsten, am blausten am kühlsten.",
+    "Warme und kühle Orte auf einen Blick. Jede Fläche nutzt den nächstgelegenen aktuellen Sensor; Rot ist im Vergleich wärmer, Blau kühler.",
   introLinkPrefix: "Lieber alle Sensoren sehen? ",
   introLink: "Vollständige Sensorkarte öffnen",
-  canvasAria: "Fläche der Temperaturkarte",
+  canvasAria: "Temperaturkarte",
   mapAria: "Temperaturkarte von Karlsruhe",
   emptyToMap:
-    "Derzeit keine kürzlich aktualisierten Temperatursensoren zum Anzeigen.",
+    "Derzeit sind keine aktuellen Temperaturmesswerte verfügbar.",
   status: {
     loading: "Sensoren werden geladen …",
     error: "Die Kartendaten konnten nicht geladen werden.",
@@ -23,9 +23,9 @@ export default {
     cooler: "Kühler",
     warmer: "Wärmer",
     caption_one:
-      "Jede Fläche ist nach ihrem nächstgelegenen kürzlich aktualisierten Sensor eingefärbt ({{count}} insgesamt).",
+      "Jede Fläche nutzt den nächstgelegenen aktuellen Sensor ({{count}} insgesamt).",
     caption_other:
-      "Jede Fläche ist nach ihrem nächstgelegenen kürzlich aktualisierten Sensor eingefärbt ({{count}} insgesamt).",
+      "Jede Fläche nutzt den nächstgelegenen aktuellen Sensor ({{count}} insgesamt).",
   },
   popup: {
     viewDetails: "Details anzeigen",
@@ -35,7 +35,7 @@ export default {
     badge: "Stadt + Community",
     heading: "Live-Temperaturen in ganz Karlsruhe",
     intro:
-      "Eine Live-Temperaturkarte, die das städtische SensorCity-Netz mit nahegelegenen Bürgerstationen von openSenseMap und sensor.community verbindet, damit das Feld überall dort gefüllt ist, wo gemessen wird.",
+      "Live-Messwerte aus dem städtischen SensorCity-Netz und nahegelegenen Stationen von openSenseMap und sensor.community vergleichen.",
     introLinkPrefix: "Lieber nur das Stadtnetz? ",
     introLink: "Temperaturkarte nur mit Stadtsensoren öffnen",
     provider: {
@@ -47,7 +47,7 @@ export default {
     providerBreakdown:
       "{{sensorcity}} Stadt · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
     communityUnavailable:
-      "Einige Community-Sensordaten sind derzeit nicht verfügbar; angezeigt wird, was geladen wurde.",
+      "Einige Community-Daten sind nicht verfügbar; geladene Messwerte werden angezeigt.",
     attribution:
       "Community-Messwerte über openSenseMap (opensensemap.org) und sensor.community, beide lizenziert unter CC BY-SA 4.0.",
   },
@@ -75,18 +75,18 @@ export default {
   insights: {
     heading: "Temperatur-Verlaufsanalyse",
     intro:
-      "Wie sich die Temperatursensoren von Karlsruhe im gesamten vorgehaltenen Archiv vergleichen.",
+      "Karlsruhes Temperatursensoren im verfügbaren Archiv vergleichen.",
     selectedArchiveTime: "Gewählter Archivzeitpunkt",
     empty: "Derzeit ist kein Temperatur-Archiv verfügbar.",
     noCurrent:
-      "Für einen aktuellen Vergleich werden mindestens zwei kürzlich aktualisierte Temperaturwerte benötigt.",
+      "Für einen Live-Vergleich sind mindestens zwei aktuelle Messwerte nötig.",
     live: {
       heading: "Live-Temperaturstatistik",
       intro:
-        "Ein direkter Vergleich der Temperatursensoren, die innerhalb der letzten Stunde aktualisiert wurden.",
+        "Sensoren vergleichen, die in der letzten Stunde aktualisiert wurden.",
     },
     cta: {
-      hint: "Für diese Verlaufsanalyse wird der gesamte vorgehaltene Verlauf jedes Temperatursensors abgerufen, das kann einige Sekunden dauern.",
+      hint: "Dies lädt das gesamte verfügbare Archiv aller Temperatursensoren und kann einige Sekunden dauern.",
       button: "Verlaufsanalyse laden",
     },
     kpi: {
@@ -100,7 +100,7 @@ export default {
     volatile: {
       label: "Schwankungsreichster Sensor",
       body:
-        "{{name}} schwankt am stärksten, mit einer historischen Spanne von {{range}} (von {{min}} bis {{max}}).",
+        "{{name}} hat die größte historische Spanne: {{range}} ({{min}} bis {{max}}).",
     },
     tabs: {
       label: "Ansichten der Temperatur-Verlaufsanalyse",
@@ -109,7 +109,9 @@ export default {
       spread: "Spannentrend",
     },
     table: {
-      caption: "Temperaturvergleich pro Sensor",
+      caption: "Temperaturvergleich nach Sensor, in Grad Celsius",
+      unitContext: "Alle Werte sind in °C angegeben. Horizontal scrollen, um alle Spalten zu vergleichen.",
+      scrollLabel: "Horizontal scrollbares Temperatur-Ranking pro Sensor",
       sensor: "Sensor",
       now: "Jetzt",
       min: "Min",
@@ -118,7 +120,7 @@ export default {
       range: "Spanne",
       vsCity: "vs. Stadt-Ø",
       sortBy: "Nach {{column}} sortieren",
-      note: "„vs. Stadt-Ø“ ist der aktuelle Messwert jedes Sensors minus dem aktuellen Stadtdurchschnitt ({{value}}); ein positiver Wert bedeutet wärmer als der Durchschnitt.",
+      note: "„vs. Stadt-Ø“ vergleicht jeden aktuellen Messwert mit dem aktuellen Stadtdurchschnitt ({{value}}). Positive Werte sind wärmer.",
     },
     spreadChart: {
       label: "Stadtweite Temperaturspanne im Zeitverlauf",
@@ -126,9 +128,9 @@ export default {
     historyMap: {
       heading: "Historische Temperaturkarte",
       intro:
-        "Die stadtweite Voronoi-Temperaturfläche in {{hours}}-Stunden-Schritten aus dem Archiv abspielen.",
+        "Die Temperaturkarte in {{hours}}-Stunden-Schritten aus dem Archiv abspielen.",
       empty:
-        "Für das vorgehaltene Temperaturarchiv sind keine historischen Kartenbilder verfügbar.",
+        "Im Archiv sind keine historischen Kartenansichten verfügbar.",
       mapAria: "Historische Temperatur-Voronoi-Karte von Karlsruhe",
       sliderLabel: "Archivzeitpunkt",
       status:
@@ -138,9 +140,9 @@ export default {
       baselineStatus_other:
         "{{date}}: Eingefärbt nach Abweichung zu {{name}} ({{count}} Sensoren).",
       legendCaption_one:
-        "Jede Fläche ist nach ihrem nächstgelegenen Sensor in diesem {{hours}}-Stunden-Archivfenster eingefärbt ({{count}} Sensor).",
+        "Jede Fläche nutzt den nächstgelegenen Sensor in diesem {{hours}}-Stunden-Zeitraum ({{count}} Sensor).",
       legendCaption_other:
-        "Jede Fläche ist nach ihrem nächstgelegenen Sensor in diesem {{hours}}-Stunden-Archivfenster eingefärbt ({{count}} Sensoren).",
+        "Jede Fläche nutzt den nächstgelegenen Sensor in diesem {{hours}}-Stunden-Zeitraum ({{count}} Sensoren).",
     },
   },
 } as const;

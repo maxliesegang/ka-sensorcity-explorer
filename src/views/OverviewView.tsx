@@ -36,7 +36,7 @@ export function OverviewView() {
 const QUICK_LINKS = [
   { to: "/map", icon: "visibility", key: "map" },
   { to: "/sensors", icon: "checklist", key: "sensors" },
-  { to: "/query", icon: "search", key: "query" },
+  { to: "/temperature", icon: "visibility", key: "temperature" },
 ] satisfies Array<{ to: string; icon: KernIconType; key: string }>;
 
 function PulseDashboard({ sensors }: { sensors: Sensor[] }) {
@@ -130,7 +130,7 @@ function PulseDashboard({ sensors }: { sensors: Sensor[] }) {
                 : "—"}
             </span>
             <span className="signal-card__label kern-body kern-body--small">
-              {t("latestValue")} ·{" "}
+              {t("latestIndividualValue")} ·{" "}
               {primary ? tc(measurementLabelKey(primary.field)) : t("currentReading")}
             </span>
             {newest && (

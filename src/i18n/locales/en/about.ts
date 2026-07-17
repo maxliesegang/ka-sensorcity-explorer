@@ -1,24 +1,25 @@
 export default {
   heading: "About this explorer",
   intro:
-    "A compact, read-only interface for Karlsruhe's public SensorCity data: current readings, locations, measurement history and raw ArcGIS queries.",
+    "Explore Karlsruhe's public SensorCity data: current readings, locations, history and advanced queries.",
   whatItDoes: {
     heading: "What it does",
-    body: "The app makes the public SensorCity FeatureServer easier to browse. It groups live sensors by category, places them on a map, exposes a searchable table and shows history charts where archive layers are available.",
+    body: "Find sensors by category, compare them on the map or in a searchable list, and view measurement history where archive data is available.",
     openMap: "Open map",
     openQuery: "Open query explorer",
   },
   design: {
-    heading: "Design",
-    body: "The interface follows KERN UX native CSS: semantic HTML, KERN typography, buttons, forms, tables, alerts and theme tokens. Use the controls below to switch language, or follow the system theme or a fixed light or dark design.",
+    heading: "Display settings",
+    body: "Choose English or German and use your system theme, light mode or dark mode.",
     themeModes: "Theme modes",
     themeModesValue: "System, Light, Dark",
     preference: "Preference",
     preferenceValue: "Saved locally in this browser",
   },
   dataSource: {
+    tableCaption: "SensorCity source layers and their purpose",
     heading: "Data source",
-    body: "Data comes from the City of Karlsruhe SensorCity ArcGIS FeatureServer. This explorer is unofficial and only sends read requests.",
+    body: "The City of Karlsruhe provides the data through its public SensorCity ArcGIS FeatureServer. This unofficial explorer only reads that service and cannot change its data.",
     liveLayer_one: "{{count}} live layer",
     liveLayer_other: "{{count}} live layers",
     archiveLayer_one: "{{count}} archive layer",
@@ -33,11 +34,11 @@ export default {
   },
   privacy: {
     heading: "Privacy and limits",
-    body: "The app does not require an account and does not write to the FeatureServer. Theme preference is stored in local browser storage. Sensor availability, update frequency and history depth depend on the public service.",
+    body: "No account is required. Language and theme preferences are saved in this browser. Sensor availability, update intervals and historical coverage depend on the public data service.",
   },
   experiment: {
     heading: "Experiment",
-    body: "A small experiment that blends the city's sensors with citizen stations from openSenseMap and sensor.community, to see how a denser temperature field would look.",
+    body: "Combine city sensors with public stations from openSenseMap and sensor.community to explore a denser live temperature map.",
     link: "Try the combined live temperature map",
   },
 } as const;

@@ -154,12 +154,11 @@ export function DepthProfileChart({ grid, profile, label, height = 260 }: Props)
 
   return (
     <figure className="chart depth-profile">
-      <div className="chart__header">
+      <div className="chart__header depth-profile__header">
         <KernRadioGroup
-          className="depth-profile__modes"
+          className="depth-profile__modes segmented-toggle"
           name={`${idPrefix}-mode`}
           legend={t("chart.profile.mode.label")}
-          hint={t(`chart.profile.modeHint.${mode}`)}
           selected={mode}
           horizontal
           items={DEPTH_PROFILE_MODES.map((option) => ({
@@ -170,8 +169,10 @@ export function DepthProfileChart({ grid, profile, label, height = 260 }: Props)
           onChange={onModeChange}
         />
         <div className="depth-profile__legend">
-          <span className="kern-label">{t("chart.profile.colorScale")}</span>
-          <div className="depth-profile__legend-scale">
+          <span className="kern-label depth-profile__legend-label">
+            {t("chart.profile.colorScale")}
+          </span>
+          <span className="depth-profile__legend-scale">
             <span className="kern-body kern-body--small">
               {formatProfileValue(model.scale.min, undefined, mode)}
             </span>
@@ -183,11 +184,11 @@ export function DepthProfileChart({ grid, profile, label, height = 260 }: Props)
             <span className="kern-body kern-body--small">
               {formatProfileValue(model.scale.max, undefined, mode)}
             </span>
-          </div>
-          <span className="kern-body kern-body--small kern-body--muted">
-            {mode === "development"
-              ? `Δ ${profile.unit || t("chart.value")}`
-              : profile.unit || t("chart.value")}
+            <span className="kern-body kern-body--small kern-body--muted depth-profile__legend-unit">
+              {mode === "development"
+                ? `Δ ${profile.unit || t("chart.value")}`
+                : profile.unit || t("chart.value")}
+            </span>
           </span>
         </div>
       </div>
@@ -227,36 +228,33 @@ export function DepthProfileChart({ grid, profile, label, height = 260 }: Props)
         )}
       </figcaption>
 
-      {(mode === "development" ||
-        model.interpolatedColumns.length > 0 ||
-        model.hasGaps) && (
-          <div className="depth-profile__notes">
-            {mode === "development" && (
+      <p className="depth-profile__hint kern-body kern-body--small kern-body--muted">
+        {t(`chart.profile.modeHint.${mode}`)}
+      </p>
+
+      {(model.interpolatedColumns.length > 0 || model.hasGaps) && (
+        <div className="depth-profile__notes">
+          {model.interpolatedColumns.length > 0 && (
+            <span className="depth-profile__legend-note">
+              <span
+                className="depth-profile__filled-swatch"
+                aria-hidden="true"
+              />
               <span className="kern-body kern-body--small kern-body--muted">
-                {t("chart.profile.medianNote")}
+                {t("chart.profile.interpolated")}
               </span>
-            )}
-            {model.interpolatedColumns.length > 0 && (
-              <span className="depth-profile__legend-note">
-                <span
-                  className="depth-profile__filled-swatch"
-                  aria-hidden="true"
-                />
-                <span className="kern-body kern-body--small kern-body--muted">
-                  {t("chart.profile.interpolated")}
-                </span>
+            </span>
+          )}
+          {model.hasGaps && (
+            <span className="depth-profile__legend-note">
+              <span className="depth-profile__gap-swatch" aria-hidden="true" />
+              <span className="kern-body kern-body--small kern-body--muted">
+                {t("chart.profile.noReading")}
               </span>
-            )}
-            {model.hasGaps && (
-              <span className="depth-profile__legend-note">
-                <span className="depth-profile__gap-swatch" aria-hidden="true" />
-                <span className="kern-body kern-body--small kern-body--muted">
-                  {t("chart.profile.noReading")}
-                </span>
-              </span>
-            )}
-          </div>
-        )}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="depth-profile__change-summary">
         <span className="kern-label">{t("chart.profile.change24h")}</span>

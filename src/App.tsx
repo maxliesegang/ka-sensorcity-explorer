@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   HashRouter,
@@ -41,6 +41,7 @@ function RouteEffects() {
   const { pathname } = useLocation();
   const { t, i18n } = useTranslation();
   const baseTitle = t("app.title");
+  const previousPath = useRef(pathname);
 
   useEffect(() => {
     const sectionKey = pathname.startsWith("/sensor/")
@@ -49,11 +50,26 @@ function RouteEffects() {
     const section = sectionKey ? t(sectionKey) : "";
     document.title = section ? `${section} · ${baseTitle}` : baseTitle;
 
-    window.scrollTo({ top: 0, left: 0 });
     // Re-run on language change so the title stays localized.
   }, [pathname, t, baseTitle, i18n.language]);
 
-  return null;
+  useEffect(() => {
+    if (previousPath.current === pathname) return;
+    previousPath.current = pathname;
+    window.scrollTo({ top: 0, left: 0 });
+    document.getElementById("main")?.focus({ preventScroll: true });
+  }, [pathname]);
+
+  const sectionKey = pathname.startsWith("/sensor/")
+    ? "titles.sensorDetail"
+    : TITLE_KEYS[pathname];
+  const section = sectionKey ? t(sectionKey) : baseTitle;
+
+  return (
+    <div className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+      {t("nav.routeChanged", { section })}
+    </div>
+  );
 }
 
 function storedThemeMode(): ThemeMode {

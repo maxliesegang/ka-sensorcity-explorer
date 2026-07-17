@@ -380,7 +380,7 @@ function DepthProfileSection({
         </div>
         {profiles.length > 1 && (
           <KernRadioGroup
-            className="depth-profile-picker"
+            className="depth-profile-picker segmented-toggle"
             name={`${pickerId}-quantity`}
             legend={t("profile.quantity")}
             selected={profile.key}
@@ -450,6 +450,9 @@ function RawAttributes({ sensor }: { sensor: Sensor }) {
       </div>
       <div className="kern-table-responsive table-scroll">
         <table className="kern-table kern-table--striped kern-table--small">
+          <caption className="visually-hidden">
+            {t("rawTableCaption", { name: sensor.name })}
+          </caption>
           <thead>
             <tr className="kern-table__row">
               <th className="kern-table__header" scope="col">{t("rawField")}</th>
@@ -459,7 +462,7 @@ function RawAttributes({ sensor }: { sensor: Sensor }) {
           <tbody className="kern-table__body">
             {rows.map(([key, value]) => (
               <tr className="kern-table__row" key={key}>
-                <td className="kern-table__cell mono">{key}</td>
+                <th className="kern-table__cell mono" scope="row">{key}</th>
                 <td className="kern-table__cell">
                   {TIMESTAMP_FIELDS.has(key) && typeof value === "number"
                     ? formatTimestamp(value)

@@ -2,7 +2,7 @@ export default {
   badge: "Offene Live-Daten",
   heading: "Karlsruhe im Überblick",
   intro:
-    "Aktuelle Messwerte aus dem SensorCity-Netz der Stadt: Wetter, Regen, Boden, Abfall und Wasser.",
+    "Aktuelle Messwerte zu Wetter, Regen, Boden und Wasser aus dem städtischen SensorCity-Netz.",
   summaryAria: "Netzübersicht",
   kpi: {
     liveSensors: "Live-Sensoren",
@@ -12,6 +12,7 @@ export default {
   categoriesHeading: "Sensorkategorien",
   currentReading: "Aktueller Messwert",
   latestValue: "Aktuellster Wert",
+  latestIndividualValue: "Neuester einzelner Messwert",
   filterSensors: "Sensoren filtern",
   exploreAria: "Erkunden",
   sensorCount_one: "{{count}} Sensor",
@@ -20,8 +21,8 @@ export default {
   links: {
     map: { title: "Karte", hint: "Sensororte ansehen" },
     sensors: { title: "Sensoren", hint: "Suchen und filtern" },
-    query: { title: "Abfrage", hint: "FeatureServer prüfen" },
+    temperature: { title: "Temperatur", hint: "Warme und kühle Orte vergleichen" },
   },
   newestReading: "Neuester Messwert",
-  empty: "Es wurden keine Live-Sensoren gemeldet.",
+  empty: "Derzeit sind keine Live-Sensordaten verfügbar.",
 } as const;

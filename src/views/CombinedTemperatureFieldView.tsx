@@ -237,7 +237,7 @@ export function CombinedTemperatureFieldView() {
       <div className="view-header view-header--compact">
         <div className="view-header__lead">
           <KernBadge label={t("combined.badge")} variant="info" />
-          <h1 className="kern-heading-large">{t("combined.heading")}</h1>
+          <h1 className="kern-heading-medium">{t("combined.heading")}</h1>
         </div>
         <p className="kern-body kern-body--muted view-header__intro">
           {t("combined.intro")} {t("combined.introLinkPrefix")}
@@ -299,7 +299,7 @@ export function CombinedTemperatureFieldView() {
         <div
           className="map"
           ref={containerRef}
-          role="application"
+          role="region"
           aria-label={t("mapAria")}
         />
 

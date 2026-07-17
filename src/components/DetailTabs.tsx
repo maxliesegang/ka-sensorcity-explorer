@@ -29,7 +29,11 @@ export function DetailTabs<Id extends string>({
   function select(id: Id, focus = false) {
     onActiveIdChange(id);
     if (focus) {
-      window.requestAnimationFrame(() => buttonRefs.current[id]?.focus());
+      window.requestAnimationFrame(() => {
+        const button = buttonRefs.current[id];
+        button?.focus();
+        button?.scrollIntoView({ block: "nearest", inline: "nearest" });
+      });
     }
   }
 

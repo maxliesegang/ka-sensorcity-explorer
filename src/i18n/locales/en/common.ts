@@ -17,6 +17,10 @@ export default {
     sensors: "Sensors",
     query: "Query",
     about: "About",
+    more: "More",
+    moreAria: "More navigation options",
+    secondary: "Data tools and information",
+    routeChanged: "{{section}} page loaded",
   },
   titles: {
     sensorDetail: "Sensor detail",
@@ -35,14 +39,14 @@ export default {
   },
   status: {
     loading: "Loading…",
-    errorTitle: "Something went wrong",
-    empty: "No data.",
+    errorTitle: "Could not load data",
+    empty: "No data available.",
   },
   footer: {
-    builtWith: "Built for exploration with KERN UX. Data:",
+    builtWith: "Built with KERN UX. Data:",
     source: "City of Karlsruhe SensorCity",
     opensNewWindow: " (opens in a new window)",
-    suffix: " (unofficial). Read-only ArcGIS FeatureServer.",
+    suffix: " — unofficial, read-only ArcGIS service.",
   },
   time: {
     notAvailable: "—",
@@ -58,8 +62,8 @@ export default {
   chart: {
     measurement: "measurement",
     value: "value",
-    pointsOver: "{{count}} points over {{span}}",
-    stepHint: "use arrow keys to step through values",
+    pointsOver: "{{count}} readings · {{span}}",
+    stepHint: "Arrow keys move between values",
     data: "Chart data",
     time: "Time",
     valueHeader: "Value",
@@ -70,7 +74,7 @@ export default {
       week_one: "{{count}} week",
       week_other: "{{count}} weeks",
     },
-    desc: "Line chart of {{label}} over {{span}}: {{count}} points ranging from {{min}} to {{max}}, {{from}} to {{to}}.",
+    desc: "{{label}} line chart: {{count}} readings from {{min}} to {{max}}, {{from}} to {{to}}.",
     pointAt: "{{time}}: {{value}}",
     profile: {
       // Doubles as the legend label for neutral cells, so it is capitalized;
@@ -83,20 +87,19 @@ export default {
       interpolatedValue: "{{value}} (interpolated)",
       reading: "level {{band}}: {{value}}",
       span: "{{from}} to {{to}}",
-      stepHint: "use arrow keys to step through time",
+      stepHint: "Arrow keys move through time",
       summary: "{{bands}} depth levels · {{count}} readings · {{span}}",
       mode: {
-        label: "Profile display",
-        absolute: "Readings",
-        development: "Variation",
+        label: "Profile view",
+        absolute: "Values",
+        development: "Change",
       },
       modeHint: {
         absolute: "Colour shows the reading at each depth level.",
         development: "Colour shows variation from each depth level's typical value.",
       },
       colorScale: "Colour scale",
-      change24h: "Change over the latest 24 hours",
-      medianNote: "Typical value: median for each depth level",
+      change24h: "Change in the last 24 hours",
       descAbsolute: "Heatmap of {{label}}: {{bands}} depth levels from {{count}} readings, values ranging from {{min}} to {{max}}, {{from}} to {{to}}. Colour shows the reading; deeper colour means a higher value.",
       descDevelopment: "Heatmap of change in {{label}}: {{bands}} depth levels from {{count}} readings, deviations from each level's median ranging from {{min}} to {{max}}, {{from}} to {{to}}. Colour shows the direction and size of change.",
     },
@@ -142,20 +145,20 @@ export default {
   layers: {
     "1": {
       label: "Live readings",
-      description: "Latest value per sensor (no history). Geolocated points.",
+      description: "Latest geolocated reading per sensor; no history.",
     },
     "2": {
       label: "Weather archive",
       description:
-        "Temperature, humidity, pressure, particulate matter, UV, radiation, precipitation and wind. ~5 weeks rolling.",
+        "Rolling ~5-week weather history.",
     },
     "3": {
       label: "Rain gauge archive",
-      description: "Tipping-bucket rain gauge clicks. ~2 months rolling.",
+      description: "Rolling ~2-month rain-gauge history.",
     },
     "4": {
       label: "Soil sensor archive",
-      description: "Soil moisture and temperature. ~2 months rolling.",
+      description: "Rolling ~2-month soil moisture and temperature history.",
     },
   },
   fallback: {

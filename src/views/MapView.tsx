@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { fetchSensors } from "../api/sensorcity";
 import { AsyncBoundary } from "../components/Status";
+import { CollapsibleFilters } from "../components/CollapsibleFilters";
 import {
   CATEGORIES,
   getCategoryColor,
@@ -171,7 +172,7 @@ export function MapView() {
     <div>
       <div className="view-header view-header--wide">
         <KernBadge label={t("badge")} variant="info" />
-        <h1 className="kern-heading-large">{t("heading")}</h1>
+        <h1 className="kern-heading-medium">{t("heading")}</h1>
         <p className="kern-body kern-body--muted">
           {t("intro")} {t("introLinkPrefix")}
           <Link className="kern-link" to="/sensors">
@@ -235,11 +236,19 @@ export function MapView() {
             }
 
             return (
-              <fieldset className="map-filters">
-                <legend className="kern-label map-filters__legend">
-                  {t("filtersLegend")}
-                </legend>
-                <div className="map-filter-grid">
+              <CollapsibleFilters
+                className="map-filter-disclosure"
+                summaryLabel={t("filtersLegend")}
+                summaryMeta={t("categoriesActive", {
+                  enabled: visibleCategoryCount,
+                  total: CATEGORIES.length,
+                })}
+              >
+                <fieldset className="map-filters">
+                  <legend className="kern-label map-filters__legend">
+                    {t("filtersLegend")}
+                  </legend>
+                  <div className="map-filter-grid">
                   {CATEGORIES.map((category) => {
                     const label = tc(categoryLabelKey(category.key));
                     const isVisible = visibleCategories[category.key] ?? false;
@@ -279,8 +288,9 @@ export function MapView() {
                       </div>
                     );
                   })}
-                </div>
-              </fieldset>
+                  </div>
+                </fieldset>
+              </CollapsibleFilters>
             );
           }}
         </AsyncBoundary>
@@ -288,11 +298,15 @@ export function MapView() {
         <div className="result-bar result-bar--compact" role="status" aria-live="polite">
           <span className="kern-body kern-body--small">{mapStatus}</span>
         </div>
+        <p id="sensor-map-help" className="map-help kern-body kern-body--small kern-body--muted">
+          {t("mapHelp")} <Link className="kern-link" to="/sensors">{t("introLink")}</Link>.
+        </p>
         <div
           className="map"
           ref={containerRef}
-          role="application"
+          role="region"
           aria-label={t("mapAria")}
+          aria-describedby="sensor-map-help"
         />
       </section>
 

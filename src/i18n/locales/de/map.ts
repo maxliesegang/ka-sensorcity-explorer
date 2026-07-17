@@ -2,10 +2,10 @@ export default {
   badge: "Räumlicher Explorer",
   heading: "Sensorkarte",
   intro:
-    "Live-Sensorstandorte in ganz Karlsruhe, nach Kategorie eingefärbt. Schalten Sie Kategorien um, setzen Sie die Stadtansicht zurück und öffnen Sie Marker für Detaildiagramme.",
+    "Finden Sie Live-Sensoren in Karlsruhe nach Kategorie. Wählen Sie einen Marker für Messwerte und Diagramme.",
   introLinkPrefix: "Lieber eine Liste? ",
   introLink: "Alle Sensoren durchsuchen",
-  controlsAria: "Kartensteuerung und Kartenfläche",
+  controlsAria: "Karte und Steuerung",
   visibleSensors: "sichtbare Sensoren",
   categoriesActive: "{{enabled}} von {{total}} Kategorien aktiv",
   liveSensorsLoaded: "{{count}} Live-Sensoren geladen",
@@ -17,6 +17,7 @@ export default {
   only: "Nur",
   onlyAria: "Nur {{category}}-Sensoren anzeigen",
   mapAria: "Karte der Karlsruher Sensoren",
+  mapHelp: "Zoomen und verschieben Sie die Karte oder nutzen Sie die Liste:",
   legendAria: "Kategoriefarben",
   status: {
     loading: "Sensoren werden geladen …",

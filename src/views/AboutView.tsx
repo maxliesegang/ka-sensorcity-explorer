@@ -28,7 +28,7 @@ export function AboutView({
   return (
     <section className="stack">
       <div className="view-header">
-        <h1 className="kern-heading-large">{t("heading")}</h1>
+        <h1 className="kern-heading-medium">{t("heading")}</h1>
         <p className="kern-body kern-body--muted">{t("intro")}</p>
       </div>
 
@@ -155,6 +155,7 @@ export function AboutView({
         </div>
         <div className="kern-table-responsive table-scroll">
           <table className="kern-table kern-table--striped kern-table--small">
+            <caption className="visually-hidden">{t("dataSource.tableCaption")}</caption>
             <thead>
               <tr className="kern-table__row">
                 <th className="kern-table__header kern-table__header--numeric" scope="col">
@@ -197,12 +198,12 @@ export function AboutView({
         </div>
       </section>
 
-      <section className="surface-section">
+      <section className="surface-section surface-section--plain">
         <h2 className="kern-heading-small">{t("privacy.heading")}</h2>
         <p className="kern-body">{t("privacy.body")}</p>
       </section>
 
-      <section className="surface-section">
+      <section className="surface-section surface-section--plain">
         <h2 className="kern-heading-small">{t("experiment.heading")}</h2>
         <p className="kern-body">{t("experiment.body")}</p>
         <p className="kern-body">

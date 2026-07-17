@@ -1,15 +1,18 @@
 export default {
-  badge: "Filter sensors",
+  badge: "Find sensors",
   heading: "Sensors",
   intro:
-    "Browse every live station as scannable cards or a dense table. Select one to see current readings, history and raw attributes.",
+    "Find a sensor, compare its latest reading and open it for history, location and raw data.",
   empty: "No sensors found.",
   noMatch: "No sensors match these filters.",
   filtersAria: "Sensor filters",
+  filtersLabel: "Filters and sorting",
+  filtersActive_one: "{{count}} active filter",
+  filtersActive_other: "{{count}} active filters",
   stats: {
     matching: "matching sensors",
     mapped: "mapped",
-    freshest: "freshest reading",
+    freshest: "latest reading",
   },
   search: {
     label: "Search by name",
@@ -34,11 +37,19 @@ export default {
   allCategories: "All",
   result_one: "{{count}} sensor",
   result_other: "{{count}} sensors",
+  tableCaption: "{{count}} filtered sensors",
   inCategory: " in {{category}}",
   view: {
     label: "View",
     cards: "Cards",
     table: "Table",
+  },
+  pagination: {
+    label: "Sensor result pages",
+    pageSize: "Results per page",
+    status: "{{from}}–{{to}} of {{total}} · Page {{page}} of {{pages}}",
+    previous: "Previous page",
+    next: "Next page",
   },
   columns: {
     name: "Name",
@@ -48,7 +59,7 @@ export default {
   },
   badges: {
     mapped: "Mapped",
-    noMap: "No map",
+    noMap: "No location",
   },
   currentValue: "Current value",
   openDetails: "Open details",

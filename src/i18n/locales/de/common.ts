@@ -16,6 +16,10 @@ export default {
     sensors: "Sensoren",
     query: "Abfrage",
     about: "Info",
+    more: "Mehr",
+    moreAria: "Weitere Navigationsziele",
+    secondary: "Datenwerkzeuge und Informationen",
+    routeChanged: "Seite {{section}} geladen",
   },
   titles: {
     sensorDetail: "Sensordetails",
@@ -34,14 +38,14 @@ export default {
   },
   status: {
     loading: "Wird geladen…",
-    errorTitle: "Etwas ist schiefgelaufen",
-    empty: "Keine Daten.",
+    errorTitle: "Daten konnten nicht geladen werden",
+    empty: "Keine Daten verfügbar.",
   },
   footer: {
-    builtWith: "Zum Erkunden gebaut mit KERN UX. Daten:",
+    builtWith: "Erstellt mit KERN UX. Daten:",
     source: "Stadt Karlsruhe SensorCity",
     opensNewWindow: " (öffnet in einem neuen Fenster)",
-    suffix: " (inoffiziell). Schreibgeschützter ArcGIS FeatureServer.",
+    suffix: " — inoffizieller, schreibgeschützter ArcGIS-Dienst.",
   },
   time: {
     notAvailable: "—",
@@ -57,8 +61,8 @@ export default {
   chart: {
     measurement: "Messwert",
     value: "Wert",
-    pointsOver: "{{count}} Punkte über {{span}}",
-    stepHint: "mit den Pfeiltasten durch die Werte blättern",
+    pointsOver: "{{count}} Messwerte · {{span}}",
+    stepHint: "Pfeiltasten wechseln zwischen Werten",
     data: "Diagrammdaten",
     time: "Zeit",
     valueHeader: "Wert",
@@ -69,7 +73,7 @@ export default {
       week_one: "{{count}} Woche",
       week_other: "{{count}} Wochen",
     },
-    desc: "Liniendiagramm von {{label}} über {{span}}: {{count}} Punkte von {{min}} bis {{max}}, {{from}} bis {{to}}.",
+    desc: "Liniendiagramm für {{label}}: {{count}} Messwerte von {{min}} bis {{max}}, {{from}} bis {{to}}.",
     pointAt: "{{time}}: {{value}}",
     profile: {
       noReading: "Kein Messwert",
@@ -77,12 +81,12 @@ export default {
       interpolatedValue: "{{value}} (interpoliert)",
       reading: "Stufe {{band}}: {{value}}",
       span: "{{from}} bis {{to}}",
-      stepHint: "mit den Pfeiltasten durch die Zeit blättern",
+      stepHint: "Pfeiltasten wechseln durch die Zeit",
       summary: "{{bands}} Tiefenstufen · {{count}} Messungen · {{span}}",
       mode: {
-        label: "Darstellung des Tiefenprofils",
-        absolute: "Messwerte",
-        development: "Abweichung",
+        label: "Profilansicht",
+        absolute: "Werte",
+        development: "Änderung",
       },
       modeHint: {
         absolute: "Die Farbe zeigt den Messwert in jeder Tiefenstufe.",
@@ -90,8 +94,7 @@ export default {
           "Die Farbe zeigt die Abweichung vom typischen Wert jeder Tiefenstufe.",
       },
       colorScale: "Farbskala",
-      change24h: "Änderung in den letzten 24 Stunden",
-      medianNote: "Typischer Wert: Median der jeweiligen Tiefenstufe",
+      change24h: "Änderung der letzten 24 Stunden",
       descAbsolute: "Heatmap von {{label}}: {{bands}} Stufen aus {{count}} Messungen, Werte von {{min}} bis {{max}}, {{from}} bis {{to}}. Die Farbe zeigt den Messwert; je kräftiger die Farbe, desto höher der Wert.",
       descDevelopment: "Heatmap der Entwicklung von {{label}}: {{bands}} Stufen aus {{count}} Messungen, Abweichungen vom Median jeder Tiefenstufe von {{min}} bis {{max}}, {{from}} bis {{to}}. Die Farbe zeigt Richtung und Stärke der Änderung.",
     },
@@ -134,20 +137,20 @@ export default {
   layers: {
     "1": {
       label: "Live-Messwerte",
-      description: "Aktuellster Wert pro Sensor (keine Historie). Verortete Punkte.",
+      description: "Neuester verorteter Messwert je Sensor; keine Historie.",
     },
     "2": {
       label: "Wetterarchiv",
       description:
-        "Temperatur, Luftfeuchtigkeit, Luftdruck, Feinstaub, UV, Strahlung, Niederschlag und Wind. ~5 Wochen rollierend.",
+        "Rollierende Wetterhistorie von etwa 5 Wochen.",
     },
     "3": {
       label: "Regenschreiber-Archiv",
-      description: "Impulse von Wippen-Regenschreibern. ~2 Monate rollierend.",
+      description: "Rollierende Regenschreiber-Historie von etwa 2 Monaten.",
     },
     "4": {
       label: "Bodensensor-Archiv",
-      description: "Bodenfeuchte und -temperatur. ~2 Monate rollierend.",
+      description: "Rollierende Bodenfeuchte- und Temperaturhistorie von etwa 2 Monaten.",
     },
   },
   fallback: {

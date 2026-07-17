@@ -224,7 +224,7 @@ export function TemperatureFieldView() {
       <div className="view-header view-header--compact">
         <div className="view-header__lead">
           <KernBadge label={t("badge")} variant="info" />
-          <h1 className="kern-heading-large">{t("heading")}</h1>
+          <h1 className="kern-heading-medium">{t("heading")}</h1>
         </div>
         <p className="kern-body kern-body--muted view-header__intro">
           {t("intro")} {t("introLinkPrefix")}
@@ -274,7 +274,7 @@ export function TemperatureFieldView() {
         <div
           className="map"
           ref={containerRef}
-          role="application"
+          role="region"
           aria-label={t("mapAria")}
         />
 

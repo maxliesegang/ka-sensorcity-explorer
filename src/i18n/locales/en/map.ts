@@ -2,10 +2,10 @@ export default {
   badge: "Spatial explorer",
   heading: "Sensor map",
   intro:
-    "Live sensor locations across Karlsruhe, colored by category. Toggle categories, reset the city view and open markers for detail charts.",
+    "Find live sensors across Karlsruhe by category. Select a marker to view its readings and charts.",
   introLinkPrefix: "Prefer a list? ",
   introLink: "Browse all sensors",
-  controlsAria: "Map controls and canvas",
+  controlsAria: "Map and controls",
   visibleSensors: "visible sensors",
   categoriesActive: "{{enabled}} of {{total}} categories active",
   liveSensorsLoaded: "{{count}} live sensors loaded",
@@ -17,6 +17,7 @@ export default {
   only: "Only",
   onlyAria: "Show only {{category}} sensors",
   mapAria: "Map of Karlsruhe sensors",
+  mapHelp: "Zoom and pan the map, or use the list instead:",
   legendAria: "Category colours",
   status: {
     loading: "Loading sensors...",

@@ -2,12 +2,12 @@ export default {
   badge: "City climate",
   heading: "How warm is Karlsruhe right now?",
   intro:
-    "A live temperature map of Karlsruhe, with each area coloured by its nearest sensor so warm and cool spots stand out at a glance. Colours rank the sensors against each other right now — reddest is warmest, bluest coolest.",
+    "See warm and cool areas at a glance. Each area uses its nearest recent sensor; red is warmer and blue cooler relative to the other sensors.",
   introLinkPrefix: "Looking for every sensor instead? ",
   introLink: "Open the full sensor map",
-  canvasAria: "Temperature field canvas",
+  canvasAria: "Temperature map",
   mapAria: "Temperature field map of Karlsruhe",
-  emptyToMap: "No recently updated temperature sensors to show right now.",
+  emptyToMap: "No recent temperature readings are available.",
   status: {
     loading: "Loading sensors…",
     error: "We couldn't load the map data.",
@@ -22,9 +22,9 @@ export default {
     cooler: "Cooler",
     warmer: "Warmer",
     caption_one:
-      "Each area is coloured by its nearest recently updated sensor ({{count}} total).",
+      "Each area uses its nearest recent sensor ({{count}} total).",
     caption_other:
-      "Each area is coloured by its nearest recently updated sensor ({{count}} total).",
+      "Each area uses its nearest recent sensor ({{count}} total).",
   },
   popup: {
     viewDetails: "View details",
@@ -34,7 +34,7 @@ export default {
     badge: "City + community",
     heading: "Live temperatures across Karlsruhe",
     intro:
-      "A live temperature map that blends the city's SensorCity network with nearby openSenseMap and sensor.community citizen stations, so the field is filled in wherever someone is measuring.",
+      "Compare live readings from the city's SensorCity network and nearby openSenseMap and sensor.community stations.",
     introLinkPrefix: "Prefer the city network alone? ",
     introLink: "Open the city-only temperature map",
     provider: {
@@ -46,7 +46,7 @@ export default {
     providerBreakdown:
       "{{sensorcity}} city · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
     communityUnavailable:
-      "Some community sensor data is unavailable right now; showing what loaded.",
+      "Some community data is unavailable; showing the readings that loaded.",
     attribution:
       "Community readings via openSenseMap (opensensemap.org) and sensor.community, both licensed CC BY-SA 4.0.",
   },
@@ -74,18 +74,18 @@ export default {
   insights: {
     heading: "Temperature history analysis",
     intro:
-      "How Karlsruhe's temperature sensors compare across the full retained archive.",
+      "Compare Karlsruhe's temperature sensors across the available archive.",
     selectedArchiveTime: "Selected archive time",
     empty: "No temperature sensor archive is available right now.",
     noCurrent:
-      "At least two recent temperature readings are needed to compare sensors right now.",
+      "At least two recent readings are needed for a live comparison.",
     live: {
       heading: "Live temperature statistics",
       intro:
-        "A direct comparison of temperature sensors updated within the last hour.",
+        "Compare sensors updated within the last hour.",
     },
     cta: {
-      hint: "Building this history analysis fetches the full retained archive for every temperature sensor, so it may take a few seconds.",
+      hint: "This loads the full available archive for every temperature sensor and may take a few seconds.",
       button: "Load history analysis",
     },
     kpi: {
@@ -99,7 +99,7 @@ export default {
     volatile: {
       label: "Most volatile sensor",
       body:
-        "{{name}} swings the most, with a historical range of {{range}} (from {{min}} to {{max}}).",
+        "{{name}} has the widest historical range: {{range}} ({{min}} to {{max}}).",
     },
     tabs: {
       label: "Temperature history views",
@@ -108,7 +108,9 @@ export default {
       spread: "Spread trend",
     },
     table: {
-      caption: "Per-sensor temperature comparison",
+      caption: "Temperature comparison by sensor, in degrees Celsius",
+      unitContext: "All values are in °C. Scroll horizontally to compare every column.",
+      scrollLabel: "Scrollable per-sensor temperature ranking",
       sensor: "Sensor",
       now: "Now",
       min: "Min",
@@ -117,7 +119,7 @@ export default {
       range: "Range",
       vsCity: "vs city avg",
       sortBy: "Sort by {{column}}",
-      note: "“vs city avg” is each sensor's current reading minus the city-wide average right now ({{value}}); a positive value means warmer than average.",
+      note: "“vs city avg” compares each current reading with the current city average ({{value}}). Positive values are warmer.",
     },
     spreadChart: {
       label: "City-wide temperature spread over time",
@@ -125,9 +127,9 @@ export default {
     historyMap: {
       heading: "Historical temperature map",
       intro:
-        "Replay the city-wide Voronoi temperature field in {{hours}}-hour archive steps.",
+        "Replay the temperature map in {{hours}}-hour archive steps.",
       empty:
-        "No historical map frames are available for the retained temperature archive.",
+        "No historical map views are available in the archive.",
       mapAria: "Historical temperature Voronoi map of Karlsruhe",
       sliderLabel: "Archive time",
       status:
@@ -137,9 +139,9 @@ export default {
       baselineStatus_other:
         "{{date}}: Coloured by difference from {{name}} ({{count}} sensors).",
       legendCaption_one:
-        "Each area is coloured by its nearest sensor in this {{hours}}-hour archive bucket ({{count}} sensor).",
+        "Each area uses its nearest sensor in this {{hours}}-hour interval ({{count}} sensor).",
       legendCaption_other:
-        "Each area is coloured by its nearest sensor in this {{hours}}-hour archive bucket ({{count}} sensors).",
+        "Each area uses its nearest sensor in this {{hours}}-hour interval ({{count}} sensors).",
     },
   },
 } as const;

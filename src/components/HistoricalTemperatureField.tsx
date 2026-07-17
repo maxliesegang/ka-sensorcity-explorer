@@ -320,7 +320,7 @@ export function HistoricalTemperatureField({
         <div
           className="map historical-temperature-field__map"
           ref={containerRef}
-          role="application"
+          role="region"
           aria-label={t("insights.historyMap.mapAria")}
         />
 

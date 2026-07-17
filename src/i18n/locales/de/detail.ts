@@ -1,7 +1,7 @@
 export default {
   back: "Zurück",
   notFound: "Sensor nicht gefunden.",
-  heroSubtitle: "Letzter bekannter Messwert aus dem öffentlichen SensorCity-Live-Layer.",
+  heroSubtitle: "Neuester veröffentlichter Messwert von SensorCity.",
   primaryValue: "Primärwert",
   tabs: {
     aria: "Sensor-Detailbereiche",
@@ -12,7 +12,7 @@ export default {
     raw: "Rohdaten",
   },
   currentReadings: "Aktuelle Messwerte",
-  currentIntro: "Live-Werte und Kennungen aus dem neuesten SensorCity-Datensatz.",
+  currentIntro: "Messwerte und Kennungen aus dem neuesten veröffentlichten Datensatz.",
   lastMeasuredAt: "Zuletzt gemessen {{date}}",
   facts: {
     lastMeasured: "Zuletzt gemessen",
@@ -21,18 +21,16 @@ export default {
   },
   location: {
     heading: "Standort",
-    subtitle:
-      "Alle Live-Sensoren werden angezeigt, dieser Sensor ist auf der Karte zentriert.",
+    subtitle: "Die Karte zentriert diesen Sensor und zeigt alle verorteten Sensoren.",
     noCoordinates:
-      "Dieser Sensor hat keine Koordinaten, daher zeigt die Karte alle verorteten Sensoren.",
+      "Für diesen Sensor fehlen Koordinaten. Die Karte zeigt stattdessen alle verorteten Sensoren.",
     focusSensor: "Sensor fokussieren",
     fitAll: "Alle einpassen",
-    mapAria: "Karte mit {{name}} und allen Live-Sensoren",
+    mapAria: "Karte mit {{name}} und allen verorteten Sensoren",
     status: {
-      loading: "Alle Live-Sensoren werden geladen...",
-      error:
-        "Nur dieser Sensor wird angezeigt; alle Sensoren konnten nicht geladen werden.",
-      showing: "{{count}} verortete Live-Sensoren werden angezeigt.",
+      loading: "Sensorstandorte werden geladen...",
+      error: "Weitere Sensorstandorte konnten nicht geladen werden.",
+      showing: "{{count}} verortete Sensoren werden angezeigt.",
     },
     popup: {
       lastReading: "Letzter Messwert:",
@@ -44,25 +42,26 @@ export default {
   measurement: "Messgröße",
   historySource: "Quelle:",
   historySourceLabel: "Quelle: {{source}}",
-  noArchiveNote: "Nur der Live-Messwert ist verfügbar (kein Verlaufsarchiv).",
+  noArchiveNote: "Nur der neueste Messwert ist verfügbar; für diesen Sensor gibt es kein Verlaufsarchiv.",
   noHistory: "Kein Verlauf verfügbar",
   profile: {
     heading: "Tiefenprofil",
     intro:
-      "Die Farbe zeigt, wie sich die Messwerte in den Tiefenstufen über die Zeit verändern. Stufe 0 liegt der Oberfläche am nächsten.",
+      "Vergleichen Sie Messwerte nach Tiefe und Zeit. Stufe 0 liegt der Oberfläche am nächsten.",
     quantity: "Messgröße",
     tableCaption:
       "Stufe 0 liegt der Oberfläche am nächsten; genaue Tiefen werden nicht veröffentlicht.",
   },
   rawAttributes: "Rohdaten",
-  rawIntro: "Nicht leere Originalattribute aus der Live-API-Antwort.",
+  rawIntro: "Nicht leere Originalfelder aus dem neuesten API-Datensatz.",
+  rawTableCaption: "Rohattribute für {{name}}",
   rawField: "Feld",
   rawValue: "Wert",
   analysis: {
     heading: "Verlaufsanalyse",
     kpi: {
       average: "Durchschnitt",
-      averageDetail: "über {{count}} Messwerte",
+      averageDetail: "aus {{count}} Messwerten",
       min: "Minimum",
       max: "Maximum",
       range: "Spannweite",
@@ -78,8 +77,7 @@ export default {
       aria: "Balkendiagramm des durchschnittlichen {{label}} nach Tagesstunde",
       caption:
         "Höchstwert gegen {{peak}}:00 Uhr ({{peakValue}}), Tiefstwert gegen {{trough}}:00 Uhr ({{troughValue}}).",
-      summary:
-        "Durchschnittswerte gruppiert nach Tagesstunde, aus dem vorgehaltenen Verlauf abgeleitet.",
+      summary: "Stündliche Mittelwerte aus dem verfügbaren Verlauf.",
     },
   },
 } as const;

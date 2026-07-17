@@ -15,6 +15,8 @@ const UNIT = "°C";
 const SPREAD_COLOR = "#d62728";
 const LIVE_HEADING_ID = "temp-live-stats-heading";
 const HISTORY_HEADING_ID = "temp-insights-heading";
+const RANKING_CONTEXT_ID = "temp-ranking-context";
+const RANKING_NOTE_ID = "temp-ranking-note";
 type HistoryTab = "map" | "sensors" | "spread";
 
 interface HistoryTabDef {
@@ -271,14 +273,7 @@ function HistoryViews({
 
         {activeTab === "sensors" && (
           <div className="temp-insights-tabs__content">
-            <RankingTable rows={perSensor} />
-            {current && (
-              <p className="kern-body kern-body--small kern-body--muted">
-                {t("insights.table.note", {
-                  value: formatValue(current.mean, UNIT),
-                })}
-              </p>
-            )}
+            <RankingTable rows={perSensor} cityMean={current?.mean ?? null} />
           </div>
         )}
 
@@ -343,8 +338,10 @@ function compareRows(
  */
 const RankingTable = memo(function RankingTable({
   rows,
+  cityMean,
 }: {
   rows: TemperatureSensorStats[];
+  cityMean: number | null;
 }) {
   const { t } = useTranslation("temperature");
   // Rows arrive pre-sorted by current temperature, descending.
@@ -367,10 +364,29 @@ const RankingTable = memo(function RankingTable({
   }
 
   return (
-    <div className="kern-table-responsive table-scroll">
-      <table className="kern-table kern-table--striped kern-table--small">
-        <caption className="visually-hidden">{t("insights.table.caption")}</caption>
-        <thead>
+    <>
+      <p
+        id={RANKING_CONTEXT_ID}
+        className="temp-insights__table-context kern-body kern-body--small kern-body--muted"
+      >
+        {t("insights.table.unitContext")}
+      </p>
+      <div
+        className="kern-table-responsive table-scroll temp-insights__ranking-scroll"
+        role="region"
+        aria-label={t("insights.table.scrollLabel")}
+        tabIndex={0}
+      >
+        <table
+          className="kern-table kern-table--striped kern-table--small table--sticky-first temp-insights__ranking-table"
+          aria-describedby={
+            cityMean == null
+              ? RANKING_CONTEXT_ID
+              : `${RANKING_CONTEXT_ID} ${RANKING_NOTE_ID}`
+          }
+        >
+          <caption className="visually-hidden">{t("insights.table.caption")}</caption>
+          <thead>
           <tr className="kern-table__row">
             {COLUMNS.map((col) => {
               const active = sort.key === col.key;
@@ -401,8 +417,8 @@ const RankingTable = memo(function RankingTable({
               );
             })}
           </tr>
-        </thead>
-        <tbody className="kern-table__body">
+          </thead>
+          <tbody className="kern-table__body">
           {sortedRows.map((row) => (
             <tr className="kern-table__row" key={row.objectId}>
               <th className="kern-table__cell" scope="row">
@@ -428,8 +444,14 @@ const RankingTable = memo(function RankingTable({
               </td>
             </tr>
           ))}
-        </tbody>
-      </table>
-    </div>
+          </tbody>
+        </table>
+      </div>
+      {cityMean != null && (
+        <p id={RANKING_NOTE_ID} className="kern-body kern-body--small kern-body--muted">
+          {t("insights.table.note", { value: formatValue(cityMean, UNIT) })}
+        </p>
+      )}
+    </>
   );
 });

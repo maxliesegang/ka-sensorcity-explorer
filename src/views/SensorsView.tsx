@@ -2,13 +2,14 @@
 // keyboard/screen-reader-friendly counterpart to the map: every sensor is
 // reachable by name without spatial interaction.
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, type CSSProperties } from "react";
 import { KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { fetchSensors } from "../api/sensorcity";
 import { AsyncBoundary, Empty } from "../components/Status";
+import { CollapsibleFilters } from "../components/CollapsibleFilters";
 import {
   CATEGORIES,
   getCategoryColor,
@@ -17,7 +18,7 @@ import {
 } from "../config/layers";
 import { useAsync } from "../hooks/useAsync";
 import type { Sensor } from "../types";
-import { timeAgo } from "../utils/format";
+import { formatTimestamp, timeAgo } from "../utils/format";
 import {
   formatPrimaryReading,
   getPrimaryMeasurement,
@@ -27,6 +28,21 @@ import {
 type SortKey = "name" | "category" | "value" | "measuredAt";
 type SortDir = "asc" | "desc";
 type ViewMode = "cards" | "table";
+type PageSize = 12 | 24 | 48;
+
+const SORT_KEYS: SortKey[] = ["name", "category", "value", "measuredAt"];
+const PAGE_SIZES: PageSize[] = [12, 24, 48];
+
+/** Coerce a raw URL param to one of `allowed`, falling back when it is absent or unknown. */
+function toEnum<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
+  return value != null && allowed.includes(value as T) ? (value as T) : fallback;
+}
+
+/** Coerce a raw URL param to a positive integer, falling back when it is not one. */
+function toPositiveInt(value: string | null, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
 
 function numericCompare(a: number | null, b: number | null, dir: SortDir): number {
   if (a == null && b == null) return 0;
@@ -85,40 +101,46 @@ export function SensorsView() {
   const [params, setParams] = useSearchParams();
   const { t } = useTranslation("sensors");
 
-  const category = params.get("category") ?? "";
-  const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const categoryParam = params.get("category") ?? "";
+  const category = CATEGORIES.some(({ key }) => key === categoryParam) ? categoryParam : "";
+  const search = params.get("search") ?? "";
+  const sortKey = toEnum(params.get("sort"), SORT_KEYS, "name");
+  const sortDir = toEnum(params.get("direction"), ["asc", "desc"], "asc");
+  const viewMode = toEnum(params.get("view"), ["cards", "table"], "cards");
+  const pageSize = Number(toEnum(params.get("pageSize"), ["12", "24", "48"], "24")) as PageSize;
+  const page = toPositiveInt(params.get("page"), 1);
+
+  function updateParams(updates: Record<string, string>, resetPage = false) {
+    const nextParams = new URLSearchParams(params);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value) nextParams.set(key, value);
+      else nextParams.delete(key);
+    }
+    if (resetPage) nextParams.set("page", "1");
+    setParams(nextParams, { replace: true });
+  }
 
   function setCategory(next: string) {
-    const nextParams = new URLSearchParams(params);
-    if (next) nextParams.set("category", next);
-    else nextParams.delete("category");
-    setParams(nextParams, { replace: true });
+    updateParams({ category: next }, true);
   }
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {
-      setSortDir((currentDirection) =>
-        currentDirection === "asc" ? "desc" : "asc",
-      );
+      updateParams({ direction: sortDir === "asc" ? "desc" : "asc" }, true);
     } else {
-      setSortKey(key);
-      setSortDir(defaultSortDir(key));
+      updateParams({ sort: key, direction: defaultSortDir(key) }, true);
     }
   }
 
   function changeSortKey(key: SortKey) {
-    setSortKey(key);
-    setSortDir(defaultSortDir(key));
+    updateParams({ sort: key, direction: defaultSortDir(key) }, true);
   }
 
   return (
     <div>
       <div className="view-header view-header--wide">
         <KernBadge label={t("badge")} variant="info" />
-        <h1 className="kern-heading-large">{t("heading")}</h1>
+        <h1 className="kern-heading-medium">{t("heading")}</h1>
         <p className="kern-body kern-body--muted">{t("intro")}</p>
       </div>
 
@@ -133,14 +155,19 @@ export function SensorsView() {
             category={category}
             onCategoryChange={setCategory}
             search={search}
-            onSearchChange={setSearch}
+            onSearchChange={(value) => updateParams({ search: value }, true)}
             sortKey={sortKey}
             sortDir={sortDir}
             onSort={toggleSort}
             onSortKeyChange={changeSortKey}
-            onSortDirectionChange={setSortDir}
+            onSortDirectionChange={(value) => updateParams({ direction: value }, true)}
             viewMode={viewMode}
-            onViewModeChange={setViewMode}
+            onViewModeChange={(value) => updateParams({ view: value }, true)}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={(value) => updateParams({ page: String(value) })}
+            onPageSizeChange={(value) => updateParams({ pageSize: String(value) }, true)}
+            onReset={() => updateParams({ search: "", category: "" }, true)}
           />
         )}
       </AsyncBoundary>
@@ -200,6 +227,11 @@ function SensorExplorer({
   onSortDirectionChange,
   viewMode,
   onViewModeChange,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  onReset,
 }: {
   sensors: Sensor[];
   category: string;
@@ -213,6 +245,11 @@ function SensorExplorer({
   onSortDirectionChange: (direction: SortDir) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  page: number;
+  pageSize: PageSize;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: PageSize) => void;
+  onReset: () => void;
 }) {
   const { t } = useTranslation("sensors");
   const { t: tc } = useTranslation("common");
@@ -255,6 +292,14 @@ function SensorExplorer({
   const newest = rows[0]?.measuredAt
     ? [...rows].sort((a, b) => (b.measuredAt ?? 0) - (a.measuredAt ?? 0))[0]
     : null;
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visibleRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const activeFilterCount = Number(Boolean(category)) + Number(Boolean(search.trim()));
+
+  useEffect(() => {
+    if (page !== currentPage) onPageChange(currentPage);
+  }, [currentPage, onPageChange, page]);
 
   return (
     <>
@@ -276,7 +321,12 @@ function SensorExplorer({
           </div>
         </div>
 
-        <div className="filter-panel sensor-filter-panel">
+        <CollapsibleFilters
+          className="sensor-filter-disclosure"
+          summaryLabel={t("filtersLabel")}
+          summaryMeta={t("filtersActive", { count: activeFilterCount })}
+        >
+          <div className="filter-panel sensor-filter-panel">
           <fieldset className="category-picker" aria-label={t("quickFiltersAria")}>
             <legend className="kern-label category-picker__legend">
               {t("category.label")}
@@ -371,15 +421,13 @@ function SensorExplorer({
             <KernButton
               type="button"
               variant="tertiary"
-              onClick={() => {
-                onSearchChange("");
-                onCategoryChange("");
-              }}
+              onClick={onReset}
               icon="close"
               label={t("reset")}
             />
           </div>
-        </div>
+          </div>
+        </CollapsibleFilters>
       </section>
 
       <div className="result-bar" role="status" aria-live="polite">
@@ -413,13 +461,16 @@ function SensorExplorer({
         <Empty label={t("noMatch")} />
       ) : viewMode === "cards" ? (
         <div className="sensor-card-grid">
-          {rows.map((sensor) => (
+          {visibleRows.map((sensor) => (
             <SensorCard sensor={sensor} key={sensor.objectId} />
           ))}
         </div>
       ) : (
         <div className="kern-table-responsive table-scroll">
-          <table className="kern-table kern-table--striped">
+          <table className="kern-table kern-table--striped sensor-table--compact">
+            <caption className="visually-hidden">
+              {t("tableCaption", { count: rows.length })}
+            </caption>
             <thead>
               <tr className="kern-table__row">
                 <SortHeader
@@ -455,13 +506,13 @@ function SensorExplorer({
               </tr>
             </thead>
             <tbody className="kern-table__body">
-              {rows.map((sensor) => (
+              {visibleRows.map((sensor) => (
                 <tr className="kern-table__row" key={sensor.objectId}>
-                  <td className="kern-table__cell">
+                  <th className="kern-table__cell" scope="row">
                     <Link className="kern-link" to={`/sensor/${sensor.objectId}`}>
                       {sensor.name}
                     </Link>
-                  </td>
+                  </th>
                   <td className="kern-table__cell">
                     <span className="legend-item">
                       <span
@@ -476,13 +527,65 @@ function SensorExplorer({
                     {formatPrimaryReading(sensor)}
                   </td>
                   <td className="kern-table__cell kern-table__cell--numeric">
-                    {timeAgo(sensor.measuredAt)}
+                    {sensor.measuredAt == null ? (
+                      timeAgo(null)
+                    ) : (
+                      <time
+                        dateTime={new Date(sensor.measuredAt).toISOString()}
+                        title={formatTimestamp(sensor.measuredAt)}
+                      >
+                        {timeAgo(sensor.measuredAt)}
+                      </time>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {pageCount > 1 && (
+        <nav className="sensor-pagination" aria-label={t("pagination.label")}>
+          <label className="kern-label" htmlFor="sensor-page-size">
+            {t("pagination.pageSize")}
+          </label>
+          <div className="kern-form-input__select-wrapper">
+            <select
+              id="sensor-page-size"
+              className="kern-form-input__select"
+              value={pageSize}
+              onChange={(event) => onPageSizeChange(Number(event.target.value) as PageSize)}
+            >
+              {PAGE_SIZES.map((size) => <option value={size} key={size}>{size}</option>)}
+            </select>
+          </div>
+          <span className="kern-body kern-body--small">
+            {t("pagination.status", {
+              page: currentPage,
+              pages: pageCount,
+              from: (currentPage - 1) * pageSize + 1,
+              to: Math.min(currentPage * pageSize, rows.length),
+              total: rows.length,
+            })}
+          </span>
+          <KernButton
+            type="button"
+            variant="tertiary"
+            icon="arrow-back"
+            label={t("pagination.previous")}
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+          />
+          <KernButton
+            type="button"
+            variant="tertiary"
+            icon="arrow-forward"
+            label={t("pagination.next")}
+            disabled={currentPage === pageCount}
+            onClick={() => onPageChange(currentPage + 1)}
+          />
+        </nav>
       )}
     </>
   );
