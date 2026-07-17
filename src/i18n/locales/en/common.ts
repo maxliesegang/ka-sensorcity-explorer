@@ -72,6 +72,27 @@ export default {
     },
     desc: "Line chart of {{label}} over {{span}}: {{count}} points ranging from {{min}} to {{max}}, {{from}} to {{to}}.",
     pointAt: "{{time}}: {{value}}",
+    profile: {
+      // Doubles as the legend label for neutral cells, so it is capitalized;
+      // it also lands in the `reading` value slot ("depth 0: No reading").
+      noReading: "No reading",
+      reading: "depth {{band}}: {{value}}",
+      span: "{{from}} to {{to}}",
+      stepHint: "use arrow keys to step through time",
+      summary: "{{bands}} depth bands · {{count}} readings · {{span}}",
+      desc: "Heatmap of {{label}}: {{bands}} bands from {{count}} readings, values ranging from {{min}} to {{max}}, {{from}} to {{to}}. Colour shows the reading; deeper colour means a higher value.",
+    },
+  },
+  // Shared by everything that shows stacked depths — the profile heatmap's axis
+  // and the current-readings depth table.
+  depth: {
+    label: "Depth",
+    band: "Depth {{band}}",
+  },
+  // Names the quantity only; the surrounding view already says "by depth".
+  depthProfiles: {
+    soil_moisture: { label: "Soil moisture" },
+    soil_temperature: { label: "Soil temperature" },
   },
   categories: {
     "Temperatur-Sensor": { label: "Weather / air" },

@@ -1,5 +1,6 @@
 import { PEGELONLINE_BASE_URL as BASE_URL } from "../config/endpoints";
 import { isDemoMode, loadDemoApi } from "../demo/mode";
+import { toFiniteNumber } from "../utils/number";
 import type { TimeSeriesPoint } from "./sensorcity";
 const DEFAULT_WINDOW = "P30D";
 
@@ -11,10 +12,6 @@ interface PegelOnlineMeasurement {
 export interface PegelOnlineHistoryOptions {
   /** ISO-8601 duration or timestamp accepted by PEGELONLINE, e.g. `P30D`. */
   start?: string;
-}
-
-function finiteNumber(v: unknown): number | null {
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
 /**
@@ -49,7 +46,7 @@ export async function fetchPegelOnlineHistory(
   return rows
     .map((row) => {
       const timestamp = row.timestamp ? Date.parse(row.timestamp) : NaN;
-      const value = finiteNumber(row.value);
+      const value = toFiniteNumber(row.value);
       return Number.isFinite(timestamp) && value != null ? { timestamp, value } : null;
     })
     .filter((point): point is TimeSeriesPoint => point != null)

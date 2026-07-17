@@ -10,7 +10,7 @@ import { DEFAULT_ZOOM, KARLSRUHE, useLeafletMap } from "../hooks/useLeafletMap";
 import type { Sensor } from "../types";
 import { formatReadingTime } from "../utils/format";
 import { escapeHtml } from "../utils/html";
-import { formatPrimaryMeasurementLine } from "../utils/sensorMeasurements";
+import { formatPrimaryReadingLine } from "../utils/sensorMeasurements";
 
 const SENSOR_ZOOM = 16;
 const FIT_OPTIONS: L.FitBoundsOptions = { padding: [24, 24], maxZoom: 14 };
@@ -198,7 +198,7 @@ function renderPopup(
   return `
     <strong>${escapeHtml(sensor.name)}</strong><br/>
     ${escapeHtml(label)}<br/>
-    ${escapeHtml(formatPrimaryMeasurementLine(sensor, translateCommon))}<br/>
+    ${escapeHtml(formatPrimaryReadingLine(sensor, translateCommon))}<br/>
     ${
       sensor.measuredAt != null
         ? `${escapeHtml(formatReadingTime(sensor.measuredAt))}<br/>`

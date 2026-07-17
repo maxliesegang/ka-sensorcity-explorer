@@ -11,6 +11,8 @@
 // deviations always read with equal colour intensity and Δ=0 (the baseline
 // itself) sits exactly at the neutral white centre.
 
+import { clamp01, hexToRgb, rgbToCss, sampleRamp, type Rgb } from "./colorRamp";
+
 // RdBu reversed (cold -> hot), symmetric around the near-white centre. Trimmed
 // from the RdYlBu ramp in temperatureScale.ts to a clean blue -> white -> red diverging
 // ramp anchored on #2166ac (strong blue) and #b2182b (strong red).
@@ -26,28 +28,11 @@ const RAMP_HEX = [
   "#b2182b",
 ];
 
-const RAMP_RGB: [number, number, number][] = RAMP_HEX.map((h) => [
-  parseInt(h.slice(1, 3), 16),
-  parseInt(h.slice(3, 5), 16),
-  parseInt(h.slice(5, 7), 16),
-]);
-
-function clamp01(x: number): number {
-  return x < 0 ? 0 : x > 1 ? 1 : x;
-}
+const RAMP_RGB: Rgb[] = RAMP_HEX.map(hexToRgb);
 
 /** Sample the master diverging ramp at u (clamped to [0,1]). */
-function masterRamp(u: number): [number, number, number] {
-  const t = clamp01(u) * (RAMP_RGB.length - 1);
-  const i = Math.min(Math.floor(t), RAMP_RGB.length - 2);
-  const f = t - i;
-  const a = RAMP_RGB[i];
-  const b = RAMP_RGB[i + 1];
-  return [
-    a[0] + (b[0] - a[0]) * f,
-    a[1] + (b[1] - a[1]) * f,
-    a[2] + (b[2] - a[2]) * f,
-  ];
+function masterRamp(u: number): Rgb {
+  return sampleRamp(RAMP_RGB, u);
 }
 
 export interface TemperatureDeviationScale {
@@ -58,7 +43,7 @@ export interface TemperatureDeviationScale {
   /** Position of Δ=0 (the baseline) along the bar — always 0.5 (centred). */
   zeroPos: number;
   css(delta: number): string; // "rgb(r, g, b)"
-  rgb(delta: number): [number, number, number]; // 0..255 each
+  rgb(delta: number): Rgb; // 0..255 each
   /** n legend samples spanning min..max, evenly spaced (pos 0..1). */
   stops(n: number): Array<{ pos: number; delta: number; css: string }>;
 }
@@ -83,13 +68,12 @@ export function buildTemperatureDeviationScale(
 
   // Map Δ∈[-halfSpan, +halfSpan] onto the ramp position u∈[0,1], with Δ=0 at the
   // 0.5 (white) centre; out-of-range deltas clamp to the ends.
-  function rgb(delta: number): [number, number, number] {
+  function rgb(delta: number): Rgb {
     return masterRamp(clamp01(0.5 + 0.5 * (delta / halfSpan)));
   }
 
   function css(delta: number): string {
-    const [r, g, b] = rgb(delta);
-    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+    return rgbToCss(rgb(delta));
   }
 
   function stops(n: number): Array<{ pos: number; delta: number; css: string }> {

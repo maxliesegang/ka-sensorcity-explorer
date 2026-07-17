@@ -19,9 +19,9 @@ import { useAsync } from "../hooks/useAsync";
 import type { Sensor } from "../types";
 import { timeAgo } from "../utils/format";
 import {
-  formatPrimaryMeasurementValue,
+  formatPrimaryReading,
   getPrimaryMeasurement,
-  getPrimaryMeasurementValue,
+  getPrimaryReading,
 } from "../utils/sensorMeasurements";
 
 type SortKey = "name" | "category" | "value" | "measuredAt";
@@ -55,8 +55,8 @@ function compareSensors(
     );
   } else if (key === "value") {
     result = numericCompare(
-      getPrimaryMeasurementValue(firstSensor),
-      getPrimaryMeasurementValue(secondSensor),
+      getPrimaryReading(firstSensor),
+      getPrimaryReading(secondSensor),
       dir,
     );
   } else if (key === "category") {
@@ -473,7 +473,7 @@ function SensorExplorer({
                     </span>
                   </td>
                   <td className="kern-table__cell kern-table__cell--numeric">
-                    {formatPrimaryMeasurementValue(sensor)}
+                    {formatPrimaryReading(sensor)}
                   </td>
                   <td className="kern-table__cell kern-table__cell--numeric">
                     {timeAgo(sensor.measuredAt)}
@@ -514,7 +514,7 @@ function SensorCard({ sensor }: { sensor: Sensor }) {
       </span>
       <span className="sensor-card__name">{sensor.name}</span>
       <span className="sensor-card__reading">
-        {formatPrimaryMeasurementValue(sensor)}
+        {formatPrimaryReading(sensor)}
       </span>
       <span className="kern-body kern-body--small">
         {primary ? tc(measurementLabelKey(primary.field)) : t("currentValue")} ·{" "}

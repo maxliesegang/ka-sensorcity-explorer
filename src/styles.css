@@ -760,6 +760,82 @@ body {
   overflow: auto;
 }
 
+/* Depth profile heatmap --------------------------------------------------- */
+.depth-profile__legend {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+}
+
+.depth-profile__legend-scale {
+  display: flex;
+  align-items: center;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+}
+
+/* The sequential ramp, low→high. Bordered so its light end stays legible as a
+   scale where it meets the surface. */
+.depth-profile__legend-bar {
+  width: 7rem;
+  height: 0.75rem;
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-small, 2px);
+}
+
+/* "No reading" cells and their legend swatch. A flat neutral: it has to read as
+   absence rather than as a value, so it stays off both ramps (blue, warm) and
+   carries no chroma of its own. Themed here rather than in the scale because
+   these are DOM nodes a KERN token can reach. */
+.depth-profile__gap,
+.depth-profile__gap-swatch {
+  fill: var(--kern-color-layout-border, #dadce6);
+  background: var(--kern-color-layout-border, #dadce6);
+}
+
+/* Current readings, by depth ---------------------------------------------- */
+/* A few short columns: left full-width the numbers strand themselves against
+   the far edge, and comparing a row means crossing the whole page. */
+.depth-readings {
+  max-width: 34rem;
+}
+
+.depth-readings__value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reads the depth structure at a glance, on the same ramp as the profile
+   heatmap. Decorative only — the number beside it carries the value. */
+.depth-readings__swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: none;
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-small, 2px);
+}
+
+.depth-profile__legend-note {
+  display: flex;
+  align-items: center;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+}
+
+.depth-profile__gap-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-small, 2px);
+}
+
+@media (max-width: 40rem) {
+  .depth-profile__legend {
+    align-items: flex-start;
+  }
+}
+
 /* Detail / misc ----------------------------------------------------------- */
 .back-link {
   display: inline-flex;

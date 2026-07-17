@@ -40,6 +40,40 @@ export interface Measurement {
 }
 
 /**
+ * The sequential colour ramp a depth profile is drawn with. Named by what it
+ * encodes rather than by its hue, so the ramp can be retuned in one place
+ * (`utils/depthProfileScale.ts`) without touching the data model.
+ */
+export type DepthProfileRamp = "moisture" | "temperature";
+
+/** One depth band of a {@link DepthProfile}. */
+export interface DepthBand {
+  /** Attribute name in the API, e.g. `soil_moisture_at_depth_21`. */
+  field: string;
+  /**
+   * Ordinal depth index, 0 = shallowest. The feed publishes no real depths (cm),
+   * only stacked bands, so this is a rank and never rendered as a distance.
+   */
+  band: number;
+}
+
+/**
+ * A family of measurements sampling one quantity at stacked depths, drawn as a
+ * depth-vs-time heatmap. Display labels live in the i18n
+ * `common.depthProfiles.<key>` namespace, keyed by `key`.
+ */
+export interface DepthProfile {
+  /** Stable id; also the translation key. */
+  key: string;
+  /** Optional unit suffix, e.g. "°C". Units are not translated. */
+  unit?: string;
+  /** Which sequential ramp encodes this quantity's magnitude. */
+  ramp: DepthProfileRamp;
+  /** Bands ordered shallow→deep. */
+  bands: DepthBand[];
+}
+
+/**
  * A sensor category, keyed by the live layer's `beschreibung` value. Drives
  * map colours, the measurements shown in detail, and which archive layer holds
  * this category's history. Display labels live in the i18n
@@ -54,6 +88,12 @@ export interface Category {
   archiveLayerId?: number;
   /** Measurements to surface; the first is treated as primary. */
   measurements: Measurement[];
+  /**
+   * Depth-banded measurement families, if this category's probes sample at
+   * stacked depths. Requires `archiveLayerId` — the profile is drawn from
+   * archive history.
+   */
+  depthProfiles?: DepthProfile[];
 }
 
 /**

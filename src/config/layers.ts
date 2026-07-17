@@ -7,7 +7,13 @@
 // `common` namespace, keyed by the stable ids below (layer `id`, category `key`,
 // measurement `field`). Use the `*LabelKey` helpers to resolve them with `t()`.
 
-import type { Category, LayerInfo, Measurement } from "../types";
+import type {
+  Category,
+  DepthProfile,
+  DepthProfileRamp,
+  LayerInfo,
+  Measurement,
+} from "../types";
 
 /** The live "latest value per sensor" layer. */
 export const LIVE_LAYER_ID = 1;
@@ -41,19 +47,44 @@ export const TEMPERATURE_FIELD_KEY = "temp";
  */
 export const SOIL_DEPTH_BANDS = [0, 1, 2, 3, 4, 5] as const;
 
+/** A soil field family, i.e. one quantity sampled across {@link SOIL_DEPTH_BANDS}. */
+type SoilFamily = "soil_moisture" | "soil_temperature";
+
 /**
- * One measurement per depth band for a soil field family. The upstream suffix is
- * the band number followed by a literal `1` (band 0 → `..._at_depth_01`, band 5 →
+ * The upstream attribute name for one band of a soil family. The suffix is the
+ * band number followed by a literal `1` (band 0 → `..._at_depth_01`, band 5 →
  * `..._at_depth_51`) — kept here so that quirk has a single home.
  */
-function soilBandMeasurements(
-  family: "soil_moisture" | "soil_temperature",
-  unit: string,
-): Measurement[] {
+function soilBandField(family: SoilFamily, band: number): string {
+  return `${family}_at_depth_${band}1`;
+}
+
+/** One measurement per depth band for a soil field family. */
+function soilBandMeasurements(family: SoilFamily, unit: string): Measurement[] {
   return SOIL_DEPTH_BANDS.map((band) => ({
-    field: `${family}_at_depth_${band}1`,
+    field: soilBandField(family, band),
     unit,
   }));
+}
+
+/**
+ * The depth profile for a soil family: the same band fields as
+ * {@link soilBandMeasurements}, ordered shallow→deep for the heatmap.
+ */
+function soilDepthProfile(
+  family: SoilFamily,
+  unit: string,
+  ramp: DepthProfileRamp,
+): DepthProfile {
+  return {
+    key: family,
+    unit,
+    ramp,
+    bands: SOIL_DEPTH_BANDS.map((band) => ({
+      field: soilBandField(family, band),
+      band,
+    })),
+  };
 }
 
 /**
@@ -100,6 +131,12 @@ export const CATEGORIES: Category[] = [
       ...soilBandMeasurements("soil_moisture", "%"),
       ...soilBandMeasurements("soil_temperature", "°C"),
     ],
+    // The same band fields again, grouped per quantity: the measurement list
+    // charts one band at a time, the profile draws all bands as depth vs. time.
+    depthProfiles: [
+      soilDepthProfile("soil_moisture", "%", "moisture"),
+      soilDepthProfile("soil_temperature", "°C", "temperature"),
+    ],
   },
   {
     key: "Wasserpegel-Sensor",
@@ -127,6 +164,8 @@ export function getCategoryColor(key: string): string {
 export const categoryLabelKey = (key: string): string => `categories.${key}.label`;
 export const measurementLabelKey = (field: string): string =>
   `measurements.${field}.label`;
+export const depthProfileLabelKey = (key: string): string =>
+  `depthProfiles.${key}.label`;
 export const layerLabelKey = (id: number): string => `layers.${id}.label`;
 export const layerDescriptionKey = (id: number): string =>
   `layers.${id}.description`;

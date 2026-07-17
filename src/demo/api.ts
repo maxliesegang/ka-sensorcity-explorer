@@ -12,7 +12,7 @@
 import type { DwdHourlyPoint } from "../api/brightsky";
 import type { OutStatistic, QueryParams } from "../api/arcgis";
 import { LIVE_LAYER_ID } from "../config/layers";
-import type { TimeSeriesPoint } from "../api/sensorcity";
+import type { HistoryRow, TimeSeriesPoint } from "../api/sensorcity";
 import type { Attributes, Feature, FieldInfo, QueryResponse } from "../types";
 import { loadSnapshot } from "./snapshot";
 
@@ -192,6 +192,34 @@ export async function history(
 ): Promise<TimeSeriesPoint[]> {
   const snapshot = await loadSnapshot();
   return snapshot.history[`${archiveLayerId}:${deviceId}:${field}`] ?? [];
+}
+
+/**
+ * Multi-field history, rebuilt by joining the snapshot's per-field series on
+ * their timestamps. The capture stores one series per measurement field, so the
+ * columns of a row are reassembled here rather than stored a second time.
+ */
+export async function historyRows(
+  archiveLayerId: number,
+  deviceId: string,
+  fields: readonly string[],
+): Promise<HistoryRow[]> {
+  const snapshot = await loadSnapshot();
+  const byTimestamp = new Map<number, (number | null)[]>();
+  fields.forEach((field, column) => {
+    const series = snapshot.history[`${archiveLayerId}:${deviceId}:${field}`] ?? [];
+    for (const point of series) {
+      let values = byTimestamp.get(point.timestamp);
+      if (!values) {
+        values = fields.map(() => null);
+        byTimestamp.set(point.timestamp, values);
+      }
+      values[column] = point.value;
+    }
+  });
+  return [...byTimestamp]
+    .sort(([a], [b]) => a - b)
+    .map(([timestamp, values]) => ({ timestamp, values }));
 }
 
 // --- External providers -----------------------------------------------------

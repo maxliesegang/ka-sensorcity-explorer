@@ -7,6 +7,7 @@ export default {
     aria: "Sensor detail sections",
     current: "Current readings",
     history: "History",
+    profile: "Depth profile",
     location: "Location",
     raw: "Raw data",
   },
@@ -43,6 +44,13 @@ export default {
   historySourceLabel: "Source: {{source}}",
   noArchiveNote: "Only the live reading is available (no history archive).",
   noHistory: "No history available",
+  profile: {
+    heading: "Depth profile",
+    intro:
+      "Every depth band of this probe over the retained archive. The feed publishes stacked bands rather than actual depths, so band 0 is the shallowest.",
+    quantity: "Quantity",
+    tableCaption: "Latest reading per depth band. Band 0 is the shallowest.",
+  },
   rawAttributes: "Raw data",
   rawIntro: "Original non-empty attributes from the live API response.",
   rawField: "Field",

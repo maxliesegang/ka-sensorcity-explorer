@@ -25,7 +25,11 @@ Built with **Vite + React + TypeScript**, styled with the
   optional historical replay.
 - **Sensor detail** — current readings plus an interactive time-series chart of
   the chosen measurement, pulled from the matching history archive (or an
-  external source such as PEGELONLINE where no archive exists).
+  external source such as PEGELONLINE where no archive exists). Probes that
+  sample at stacked depths (the soil sensors) read their current values as a
+  depth table rather than one card per field, and get a **depth profile** tab:
+  a depth-vs-time heatmap of every band at once, which is what shows rain
+  soaking downward, or the daily temperature swing damping out with depth.
 - **Query explorer** — a small UI over the ArcGIS `/query` endpoint with a
   copyable request URL, for ad-hoc data exploration.
 - **About** — project background, data sources, and a light/dark/system theme
@@ -99,17 +103,19 @@ src/
 │   ├── brightsky.ts         DWD Rheinstetten temperatures (deviation baseline).
 │   └── temperatureInsights  Cross-sensor temperature stats + replay frames.
 ├── config/
-│   ├── layers.ts            The data model: layers + categories + measurements.
-│   │                        ← extend the app here.
+│   ├── layers.ts            The data model: layers + categories + measurements
+│   │                        + depth profiles. ← extend the app here.
 │   ├── historySources.ts    External (non-ArcGIS) history sources per sensor.
 │   └── temperatureBaselines Baseline-station options for deviation mode.
-├── components/              Layout, Status (loading/error/empty), LineChart
-│                            (SVG), temperature field/legend/insights, and UI.
+├── components/              Layout, Status (loading/error/empty), LineChart and
+│                            DepthProfileChart (SVG), temperature field/legend/
+│                            insights, and UI.
 ├── hooks/                   useAsync (abortable async-state), useLeafletMap
 │                            (create-once/teardown map lifecycle), + others.
 ├── i18n/                    react-i18next setup + per-namespace en/de dicts.
 ├── utils/                   format (locale-aware), voronoi (Thiessen cells),
-│                            temperature scales/model, stats, Leaflet helpers.
+│                            colour ramps + temperature/depth-profile scales,
+│                            depthProfile (depth×time grid), stats, Leaflet.
 ├── views/                   One file per route: Overview, Sensors, Map,
 │                            TemperatureField, SensorDetail, Query, About.
 ├── types.ts                Shared domain types.
@@ -123,9 +129,10 @@ The language is detected from the browser (falling back to English), can be
 switched in the header, and is persisted to `localStorage`. Strings live in
 [`src/i18n/locales/<lang>/<namespace>.ts`](src/i18n/locales): shared chrome and
 domain labels in `common`, plus one namespace per view. Domain display text
-(category, measurement and layer labels) is **not** stored in
+(category, measurement, depth-profile and layer labels) is **not** stored in
 `config/layers.ts` — only stable ids are; the labels are resolved from `common`
-via the `categoryLabelKey` / `measurementLabelKey` / `layerLabelKey` helpers.
+via the `categoryLabelKey` / `measurementLabelKey` / `depthProfileLabelKey` /
+`layerLabelKey` helpers.
 
 ### Extending
 
@@ -140,6 +147,14 @@ via the `categoryLabelKey` / `measurementLabelKey` / `layerLabelKey` helpers.
   and detail view pick it up. A category without an `archiveLayerId` (e.g. a
   gauge published only on the live layer) gets its history from an external
   source instead — see below.
+- **New depth profile** — for a category whose probes sample one quantity at
+  stacked depths, add a `DepthProfile` to its `depthProfiles` (bands ordered
+  shallow→deep, each naming its upstream field) plus a
+  `depthProfiles.<key>.label` entry in the `common` dictionaries. The detail
+  view grows a "Depth profile" tab; categories without one are unaffected. A
+  profile needs an `archiveLayerId` — it is drawn from archive history. Pick its
+  `ramp` from the sequential scales in
+  [`src/utils/depthProfileScale.ts`](src/utils/depthProfileScale.ts).
 - **New external history source** — for a measurement with no SensorCity
   archive, add an entry to
   [`src/config/historySources.ts`](src/config/historySources.ts) matching the

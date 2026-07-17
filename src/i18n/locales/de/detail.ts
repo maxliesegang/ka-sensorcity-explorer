@@ -7,6 +7,7 @@ export default {
     aria: "Sensor-Detailbereiche",
     current: "Aktuelle Messwerte",
     history: "Verlauf",
+    profile: "Tiefenprofil",
     location: "Standort",
     raw: "Rohdaten",
   },
@@ -45,6 +46,14 @@ export default {
   historySourceLabel: "Quelle: {{source}}",
   noArchiveNote: "Nur der Live-Messwert ist verfügbar (kein Verlaufsarchiv).",
   noHistory: "Kein Verlauf verfügbar",
+  profile: {
+    heading: "Tiefenprofil",
+    intro:
+      "Alle Tiefenstufen dieser Sonde über das vorgehaltene Archiv. Der Feed veröffentlicht gestufte Bänder statt tatsächlicher Tiefen; Stufe 0 ist die oberflächennächste.",
+    quantity: "Größe",
+    tableCaption:
+      "Neuester Messwert je Tiefenstufe. Stufe 0 ist die oberflächennächste.",
+  },
   rawAttributes: "Rohdaten",
   rawIntro: "Nicht leere Originalattribute aus der Live-API-Antwort.",
   rawField: "Feld",

@@ -24,7 +24,7 @@ import {
   sensorPopupHtml,
   type MarkerInteractionStyles,
 } from "../utils/leafletMarkers";
-import { formatPrimaryMeasurementLine } from "../utils/sensorMeasurements";
+import { formatPrimaryReadingLine } from "../utils/sensorMeasurements";
 
 // Resting/hover/active ring sizes for the category markers.
 const MARKER_STYLES: MarkerInteractionStyles = {
@@ -88,7 +88,7 @@ export function MapView() {
             color,
             label,
             name: sensor.name,
-            meta: formatPrimaryMeasurementLine(sensor, tc),
+            meta: formatPrimaryReadingLine(sensor, tc),
             readingTime: sensor.measuredAt,
             href: `#/sensor/${sensor.objectId}`,
             cta: t("popup.viewDetails"),

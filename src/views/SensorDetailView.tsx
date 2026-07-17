@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { KernButton } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { resolveHistorySource } from "../api/history";
-import { fetchSensor } from "../api/sensorcity";
+import { fetchHistoryRows, fetchSensor } from "../api/sensorcity";
+import type { HistoryRow } from "../api/sensorcity";
+import { CurrentDepthReadings } from "../components/CurrentDepthReadings";
+import { DepthProfileChart } from "../components/DepthProfileChart";
 import { DetailTabs } from "../components/DetailTabs";
 import type { DetailTabItem } from "../components/DetailTabs";
 import { LineChart } from "../components/LineChart";
@@ -15,16 +18,19 @@ import { AsyncBoundary, Empty } from "../components/Status";
 import {
   getCategoryColor,
   categoryLabelKey,
+  depthProfileLabelKey,
   getCategory,
   measurementLabelKey,
 } from "../config/layers";
 import { useAsync } from "../hooks/useAsync";
-import type { Category, Sensor } from "../types";
+import type { Category, DepthProfile, Sensor } from "../types";
+import { buildDepthProfileGrid } from "../utils/depthProfile";
 import { formatTimestamp, formatValue, timeAgo } from "../utils/format";
+import { getDepthProfiles, getUnbandedMeasurements } from "../utils/sensorMeasurements";
 
 /** Attribute keys that hold epoch-ms timestamps and should be formatted as dates. */
 const TIMESTAMP_FIELDS = new Set(["measured_at", "inserted_at"]);
-type DetailTab = "current" | "history" | "location" | "raw";
+type DetailTab = "current" | "history" | "profile" | "location" | "raw";
 
 /**
  * Detail page for one sensor: header + badge, current readings, a history chart
@@ -70,14 +76,13 @@ function SensorDetail({ sensor }: { sensor: Sensor }) {
   const [selectedField, setSelectedField] = useState(measurements[0]?.field ?? "");
   const [activeTab, setActiveTab] = useState<DetailTab>("current");
   const primary = measurements[0];
+  const depthProfiles = getDepthProfiles(category);
 
   const tabs: DetailTabItem<DetailTab>[] = [
     {
       id: "current",
       label: t("tabs.current"),
-      panel: (
-        <CurrentReadingsSection sensor={sensor} measurements={measurements} />
-      ),
+      panel: <CurrentReadingsSection sensor={sensor} category={category} />,
     },
     {
       id: "history",
@@ -91,6 +96,22 @@ function SensorDetail({ sensor }: { sensor: Sensor }) {
         />
       ),
     },
+    // Only probes that sample at stacked depths have a profile to show.
+    ...(depthProfiles.length > 0 && category?.archiveLayerId != null
+      ? [
+          {
+            id: "profile" as const,
+            label: t("tabs.profile"),
+            panel: (
+              <DepthProfileSection
+                sensor={sensor}
+                profiles={depthProfiles}
+                archiveLayerId={category.archiveLayerId}
+              />
+            ),
+          },
+        ]
+      : []),
     {
       id: "location",
       label: t("tabs.location"),
@@ -144,13 +165,16 @@ function SensorDetail({ sensor }: { sensor: Sensor }) {
 
 function CurrentReadingsSection({
   sensor,
-  measurements,
+  category,
 }: {
   sensor: Sensor;
-  measurements: Category["measurements"];
+  category: Category | undefined;
 }) {
   const { t } = useTranslation("detail");
   const { t: tc } = useTranslation("common");
+  // Depth-banded families read as a table; anything else stays a card.
+  const profiles = getDepthProfiles(category);
+  const unbanded = getUnbandedMeasurements(category);
 
   return (
     <section className="sensor-detail__section sensor-detail__section--plain">
@@ -165,18 +189,23 @@ function CurrentReadingsSection({
           {t("lastMeasuredAt", { date: formatTimestamp(sensor.measuredAt) })}
         </span>
       </div>
-      <div className="reading-grid reading-grid--featured">
-        {measurements.map((m) => (
-          <div className="reading-card" key={m.field}>
-            <span className="reading-card__label">
-              {tc(measurementLabelKey(m.field))}
-            </span>
-            <span className="reading-card__value">
-              {formatValue(sensor.attributes[m.field], m.unit)}
-            </span>
-          </div>
-        ))}
-      </div>
+      {profiles.length > 0 && (
+        <CurrentDepthReadings sensor={sensor} profiles={profiles} />
+      )}
+      {unbanded.length > 0 && (
+        <div className="reading-grid reading-grid--featured">
+          {unbanded.map((m) => (
+            <div className="reading-card" key={m.field}>
+              <span className="reading-card__label">
+                {tc(measurementLabelKey(m.field))}
+              </span>
+              <span className="reading-card__value">
+                {formatValue(sensor.attributes[m.field], m.unit)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
       <dl className="kern-description-list detail-facts">
         <div className="kern-description-list-item">
           <dt className="kern-description-list-item__key">
@@ -319,6 +348,100 @@ function HistorySection({
       </AsyncBoundary>
     </section>
   );
+}
+
+/**
+ * Depth-vs-time heatmap for a probe that samples at stacked depths, with a
+ * picker when the category declares more than one banded quantity.
+ */
+function DepthProfileSection({
+  sensor,
+  profiles,
+  archiveLayerId,
+}: {
+  sensor: Sensor;
+  profiles: DepthProfile[];
+  archiveLayerId: number;
+}) {
+  const { t } = useTranslation("detail");
+  const { t: tc } = useTranslation("common");
+  const [selectedKey, setSelectedKey] = useState(profiles[0].key);
+  const profile = profiles.find((p) => p.key === selectedKey) ?? profiles[0];
+  const rows = useAsync(
+    (s) =>
+      fetchHistoryRows(
+        archiveLayerId,
+        sensor.deviceId,
+        profile.bands.map((band) => band.field),
+        {},
+        s,
+      ),
+    [archiveLayerId, sensor.deviceId, profile.key],
+  );
+
+  return (
+    <section className="sensor-detail__section sensor-detail__section--plain">
+      <div className="section-toolbar">
+        <div>
+          <h2 className="kern-heading-small">{t("profile.heading")}</h2>
+          <p className="kern-body kern-body--small kern-body--muted">
+            {t("profile.intro")}
+          </p>
+        </div>
+        {profiles.length > 1 && (
+          <div className="field kern-form-input">
+            <label className="kern-label" htmlFor="depth-profile-select">
+              {t("profile.quantity")}
+            </label>
+            <div className="kern-form-input__select-wrapper">
+              <select
+                id="depth-profile-select"
+                className="kern-form-input__select"
+                value={profile.key}
+                onChange={(e) => setSelectedKey(e.target.value)}
+              >
+                {profiles.map((p) => (
+                  <option key={p.key} value={p.key}>
+                    {tc(depthProfileLabelKey(p.key))}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+      <AsyncBoundary
+        state={rows}
+        isEmpty={(data) => data.length === 0}
+        emptyLabel={t("noHistory")}
+      >
+        {(data) => (
+          <DepthProfilePanel
+            rows={data}
+            profile={profile}
+            label={tc(depthProfileLabelKey(profile.key))}
+          />
+        )}
+      </AsyncBoundary>
+    </section>
+  );
+}
+
+/** Builds the grid for the loaded rows, so the memo hook stays top-level. */
+function DepthProfilePanel({
+  rows,
+  profile,
+  label,
+}: {
+  rows: HistoryRow[];
+  profile: DepthProfile;
+  label: string;
+}) {
+  const { t } = useTranslation("detail");
+  const grid = useMemo(() => buildDepthProfileGrid(rows, profile), [rows, profile]);
+
+  if (grid == null) return <Empty label={t("noHistory")} />;
+  return <DepthProfileChart grid={grid} profile={profile} label={label} />;
 }
 
 /** Raw attribute dump, skipping null/empty values. */

@@ -21,6 +21,15 @@ const MEASUREMENT_FIELDS = [
   ...new Set(CATEGORIES.flatMap((category) => category.measurements.map((m) => m.field))),
 ];
 
+/** Every depth profile key referenced by any category, de-duplicated. */
+const DEPTH_PROFILE_KEYS = [
+  ...new Set(
+    CATEGORIES.flatMap((category) =>
+      (category.depthProfiles ?? []).map((profile) => profile.key),
+    ),
+  ),
+];
+
 /** Collect an object's leaf key paths, e.g. "categories.Boden-Sensor.label". */
 function leafKeyPaths(value: unknown, prefix = ""): string[] {
   if (value == null || typeof value !== "object") return [prefix];
@@ -33,6 +42,7 @@ describe.each(LANGUAGES)("%s common labels", (lang) => {
   const common = resources[lang].common as {
     categories: Record<string, { label: string }>;
     measurements: Record<string, { label: string }>;
+    depthProfiles: Record<string, { label: string }>;
     layers: Record<string, { label: string; description: string }>;
   };
 
@@ -42,6 +52,10 @@ describe.each(LANGUAGES)("%s common labels", (lang) => {
 
   it.each(MEASUREMENT_FIELDS)("has a label for measurement %s", (field) => {
     expect(common.measurements[field]?.label).toBeTruthy();
+  });
+
+  it.each(DEPTH_PROFILE_KEYS)("has a label for depth profile %s", (key) => {
+    expect(common.depthProfiles[key]?.label).toBeTruthy();
   });
 
   it.each(LAYERS.map((l) => l.id))("has a label and description for layer %s", (id) => {
@@ -59,10 +73,45 @@ describe.each(LANGUAGES)("%s common labels", (lang) => {
     expect(Object.keys(common.measurements).filter((f) => !configured.has(f))).toEqual([]);
   });
 
+  it("has no label for a depth profile the config dropped", () => {
+    const configured = new Set(DEPTH_PROFILE_KEYS);
+    expect(
+      Object.keys(common.depthProfiles).filter((key) => !configured.has(key)),
+    ).toEqual([]);
+  });
+
   it("has no label for a layer the config dropped", () => {
     const configured = new Set(LAYERS.map((l) => String(l.id)));
     expect(Object.keys(common.layers).filter((id) => !configured.has(id))).toEqual([]);
   });
+});
+
+describe("depth profile config", () => {
+  const withProfiles = CATEGORIES.filter((c) => (c.depthProfiles ?? []).length > 0);
+
+  // The profile is drawn from archive history, so the detail view hides the tab
+  // for a category without an archive — which would silently drop the feature.
+  it.each(withProfiles.map((c) => c.key))(
+    "category %s declaring a depth profile also has an archive layer",
+    (key) => {
+      const category = CATEGORIES.find((c) => c.key === key);
+      expect(category?.archiveLayerId).toBeDefined();
+    },
+  );
+
+  // Bands are addressed positionally when rows are fetched and gridded, so a
+  // duplicate or out-of-order band would mislabel the depth axis.
+  it.each(withProfiles.flatMap((c) => c.depthProfiles ?? []).map((p) => p.key))(
+    "profile %s lists distinct bands ordered shallow→deep",
+    (key) => {
+      const profile = withProfiles
+        .flatMap((c) => c.depthProfiles ?? [])
+        .find((p) => p.key === key);
+      const bands = profile?.bands.map((b) => b.band) ?? [];
+      expect(bands).toEqual([...new Set(bands)].sort((a, b) => a - b));
+      expect(new Set(profile?.bands.map((b) => b.field)).size).toBe(bands.length);
+    },
+  );
 });
 
 // CLAUDE.md requires the EN and DE files to stay structurally identical, so a

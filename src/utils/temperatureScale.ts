@@ -4,6 +4,8 @@
 // temperature (so warm areas never look blue) while the live min..max range is
 // stretched across a minimum window so nearby values always stay distinguishable.
 
+import { clamp01, hexToRgb, rgbToCss, sampleRamp, type Rgb } from "./colorRamp";
+
 export interface TemperatureFieldPoint {
   lat: number;
   lon: number;
@@ -46,11 +48,7 @@ const RAMP_HEX = [
   "#a50026",
 ];
 
-const RAMP_RGB: [number, number, number][] = RAMP_HEX.map((h) => [
-  parseInt(h.slice(1, 3), 16),
-  parseInt(h.slice(3, 5), 16),
-  parseInt(h.slice(5, 7), 16),
-]);
+const RAMP_RGB: Rgb[] = RAMP_HEX.map(hexToRgb);
 
 // Absolute domain anchoring hue to real temperature (°C).
 const D_MIN = -5;
@@ -61,22 +59,9 @@ const D_MAX = 40;
 // the ramp so closely-spaced warm readings still never tip into blue.
 const MIN_SPAN = 0.34;
 
-function clamp01(x: number): number {
-  return x < 0 ? 0 : x > 1 ? 1 : x;
-}
-
 /** Sample the master RdYlBu-reversed ramp at u (clamped to [0,1]). */
-function masterRamp(u: number): [number, number, number] {
-  const t = clamp01(u) * (RAMP_RGB.length - 1);
-  const i = Math.min(Math.floor(t), RAMP_RGB.length - 2);
-  const f = t - i;
-  const a = RAMP_RGB[i];
-  const b = RAMP_RGB[i + 1];
-  return [
-    a[0] + (b[0] - a[0]) * f,
-    a[1] + (b[1] - a[1]) * f,
-    a[2] + (b[2] - a[2]) * f,
-  ];
+function masterRamp(u: number): Rgb {
+  return sampleRamp(RAMP_RGB, u);
 }
 
 /** Absolute position of a temperature within the fixed domain, clamped to [0,1]. */
@@ -123,15 +108,14 @@ export function buildTemperatureScale(
 
   const span = max - min;
 
-  function rgb(temperature: number): [number, number, number] {
+  function rgb(temperature: number): Rgb {
     const f = span > 0 ? clamp01((temperature - min) / span) : 0.5;
     const u = s0 + f * (s1 - s0);
     return masterRamp(u);
   }
 
   function css(temperature: number): string {
-    const [r, g, b] = rgb(temperature);
-    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+    return rgbToCss(rgb(temperature));
   }
 
   function stops(n: number): LegendStop[] {

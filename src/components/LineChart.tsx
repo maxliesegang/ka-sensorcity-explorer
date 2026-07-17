@@ -1,8 +1,9 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useId, useMemo, useState } from "react";
 import { KernBadge } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 
 import type { TimeSeriesPoint } from "../api/sensorcity";
+import { useChartCursor } from "../hooks/useChartCursor";
 import { formatTimestamp, formatValue } from "../utils/format";
 
 interface Props {
@@ -41,7 +42,8 @@ export function LineChart({
   const { t: translate } = useTranslation("common");
   const seriesLabel = label ?? translate("chart.measurement");
   const width = 720;
-  const [hover, setHover] = useState<number | null>(null);
+  const { index: hover, setIndex: setHover, svgProps } = useChartCursor(points.length);
+  const describedById = useId();
 
   const model = useMemo(() => {
     if (points.length === 0) return null;
@@ -73,7 +75,6 @@ export function LineChart({
 
   const ticks = [model.maxY, (model.maxY + model.minY) / 2, model.minY];
   const active = hover != null ? model.screen[hover] : null;
-  const describedById = "chart-desc";
 
   const span = spanLabel(model.minX, model.maxX, translate);
   const description = translate("chart.desc", {
@@ -85,29 +86,6 @@ export function LineChart({
     from: formatTimestamp(model.minX),
     to: formatTimestamp(model.maxX),
   });
-
-  function step(delta: number) {
-    setHover((h) => {
-      const next = (h == null ? 0 : h) + delta;
-      return Math.max(0, Math.min(points.length - 1, next));
-    });
-  }
-
-  function onKeyDown(e: React.KeyboardEvent<SVGSVGElement>) {
-    if (e.key === "ArrowRight") {
-      e.preventDefault();
-      step(1);
-    } else if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      step(-1);
-    } else if (e.key === "Home") {
-      e.preventDefault();
-      setHover(0);
-    } else if (e.key === "End") {
-      e.preventDefault();
-      setHover(points.length - 1);
-    }
-  }
 
   function onMove(e: React.MouseEvent<SVGSVGElement>) {
     if (!model) return;
@@ -144,13 +122,10 @@ export function LineChart({
         viewBox={`0 0 ${width} ${height}`}
         className="chart__svg"
         role="img"
-        tabIndex={0}
         aria-label={description}
         aria-describedby={describedById}
         onMouseMove={onMove}
-        onMouseLeave={() => setHover(null)}
-        onKeyDown={onKeyDown}
-        onFocus={() => setHover((h) => (h == null ? 0 : h))}
+        {...svgProps}
       >
         {ticks.map((tickValue, index) => {
           const y = model.sy(tickValue);
@@ -213,7 +188,7 @@ export function LineChart({
       <p id={describedById} className="visually-hidden">
         {description}
       </p>
-      <DataTable points={points} unit={unit} seriesLabel={seriesLabel} />
+      <SeriesDataTable points={points} unit={unit} seriesLabel={seriesLabel} />
     </figure>
   );
 }
@@ -224,7 +199,7 @@ export function LineChart({
  * cursor on every mousemove — does not re-render these (up to thousands of) rows
  * and re-run an `Intl.DateTimeFormat` per row.
  */
-const DataTable = memo(function DataTable({
+const SeriesDataTable = memo(function SeriesDataTable({
   points,
   unit,
   seriesLabel,

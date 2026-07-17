@@ -71,6 +71,22 @@ export default {
     },
     desc: "Liniendiagramm von {{label}} über {{span}}: {{count}} Punkte von {{min}} bis {{max}}, {{from}} bis {{to}}.",
     pointAt: "{{time}}: {{value}}",
+    profile: {
+      noReading: "Kein Messwert",
+      reading: "Tiefe {{band}}: {{value}}",
+      span: "{{from}} bis {{to}}",
+      stepHint: "mit den Pfeiltasten durch die Zeit blättern",
+      summary: "{{bands}} Tiefenstufen · {{count}} Messungen · {{span}}",
+      desc: "Heatmap von {{label}}: {{bands}} Stufen aus {{count}} Messungen, Werte von {{min}} bis {{max}}, {{from}} bis {{to}}. Die Farbe zeigt den Messwert; je kräftiger die Farbe, desto höher der Wert.",
+    },
+  },
+  depth: {
+    label: "Tiefe",
+    band: "Tiefe {{band}}",
+  },
+  depthProfiles: {
+    soil_moisture: { label: "Bodenfeuchte" },
+    soil_temperature: { label: "Bodentemperatur" },
   },
   categories: {
     "Temperatur-Sensor": { label: "Wetter / Luft" },

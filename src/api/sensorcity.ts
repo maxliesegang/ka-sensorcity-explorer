@@ -3,11 +3,8 @@
 import { LIVE_LAYER_ID } from "../config/layers";
 import { isDemoMode, loadDemoApi } from "../demo/mode";
 import type { Attributes, Feature, Sensor } from "../types";
+import { toFiniteNumber } from "../utils/number";
 import { query, queryAll, queryCount, queryStatistics } from "./arcgis";
-
-function toFiniteNumber(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
 
 /** Normalize a live-layer feature into a UI-friendly Sensor. */
 function toSensor(feature: Feature): Sensor {
@@ -54,6 +51,35 @@ export interface TimeSeriesPoint {
   value: number;
 }
 
+/** Options shared by the archive readers. */
+interface HistoryOptions {
+  /** Cap on rows pulled; omit for the full retained archive. */
+  maxRows?: number;
+}
+
+/**
+ * One device's archive rows, oldest→newest, carrying `fields` alongside the
+ * timestamp. The single place a device id is escaped into a SQL `WHERE` clause.
+ */
+function fetchArchiveFeatures(
+  archiveLayerId: number,
+  deviceId: string,
+  fields: readonly string[],
+  options: HistoryOptions,
+  signal?: AbortSignal,
+): Promise<Feature[]> {
+  return queryAll(
+    archiveLayerId,
+    {
+      where: `device_id='${deviceId.replace(/'/g, "''")}'`,
+      outFields: ["measured_at", ...fields].join(","),
+      orderByFields: "measured_at ASC",
+    },
+    { maxRows: options.maxRows },
+    signal,
+  );
+}
+
 /**
  * Fetch a measurement's history for one sensor (by device_id) from an archive
  * layer, ordered oldest→newest. By default this pulls the full available
@@ -63,20 +89,11 @@ export async function fetchHistory(
   archiveLayerId: number,
   deviceId: string,
   field: string,
-  options: { maxRows?: number } = {},
+  options: HistoryOptions = {},
   signal?: AbortSignal,
 ): Promise<TimeSeriesPoint[]> {
   if (isDemoMode()) return (await loadDemoApi()).history(archiveLayerId, deviceId, field);
-  const features = await queryAll(
-    archiveLayerId,
-    {
-      where: `device_id='${deviceId.replace(/'/g, "''")}'`,
-      outFields: `measured_at,${field}`,
-      orderByFields: "measured_at ASC",
-    },
-    { maxRows: options.maxRows },
-    signal,
-  );
+  const features = await fetchArchiveFeatures(archiveLayerId, deviceId, [field], options, signal);
   const points: TimeSeriesPoint[] = [];
   for (const feature of features) {
     const timestamp = toFiniteNumber(feature.attributes.measured_at);
@@ -84,6 +101,42 @@ export async function fetchHistory(
     if (timestamp != null && value != null) points.push({ timestamp, value });
   }
   return points;
+}
+
+/** One archive row: a timestamp plus the requested fields' values. */
+export interface HistoryRow {
+  timestamp: number;
+  /** Parallel to the requested `fields`; null where the row has no value. */
+  values: (number | null)[];
+}
+
+/**
+ * Fetch several measurements' history for one sensor in a single pass, ordered
+ * oldest→newest. The multi-field counterpart of {@link fetchHistory}: reading a
+ * whole depth profile this way costs one paginated scan of the archive instead
+ * of one per band.
+ */
+export async function fetchHistoryRows(
+  archiveLayerId: number,
+  deviceId: string,
+  fields: readonly string[],
+  options: HistoryOptions = {},
+  signal?: AbortSignal,
+): Promise<HistoryRow[]> {
+  if (fields.length === 0) return [];
+  if (isDemoMode()) {
+    return (await loadDemoApi()).historyRows(archiveLayerId, deviceId, fields);
+  }
+  const features = await fetchArchiveFeatures(archiveLayerId, deviceId, fields, options, signal);
+  const rows: HistoryRow[] = [];
+  for (const feature of features) {
+    const timestamp = toFiniteNumber(feature.attributes.measured_at);
+    if (timestamp == null) continue;
+    const values = fields.map((field) => toFiniteNumber(feature.attributes[field]));
+    // A row with no value in any requested field carries no information.
+    if (values.some((value) => value != null)) rows.push({ timestamp, values });
+  }
+  return rows;
 }
 
 /** Row count of a layer. */
