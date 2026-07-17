@@ -101,8 +101,8 @@ describe("getDefaultDepthProfileMode", () => {
     bands: [],
   });
 
-  it("opens moisture as development and temperature as absolute", () => {
-    expect(getDefaultDepthProfileMode(profile("moisture"))).toBe("development");
+  it("opens moisture and temperature as absolute readings", () => {
+    expect(getDefaultDepthProfileMode(profile("moisture"))).toBe("absolute");
     expect(getDefaultDepthProfileMode(profile("temperature"))).toBe("absolute");
   });
 });

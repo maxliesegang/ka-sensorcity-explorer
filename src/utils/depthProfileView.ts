@@ -41,7 +41,7 @@ const MIN_WINDOW_COVERAGE = 0.75;
 
 /** Defaults by quantity semantics; adding a ramp requires an explicit choice. */
 const DEFAULT_MODE: Record<DepthProfileRamp, DepthProfileMode> = {
-  moisture: "development",
+  moisture: "absolute",
   temperature: "absolute",
 };
 

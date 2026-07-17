@@ -25,8 +25,8 @@ Built with **Vite + React + TypeScript**, styled with the
   optional historical replay.
 - **Sensor detail** — current readings plus an interactive time-series chart of
   the chosen measurement, pulled from the matching history archive (or an
-  external source such as PEGELONLINE where no archive exists). Probes that
-  sample at stacked depths (the soil sensors) read their current values as a
+  fallback FeatureServer where the main archive has no matching layer). Probes
+  that sample at stacked depths (the soil sensors) read their current values as a
   depth table rather than one card per field, and get a **depth profile** tab:
   a depth-vs-time heatmap of every band at once, which is what shows rain
   soaking downward, or the daily temperature swing damping out with depth.
@@ -68,10 +68,10 @@ npm run capture:demo           # refresh the snapshot (live layer + full history
 ```
 
 It captures the full retained archive (the complete per-sensor history, a raw
-sample of each archive layer for the query explorer, plus PEGELONLINE and DWD
-weather). That is >100 MB raw, so it is stored gzipped (~18 MB) and inflated in
-the browser; set `DEMO_HISTORY_MAX_ROWS=N` when capturing for a smaller, recent
-slice instead.
+sample of each archive layer for the query explorer, plus the LUBW/HVZ
+water-level archive and DWD weather). That is >100 MB raw, so it is stored
+gzipped (~11 MB) and inflated in the browser; set `DEMO_HISTORY_MAX_ROWS=N`
+when capturing for a smaller, recent slice instead.
 
 [`scripts/capture-demo.ts`](scripts/capture-demo.ts) reads the data model from
 `src/config/` so it captures exactly what the app requests; the
@@ -101,14 +101,14 @@ src/
 │   │                        pagination, statistics, count). No SensorCity logic.
 │   ├── sensorcity.ts        Domain access: sensors, history, category counts.
 │   ├── history.ts           Resolves a sensor+measurement to its history source
-│   │                        (SensorCity archive, else an external provider).
-│   ├── pegelonline.ts       PEGELONLINE water-level history.
+│   │                        (main archive, else a fallback provider).
+│   ├── hvz.ts               LUBW/HVZ water-level history.
 │   ├── brightsky.ts         DWD Rheinstetten temperatures (deviation baseline).
 │   └── temperatureInsights  Cross-sensor temperature stats + replay frames.
 ├── config/
 │   ├── layers.ts            The data model: layers + categories + measurements
 │   │                        + depth profiles. ← extend the app here.
-│   ├── historySources.ts    External (non-ArcGIS) history sources per sensor.
+│   ├── historySources.ts    Fallback history sources per sensor.
 │   └── temperatureBaselines Baseline-station options for deviation mode.
 ├── components/              Layout, Status (loading/error/empty), LineChart and
 │                            DepthProfileChart (SVG), temperature field/legend/
@@ -168,10 +168,11 @@ via the `categoryLabelKey` / `measurementLabelKey` / `depthProfileLabelKey` /
   category with the same shape is covered without another edit. Only the readings
   body is the panel's — the heading, last-measured stamp and device facts around
   it stay the same for every type.
-- **New external history source** — for a measurement with no SensorCity
+- **New fallback history source** — for a measurement with no main SensorCity
   archive, add an entry to
   [`src/config/historySources.ts`](src/config/historySources.ts) matching the
-  sensor's category, field and `deviceId` to a provider (PEGELONLINE today). The
+  sensor's category, field and `deviceId` to a provider (the LUBW/HVZ
+  FeatureServer today). The
   detail view's [`resolveHistorySource`](src/api/history.ts) routes to it
   automatically.
 - **New view/route** — add a file in `src/views/` and a `<Route>` in
@@ -179,13 +180,14 @@ via the `categoryLabelKey` / `measurementLabelKey` / `depthProfileLabelKey` /
 
 ## Data source
 
-The primary source is the City of Karlsruhe SensorCity ArcGIS FeatureServer —
-see [`karlsruhe_sensorcity_api.md`](karlsruhe_sensorcity_api.md) for the
-reference. Two further public, read-only APIs supplement it: **DWD** weather
-(Rheinstetten station, via [Bright Sky](https://brightsky.dev/)) provides the
-out-of-city temperature baseline, and **[PEGELONLINE](https://www.pegelonline.wsv.de/)**
-provides water-level history where SensorCity has no archive.
+The primary sources are two City of Karlsruhe ArcGIS FeatureServers: the main
+SensorCity service and a separate LUBW/HVZ water-level archive. See
+[`karlsruhe_sensorcity_api.md`](karlsruhe_sensorcity_api.md) for the reference.
+**DWD** weather (Rheinstetten station, via
+[Bright Sky](https://brightsky.dev/)) supplements them with the out-of-city
+temperature baseline.
 
-The SensorCity archives are **rolling windows** (weeks to months), so history is
-limited to what the service currently retains. This is an unofficial tool and
-not affiliated with the City of Karlsruhe.
+The archive layers are **rolling windows**, so history is limited to what the
+services currently retain: weeks to months for the main archives, but only a
+few days for water levels. This is an unofficial tool and not affiliated with
+the City of Karlsruhe.

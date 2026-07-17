@@ -33,7 +33,7 @@ const snapshot: DemoSnapshot = {
       { attributes: { objectid: 2, device_id: "dev-1", temp: 13 } },
     ],
   },
-  pegel: { "uuid:W": [{ timestamp: 5, value: 100 }] },
+  hvzWaterLevels: { "109": [{ timestamp: 5, value: 100 }] },
   brightskyHourly: [
     { timestamp: Date.UTC(2026, 0, 1, 12), temperature: 5, observed: true },
     { timestamp: Date.UTC(2026, 0, 3, 12), temperature: 7, observed: true },
@@ -121,14 +121,14 @@ describe("count", () => {
   });
 });
 
-describe("history and external providers", () => {
+describe("history and fallback providers", () => {
   it("looks up history by composite key", async () => {
     expect(await api.history(2, "dev-1", "temp")).toEqual([{ timestamp: 10, value: 1 }]);
     expect(await api.history(2, "missing", "temp")).toEqual([]);
   });
 
-  it("returns pegel history by station and parameter", async () => {
-    expect(await api.pegelHistory("uuid", "W")).toEqual([{ timestamp: 5, value: 100 }]);
+  it("returns HVZ water-level history by station id", async () => {
+    expect(await api.hvzWaterLevelHistory(109)).toEqual([{ timestamp: 5, value: 100 }]);
   });
 
   it("filters brightsky hourly to the requested date range", async () => {

@@ -222,14 +222,13 @@ export async function historyRows(
     .map(([timestamp, values]) => ({ timestamp, values }));
 }
 
-// --- External providers -----------------------------------------------------
+// --- Fallback history providers --------------------------------------------
 
-export async function pegelHistory(
-  stationUuid: string,
-  parameter: string,
+export async function hvzWaterLevelHistory(
+  stationId: number,
 ): Promise<TimeSeriesPoint[]> {
   const snapshot = await loadSnapshot();
-  return snapshot.pegel[`${stationUuid}:${parameter}`] ?? [];
+  return snapshot.hvzWaterLevels[String(stationId)] ?? [];
 }
 
 export async function brightskyHourly(

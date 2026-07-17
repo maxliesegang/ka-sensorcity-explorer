@@ -1,23 +1,23 @@
 // Capture a real snapshot of every API the app reads, so the explorer can run
 // from a frozen dataset when the upstream services are unavailable (demo mode).
 //
-// Run with `npm run capture:demo`. It writes `public/demo-snapshot.json`, which
+// Run with `npm run capture:demo`. It writes `public/demo-snapshot.json.gz`, which
 // `src/demo/` serves whenever demo mode is on. Re-run it to refresh the dataset.
 //
-// Config (layers, fields, external sources) is imported from `src/` so this
+// Config (layers, fields, fallback sources) is imported from `src/` so this
 // stays in sync with the live data model — there is nothing to duplicate here.
 
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { CATEGORIES, LAYERS, LIVE_LAYER_ID } from "../src/config/layers.ts";
-import { EXTERNAL_HISTORY_SOURCES } from "../src/config/historySources.ts";
+import { FALLBACK_HISTORY_SOURCES } from "../src/config/historySources.ts";
 import {
-  ARCGIS_BASE_URL,
+  ARCGIS_MAX_PAGE_SIZE,
   BRIGHTSKY_BASE_URL,
   DWD_RHEINSTETTEN_STATION_ID,
-  MAX_RECORD_COUNT,
-  PEGELONLINE_BASE_URL,
+  HVZ_WATER_LEVEL_LAYER_URL,
+  SENSORCITY_FEATURE_SERVER_URL,
 } from "../src/config/endpoints.ts";
 import type { DemoSnapshot } from "../src/demo/snapshot.ts";
 import type { Feature, FieldInfo } from "../src/types.ts";
@@ -59,11 +59,24 @@ async function queryAll(
   params: Record<string, string>,
   maxRows = Infinity,
 ): Promise<Feature[]> {
-  const pageSize = Math.min(maxRows, MAX_RECORD_COUNT);
+  return queryAllFromLayer(
+    `${SENSORCITY_FEATURE_SERVER_URL}/${layerId}`,
+    params,
+    maxRows,
+  );
+}
+
+/** Page through a layer outside the main SensorCity FeatureServer. */
+async function queryAllFromLayer(
+  layerUrl: string,
+  params: Record<string, string>,
+  maxRows = Infinity,
+): Promise<Feature[]> {
+  const pageSize = Math.min(maxRows, ARCGIS_MAX_PAGE_SIZE);
   const out: Feature[] = [];
   let offset = 0;
   for (;;) {
-    const url = new URL(`${ARCGIS_BASE_URL}/${layerId}/query`);
+    const url = new URL(`${layerUrl}/query`);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
     url.searchParams.set("resultOffset", String(offset));
     url.searchParams.set("resultRecordCount", String(pageSize));
@@ -87,14 +100,14 @@ async function captureLiveFeatures(): Promise<Feature[]> {
 
 async function captureCount(layerId: number): Promise<number> {
   const res = await getJson<{ count: number }>(
-    `${ARCGIS_BASE_URL}/${layerId}/query?where=1%3D1&returnCountOnly=true&f=json`,
+    `${SENSORCITY_FEATURE_SERVER_URL}/${layerId}/query?where=1%3D1&returnCountOnly=true&f=json`,
   );
   return res.count;
 }
 
 async function captureFields(layerId: number): Promise<FieldInfo[]> {
   const meta = await getJson<{ fields?: FieldInfo[] }>(
-    `${ARCGIS_BASE_URL}/${layerId}?f=json`,
+    `${SENSORCITY_FEATURE_SERVER_URL}/${layerId}?f=json`,
   );
   return meta.fields ?? [];
 }
@@ -152,31 +165,34 @@ async function captureArchiveLayer(
   return { history, sample };
 }
 
-interface PegelMeasurement {
-  timestamp?: string;
-  value?: number | null;
-}
-
-async function capturePegel(
-  stationUuid: string,
-  parameter: string,
-): Promise<TimeSeriesPoint[]> {
-  const url = new URL(
-    `${PEGELONLINE_BASE_URL}/stations/${stationUuid}/${parameter}/measurements.json`,
+async function captureHvzWaterLevels(): Promise<Record<string, TimeSeriesPoint[]>> {
+  const stationIds = new Set<number>(
+    FALLBACK_HISTORY_SOURCES.filter(
+      (source) => source.provider === "hvz",
+    ).map((source) => source.stationId),
   );
-  url.searchParams.set("start", "P30D");
-  const rows = await getJson<PegelMeasurement[]>(url.toString());
-  if (!Array.isArray(rows)) return [];
-  return rows
-    .map((row) => {
-      const timestamp = row.timestamp ? Date.parse(row.timestamp) : NaN;
-      const value = toFinite(row.value);
-      return Number.isFinite(timestamp) && value != null
-        ? { timestamp, value }
-        : null;
-    })
-    .filter((p): p is TimeSeriesPoint => p != null)
-    .sort((a, b) => a.timestamp - b.timestamp);
+  const rows = await queryAllFromLayer(HVZ_WATER_LEVEL_LAYER_URL, {
+    where: "1=1",
+    outFields: "objectid,srid,datum,pegel",
+    returnGeometry: "false",
+    orderByFields: "datum ASC,objectid ASC",
+  });
+  const hvzWaterLevels: Record<string, TimeSeriesPoint[]> = {};
+  for (const row of rows) {
+    const stationId = toFinite(row.attributes.srid);
+    const timestamp = toFinite(row.attributes.datum);
+    const value = toFinite(row.attributes.pegel);
+    if (
+      stationId == null ||
+      !stationIds.has(stationId) ||
+      timestamp == null ||
+      value == null
+    ) {
+      continue;
+    }
+    (hvzWaterLevels[String(stationId)] ??= []).push({ timestamp, value });
+  }
+  return hvzWaterLevels;
 }
 
 interface BrightskyPoint {
@@ -278,14 +294,10 @@ async function main(): Promise<void> {
       `raw sample: ${Object.values(rawArchiveFeatures).reduce((n, r) => n + r.length, 0)} rows`,
   );
 
-  const pegel: Record<string, TimeSeriesPoint[]> = {};
-  for (const source of EXTERNAL_HISTORY_SOURCES) {
-    if (source.provider !== "pegelonline") continue;
-    pegel[`${source.stationUuid}:${source.parameter}`] = await capturePegel(
-      source.stationUuid,
-      source.parameter,
-    );
-  }
+  const hvzWaterLevels = await captureHvzWaterLevels();
+  console.log(
+    `  HVZ water levels: ${Object.values(hvzWaterLevels).reduce((n, rows) => n + rows.length, 0)} points`,
+  );
 
   // Extend the weather window back to the oldest captured reading so the
   // historical temperature replay has a baseline for every frame.
@@ -306,7 +318,7 @@ async function main(): Promise<void> {
     fields,
     history,
     rawArchiveFeatures,
-    pegel,
+    hvzWaterLevels,
     brightskyHourly,
     brightskyCurrent,
   };

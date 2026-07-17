@@ -4,13 +4,16 @@
 // semantics (that lives in `config/layers.ts` and `api/sensorcity.ts`). This
 // makes it reusable for any layer and easy to test or swap.
 
-import { ARCGIS_BASE_URL as BASE_URL, MAX_RECORD_COUNT } from "../config/endpoints";
+import {
+  ARCGIS_MAX_PAGE_SIZE,
+  SENSORCITY_FEATURE_SERVER_URL,
+} from "../config/endpoints";
 import { isDemoMode, loadDemoApi } from "../demo/mode";
 import type { Feature, FieldInfo, QueryResponse } from "../types";
 
 // Re-exported so callers that surface the service contract (e.g. QueryView's
 // page-size cap) keep importing it from the client they talk to.
-export { MAX_RECORD_COUNT };
+export { ARCGIS_MAX_PAGE_SIZE };
 
 export interface QueryParams {
   /** SQL filter. Defaults to `1=1` (match all). */
@@ -38,8 +41,8 @@ export interface OutStatistic {
  * resolved request (e.g. the query explorer) shows exactly what `query` hits,
  * rather than re-serializing the params and risking drift.
  */
-export function queryUrl(layerId: number, params: QueryParams): string {
-  const url = new URL(`${BASE_URL}/${layerId}/query`);
+export function queryUrlForLayer(layerUrl: string, params: QueryParams): string {
+  const url = new URL(`${layerUrl}/query`);
   const p = url.searchParams;
   p.set("where", params.where ?? "1=1");
   if (params.outFields) p.set("outFields", params.outFields);
@@ -57,6 +60,10 @@ export function queryUrl(layerId: number, params: QueryParams): string {
     p.set("outStatistics", JSON.stringify(params.outStatistics));
   p.set("f", params.f ?? "json");
   return url.toString();
+}
+
+export function queryUrl(layerId: number, params: QueryParams): string {
+  return queryUrlForLayer(`${SENSORCITY_FEATURE_SERVER_URL}/${layerId}`, params);
 }
 
 class ArcGisError extends Error {}
@@ -81,7 +88,20 @@ export async function query(
   signal?: AbortSignal,
 ): Promise<QueryResponse> {
   if (isDemoMode()) return (await loadDemoApi()).query(layerId, params);
-  const url = queryUrl(layerId, { returnGeometry: false, ...params });
+  return queryFromLayer(
+    `${SENSORCITY_FEATURE_SERVER_URL}/${layerId}`,
+    params,
+    signal,
+  );
+}
+
+/** Run a query against any ArcGIS FeatureServer layer URL. */
+export function queryFromLayer(
+  layerUrl: string,
+  params: QueryParams,
+  signal?: AbortSignal,
+): Promise<QueryResponse> {
+  const url = queryUrlForLayer(layerUrl, { returnGeometry: false, ...params });
   return fetchJson<QueryResponse>(url, signal);
 }
 
@@ -119,30 +139,66 @@ export async function queryStatistics(
  * correct pagination, so we default to the object id. `maxRows` caps the pull
  * to keep the UI responsive on large layers.
  */
-export async function queryAll(
-  layerId: number,
+async function queryAllPages(
+  fetchPage: (params: QueryParams) => Promise<QueryResponse>,
   params: QueryParams = {},
   options: { maxRows?: number } = {},
-  signal?: AbortSignal,
 ): Promise<Feature[]> {
   const maxRows = options.maxRows ?? Infinity;
-  const pageSize = Math.min(params.resultRecordCount ?? MAX_RECORD_COUNT, MAX_RECORD_COUNT);
+  if (maxRows <= 0) return [];
+
+  const pageSize = Math.min(
+    params.resultRecordCount ?? ARCGIS_MAX_PAGE_SIZE,
+    ARCGIS_MAX_PAGE_SIZE,
+    maxRows,
+  );
   const orderByFields = params.orderByFields ?? "objectid ASC";
   const out: Feature[] = [];
   let offset = 0;
 
   for (;;) {
-    const res = await query(
-      layerId,
-      { ...params, orderByFields, resultOffset: offset, resultRecordCount: pageSize },
-      signal,
-    );
+    const res = await fetchPage({
+      ...params,
+      orderByFields,
+      resultOffset: offset,
+      resultRecordCount: pageSize,
+    });
     out.push(...res.features);
     offset += res.features.length;
-    const done = res.features.length < pageSize || out.length >= maxRows;
+    const reachedLastPage =
+      res.features.length === 0 ||
+      (res.features.length < pageSize && !res.exceededTransferLimit);
+    const done = reachedLastPage || out.length >= maxRows;
     if (done) break;
   }
   return out.slice(0, maxRows);
+}
+
+export function queryAll(
+  layerId: number,
+  params: QueryParams = {},
+  options: { maxRows?: number } = {},
+  signal?: AbortSignal,
+): Promise<Feature[]> {
+  return queryAllPages(
+    (pageParams) => query(layerId, pageParams, signal),
+    params,
+    options,
+  );
+}
+
+/** Page through rows from any ArcGIS FeatureServer layer URL. */
+export function queryAllFromLayer(
+  layerUrl: string,
+  params: QueryParams = {},
+  options: { maxRows?: number } = {},
+  signal?: AbortSignal,
+): Promise<Feature[]> {
+  return queryAllPages(
+    (pageParams) => queryFromLayer(layerUrl, pageParams, signal),
+    params,
+    options,
+  );
 }
 
 /**
@@ -156,7 +212,7 @@ export async function fetchLayerFields(
   signal?: AbortSignal,
 ): Promise<FieldInfo[]> {
   if (isDemoMode()) return (await loadDemoApi()).layerFields(layerId);
-  const url = `${BASE_URL}/${layerId}?f=json`;
+  const url = `${SENSORCITY_FEATURE_SERVER_URL}/${layerId}?f=json`;
   const meta = await fetchJson<{ fields?: FieldInfo[] }>(url, signal);
   return meta.fields ?? [];
 }

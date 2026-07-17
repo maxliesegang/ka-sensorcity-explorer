@@ -28,7 +28,18 @@ rows drop off, so pull periodically and accumulate for long-term series.
 
 Water-level gauges (`beschreibung = 'Wasserpegel-Sensor'`) are currently present
 only in layer 1. No dedicated SensorCity archive layer is exposed for their
-history.
+history within this FeatureServer. Their history is published through a
+separate service:
+
+```
+https://geoportal.karlsruhe.de/ags04/rest/services/Hosted/Sensordaten_HVZ_Pegelstaende/FeatureServer/0
+```
+
+That layer uses `srid` as the station id, `datum` as its epoch-millisecond
+timestamp and `pegel` as the water level in centimetres. The three live gauge
+device ids map directly to its station ids: `109` (Berghausen/Pfinz), `110`
+(Ettlingen/Alb), and `9016` (Maxau/Rhein). As observed in July 2026, this is a
+short rolling window of roughly three to four days.
 
 > **Upstream change (July 2026).** The service dropped the waste-container
 > dataset: the `NodeRED_TSK_Archiv` layer is gone, the archive layers below it
@@ -36,9 +47,8 @@ history.
 > `beschreibung = 'TSK-Container'` now matches zero live rows. In the same
 > revision the weather category was renamed `Temperatur` → `Temperatur-Sensor`.
 
-The app supplements the Maxau/Rhein gauge (`device_id = 9016`) with recent
-water-level history from PEGELONLINE, because that station is also published by
-WSV. The current mapping lives in `src/config/historySources.ts`.
+The app uses this separate FeatureServer as the fallback history provider for
+all three gauges. The current mappings live in `src/config/historySources.ts`.
 
 ---
 

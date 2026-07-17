@@ -238,7 +238,7 @@ function HistorySection({
   const selected = category?.measurements.find((m) => m.field === selectedField);
   const source = resolveHistorySource(sensor, category, selectedField);
   const history = useAsync(
-    (s) => (source ? source.fetch(s) : Promise.resolve([])),
+    (signal) => (source ? source.fetchHistory(signal) : Promise.resolve([])),
     [sensor.category, sensor.deviceId, selectedField, category?.archiveLayerId],
     { enabled: source != null },
   );
@@ -258,20 +258,20 @@ function HistorySection({
         <div>
           <h2 className="kern-heading-small">{t("history")}</h2>
           <p className="kern-body kern-body--small kern-body--muted">
-            {source.info.url ? (
+            {source.metadata.url ? (
               <>
                 {t("historySource")}{" "}
                 <a
                   className="kern-link"
-                  href={source.info.url}
+                  href={source.metadata.url}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {source.info.label}
+                  {source.metadata.label}
                 </a>
               </>
             ) : (
-              t("historySourceLabel", { source: source.info.label })
+              t("historySourceLabel", { source: source.metadata.label })
             )}
           </p>
         </div>

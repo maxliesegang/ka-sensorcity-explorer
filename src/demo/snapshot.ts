@@ -25,8 +25,8 @@ export interface DemoSnapshot {
    * returns real data for layers 2-5. A bounded sample, not the full archive.
    */
   rawArchiveFeatures: Record<number, Feature[]>;
-  /** PEGELONLINE history keyed by `${stationUuid}:${parameter}`. */
-  pegel: Record<string, TimeSeriesPoint[]>;
+  /** LUBW/HVZ water-level history keyed by station id. */
+  hvzWaterLevels: Record<string, TimeSeriesPoint[]>;
   /** DWD Rheinstetten hourly temperatures over the captured window. */
   brightskyHourly: DwdHourlyPoint[];
   /** Latest captured DWD Rheinstetten observation. */

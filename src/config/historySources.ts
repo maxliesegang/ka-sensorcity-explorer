@@ -1,14 +1,12 @@
-// Declarative map of (category, field, device) → the external network holding
-// that sensor's history. Adding an external history source is an entry here.
+// Declarative map of (category, field, device) → the fallback source holding
+// that sensor's history when the main SensorCity service has no archive layer.
 
-import type { HistoryProvider } from "../api/history";
 import type { Sensor } from "../types";
+// This config is also imported directly by the Node-run snapshot capture;
+// retain the extension so Node's native TypeScript loader can resolve it.
+import { HVZ_WATER_LEVEL_LAYER_URL } from "./endpoints.ts";
 
-/** The external providers; `sensorcity` is the built-in archive, not an entry here. */
-export type ExternalHistoryProvider = Exclude<HistoryProvider, "sensorcity">;
-
-export interface ExternalHistorySource {
-  provider: ExternalHistoryProvider;
+interface FallbackHistorySourceBase {
   /** Live-layer category key, e.g. `Wasserpegel-Sensor`. */
   categoryKey: string;
   /** Measurement field on the SensorCity live layer, e.g. `pegel`. */
@@ -16,30 +14,54 @@ export interface ExternalHistorySource {
   /** SensorCity `device_id` used to match the live sensor to this source. */
   deviceId: string;
   label: string;
-  sourceUrl: string;
-  stationUuid: string;
-  parameter: string;
+  url: string;
 }
 
-export const EXTERNAL_HISTORY_SOURCES: ExternalHistorySource[] = [
+export interface HvzHistorySource extends FallbackHistorySourceBase {
+  provider: "hvz";
+  /** Numeric station id in the HVZ archive (`srid` upstream). */
+  stationId: number;
+}
+
+/** Provider-specific source config, discriminated by `provider`. */
+export type FallbackHistorySource = HvzHistorySource;
+export type FallbackHistoryProvider = FallbackHistorySource["provider"];
+
+export const FALLBACK_HISTORY_SOURCES = [
   {
-    provider: "pegelonline",
+    provider: "hvz",
+    categoryKey: "Wasserpegel-Sensor",
+    field: "pegel",
+    deviceId: "109",
+    label: "LUBW/HVZ",
+    url: HVZ_WATER_LEVEL_LAYER_URL,
+    stationId: 109,
+  },
+  {
+    provider: "hvz",
+    categoryKey: "Wasserpegel-Sensor",
+    field: "pegel",
+    deviceId: "110",
+    label: "LUBW/HVZ",
+    url: HVZ_WATER_LEVEL_LAYER_URL,
+    stationId: 110,
+  },
+  {
+    provider: "hvz",
     categoryKey: "Wasserpegel-Sensor",
     field: "pegel",
     deviceId: "9016",
-    label: "PEGELONLINE",
-    sourceUrl:
-      "https://www.pegelonline.wsv.de/webservices/rest-api/v2/stations/b6c6d5c8-e2d5-4469-8dd8-fa972ef7eaea/W/measurements.json?start=P30D",
-    stationUuid: "b6c6d5c8-e2d5-4469-8dd8-fa972ef7eaea",
-    parameter: "W",
+    label: "LUBW/HVZ",
+    url: HVZ_WATER_LEVEL_LAYER_URL,
+    stationId: 9016,
   },
-];
+] as const satisfies readonly FallbackHistorySource[];
 
-export function externalHistorySourceFor(
+export function getFallbackHistorySource(
   sensor: Sensor,
   field: string,
-): ExternalHistorySource | undefined {
-  return EXTERNAL_HISTORY_SOURCES.find(
+): FallbackHistorySource | undefined {
+  return FALLBACK_HISTORY_SOURCES.find(
     (source) =>
       source.categoryKey === sensor.category &&
       source.deviceId === sensor.deviceId &&

@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { KernAlert, KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
-import { MAX_RECORD_COUNT, query, queryUrl } from "../api/arcgis";
+import { ARCGIS_MAX_PAGE_SIZE, query, queryUrl } from "../api/arcgis";
 import type { QueryParams } from "../api/arcgis";
 import { LAYERS, TEMPERATURE_CATEGORY_KEY } from "../config/layers";
 import { Empty, ErrorMessage, Loading } from "../components/Status";
@@ -214,7 +214,7 @@ export function QueryView() {
               type="number"
               className="kern-form-input__input"
               min={1}
-              max={MAX_RECORD_COUNT}
+              max={ARCGIS_MAX_PAGE_SIZE}
               value={resultRecordCount}
               onChange={(e) => setResultRecordCount(Number(e.target.value))}
             />

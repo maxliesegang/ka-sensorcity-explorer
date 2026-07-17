@@ -1,49 +1,58 @@
 // Resolves where one sensor's measurement history comes from.
 //
-// Not every category has a SensorCity archive layer (water gauges, for example,
-// are published only on the live layer), so callers ask here rather than calling
-// `fetchHistory` directly: this picks the SensorCity archive when the category
-// has one and falls back to a matching external provider otherwise.
+// Not every category has an archive layer in the main SensorCity service (water
+// gauges, for example, use a separate FeatureServer), so callers ask here rather
+// than calling `fetchHistory` directly: this picks the main archive when the
+// category has one and falls back to a matching configured provider otherwise.
 
 import {
-  externalHistorySourceFor,
-  type ExternalHistoryProvider,
-  type ExternalHistorySource,
+  getFallbackHistorySource,
+  type FallbackHistoryProvider,
+  type FallbackHistorySource,
 } from "../config/historySources";
 import type { Category, Sensor } from "../types";
-import { fetchPegelOnlineHistory } from "./pegelonline";
+import { fetchHvzWaterLevelHistory } from "./hvz";
 import { fetchHistory, type TimeSeriesPoint } from "./sensorcity";
 
-/** Which upstream network a history series is read from. */
-export type HistoryProvider = "sensorcity" | "pegelonline";
+/** Which upstream provider a history series is read from. */
+export type HistoryProvider = "sensorcity" | FallbackHistoryProvider;
 
-export interface HistorySourceInfo {
+export interface HistorySourceMetadata {
   provider: HistoryProvider;
   label: string;
-  /** Public page for the upstream series; absent for the SensorCity archive. */
+  /** Public URL for the upstream series; absent for the SensorCity archive. */
   url?: string;
 }
 
 export type HistoryFetcher = (signal?: AbortSignal) => Promise<TimeSeriesPoint[]>;
 
 export interface ResolvedHistorySource {
-  info: HistorySourceInfo;
-  fetch: HistoryFetcher;
+  metadata: HistorySourceMetadata;
+  fetchHistory: HistoryFetcher;
 }
 
-/**
- * How to read a series from each external provider. Keyed by provider so adding
- * one is an entry here plus its `EXTERNAL_HISTORY_SOURCES` config —
- * `resolveHistorySource` itself stays provider-agnostic. `Record` over the
- * union makes a missing provider a compile error, not a runtime `null`.
- */
-const EXTERNAL_FETCHERS: Record<
-  ExternalHistoryProvider,
-  (source: ExternalHistorySource) => HistoryFetcher
-> = {
-  pegelonline: (source) => (signal) =>
-    fetchPegelOnlineHistory(source.stationUuid, source.parameter, undefined, signal),
+type FallbackFetcherFactoryRegistry = {
+  [Provider in FallbackHistoryProvider]: (
+    source: Extract<FallbackHistorySource, { provider: Provider }>,
+  ) => HistoryFetcher;
 };
+
+/** Keep provider-specific reads exhaustive and correctly typed as the union grows. */
+const FALLBACK_FETCHER_FACTORIES: FallbackFetcherFactoryRegistry = {
+  hvz: (source) => (signal) =>
+    fetchHvzWaterLevelHistory(source.stationId, signal),
+};
+
+function createFallbackHistoryFetcher(
+  source: FallbackHistorySource,
+): HistoryFetcher {
+  // TypeScript cannot preserve the correlation between a union's discriminator
+  // and an indexed mapped type. The registry definition enforces it at creation.
+  const createFetcher = FALLBACK_FETCHER_FACTORIES[source.provider] as (
+    source: FallbackHistorySource,
+  ) => HistoryFetcher;
+  return createFetcher(source);
+}
 
 export function resolveHistorySource(
   sensor: Sensor,
@@ -53,21 +62,21 @@ export function resolveHistorySource(
   const archiveLayerId = category?.archiveLayerId;
   if (archiveLayerId != null) {
     return {
-      info: { provider: "sensorcity", label: "SensorCity" },
-      fetch: (signal) =>
+      metadata: { provider: "sensorcity", label: "SensorCity" },
+      fetchHistory: (signal) =>
         fetchHistory(archiveLayerId, sensor.deviceId, field, {}, signal),
     };
   }
 
-  const external = externalHistorySourceFor(sensor, field);
-  if (!external) return null;
+  const fallback = getFallbackHistorySource(sensor, field);
+  if (!fallback) return null;
 
   return {
-    info: {
-      provider: external.provider,
-      label: external.label,
-      url: external.sourceUrl,
+    metadata: {
+      provider: fallback.provider,
+      label: fallback.label,
+      url: fallback.url,
     },
-    fetch: EXTERNAL_FETCHERS[external.provider](external),
+    fetchHistory: createFallbackHistoryFetcher(fallback),
   };
 }

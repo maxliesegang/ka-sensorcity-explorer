@@ -6,16 +6,16 @@
 // can't import the api/* modules directly because those pull in the
 // browser-only demo graph (see src/demo/).
 
-/** Karlsruhe ArcGIS REST FeatureServer hosting the SensorCity layers. */
-export const ARCGIS_BASE_URL =
+/** Karlsruhe ArcGIS REST FeatureServer hosting the main SensorCity layers. */
+export const SENSORCITY_FEATURE_SERVER_URL =
   "https://geoportal.karlsruhe.de/ags04/rest/services/Hosted/Sensordaten_NodeRED/FeatureServer";
 
 /** Hard service limit: a single ArcGIS query page returns at most this many rows. */
-export const MAX_RECORD_COUNT = 2000;
+export const ARCGIS_MAX_PAGE_SIZE = 2000;
 
-/** PEGELONLINE water-gauge REST API. */
-export const PEGELONLINE_BASE_URL =
-  "https://www.pegelonline.wsv.de/webservices/rest-api/v2";
+/** Karlsruhe FeatureServer layer publishing LUBW/HVZ water-level history. */
+export const HVZ_WATER_LEVEL_LAYER_URL =
+  "https://geoportal.karlsruhe.de/ags04/rest/services/Hosted/Sensordaten_HVZ_Pegelstaende/FeatureServer/0";
 
 /** Bright Sky (DWD) weather API. */
 export const BRIGHTSKY_BASE_URL = "https://api.brightsky.dev";
