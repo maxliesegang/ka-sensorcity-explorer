@@ -2,7 +2,6 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { KernIcon, type KernIconType } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { SUPPORTED_LANGUAGES, type Language } from "../i18n";
 
 type NavItem = {
   to: string;
@@ -25,10 +24,9 @@ const SECONDARY_NAV = [
 
 /** App chrome: KERN government strip, header with nav, main content, footer. */
 export function Layout({ children }: { children: ReactNode }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   const moreRef = useRef<HTMLDetailsElement>(null);
-  const currentLang = (i18n.resolvedLanguage ?? i18n.language) as string;
   const isSecondaryActive = SECONDARY_NAV.some((item) => pathname.startsWith(item.to));
 
   useEffect(() => {
@@ -115,32 +113,6 @@ export function Layout({ children }: { children: ReactNode }) {
                 </div>
               </details>
             </nav>
-            <div
-              className="theme-switch app__language"
-              role="group"
-              aria-label={t("language.label")}
-            >
-              {SUPPORTED_LANGUAGES.map((lang: Language) => {
-                const active = currentLang === lang;
-                return (
-                  <button
-                    key={lang}
-                    type="button"
-                    className={`theme-switch__option${
-                      active ? " theme-switch__option--active" : ""
-                    }`}
-                    aria-pressed={active}
-                    lang={lang}
-                    onClick={() => void i18n.changeLanguage(lang)}
-                    title={t(`language.${lang}`)}
-                  >
-                    <span className="theme-switch__text theme-switch__text--code">
-                      {lang.toUpperCase()}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </header>
       </div>

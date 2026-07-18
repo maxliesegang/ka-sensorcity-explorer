@@ -1,7 +1,7 @@
 export default {
   back: "Back",
   notFound: "Sensor not found.",
-  heroSubtitle: "Latest published reading from SensorCity.",
+  heroSubtitle: "Latest reading published by SensorCity.",
   primaryValue: "Primary value",
   tabs: {
     aria: "Sensor detail sections",
@@ -12,7 +12,7 @@ export default {
     raw: "Raw data",
   },
   currentReadings: "Current readings",
-  currentIntro: "Measurements and identifiers from the latest published record.",
+  currentIntro: "Measurements and identifiers from the latest record.",
   lastMeasuredAt: "Last measured {{date}}",
   facts: {
     lastMeasured: "Last measured",
@@ -23,13 +23,13 @@ export default {
     heading: "Location",
     subtitle: "The map centres on this sensor and shows all located sensors.",
     noCoordinates:
-      "No coordinates are available for this sensor. The map shows all located sensors instead.",
+      "This sensor has no coordinates. The map shows all located sensors instead.",
     focusSensor: "Focus sensor",
     fitAll: "Fit all",
     mapAria: "Map showing {{name}} and all located sensors",
     status: {
       loading: "Loading sensor locations...",
-      error: "Other sensor locations could not be loaded.",
+      error: "Couldn't load other sensor locations.",
       showing: "Showing {{count}} located sensors.",
     },
     popup: {
@@ -50,10 +50,10 @@ export default {
       "Compare readings by depth and time. Level 0 is closest to the surface.",
     quantity: "Measurement",
     tableCaption:
-      "Level 0 is closest to the surface; exact depths are not published.",
+      "Level 0 is closest to the surface; exact depths aren't published.",
   },
   rawAttributes: "Raw data",
-  rawIntro: "Original non-empty fields from the latest API record.",
+  rawIntro: "Non-empty fields from the latest API record.",
   rawTableCaption: "Raw attributes for {{name}}",
   rawField: "Field",
   rawValue: "Value",
@@ -68,8 +68,8 @@ export default {
       volatility: "Volatility",
     },
     trend: {
-      up: "Trending up by {{delta}} over the recent window",
-      down: "Trending down by {{delta}} over the recent window",
+      up: "Up {{delta}} over the recent window",
+      down: "Down {{delta}} over the recent window",
       steady: "Holding steady (±{{delta}})",
     },
     diurnal: {
@@ -77,7 +77,7 @@ export default {
       aria: "Bar chart of average {{label}} by hour of day",
       caption:
         "Peaks around {{peak}}:00 ({{peakValue}}), lowest around {{trough}}:00 ({{troughValue}}).",
-      summary: "Hourly averages calculated from the available history.",
+      summary: "Hourly averages from the available history.",
     },
   },
 } as const;

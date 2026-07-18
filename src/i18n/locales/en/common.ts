@@ -96,7 +96,7 @@ export default {
       },
       modeHint: {
         absolute: "Colour shows the reading at each depth level.",
-        development: "Colour shows variation from each depth level's typical value.",
+        development: "Colour shows how far each depth level differs from its typical value.",
       },
       colorScale: "Colour scale",
       change24h: "Change in the last 24 hours",

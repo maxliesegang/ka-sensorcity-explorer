@@ -31,5 +31,5 @@ export default {
     status: "{{from}}–{{to}} of {{total}} · Page {{page}} of {{pages}}",
   },
   transferLimit:
-    "Server limit reached. More rows may match. Refine the query or request another server page. Downloads include only returned rows.",
+    "Server limit reached. More rows may match. Refine the query or load the next server page. Downloads include only the returned rows.",
 } as const;

@@ -2,7 +2,7 @@ export default {
   badge: "Live open data",
   heading: "Karlsruhe at a glance",
   intro:
-    "Current weather, rain, soil and water readings from the city's SensorCity network.",
+    "Weather, rain, soil and water readings from the city's SensorCity network.",
   summaryAria: "Network summary",
   kpi: {
     liveSensors: "Live sensors",
@@ -24,5 +24,5 @@ export default {
     temperature: { title: "Temperature", hint: "Compare warm and cool areas" },
   },
   newestReading: "Newest reading",
-  empty: "No live sensor data is available.",
+  empty: "No live sensor data available.",
 } as const;

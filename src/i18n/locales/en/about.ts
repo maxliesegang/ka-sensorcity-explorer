@@ -10,7 +10,7 @@ export default {
   },
   design: {
     heading: "Display settings",
-    body: "Choose English or German and use your system theme, light mode or dark mode.",
+    body: "Choose English or German, and follow your system theme or pick light or dark mode.",
     themeModes: "Theme modes",
     themeModesValue: "System, Light, Dark",
     preference: "Preference",

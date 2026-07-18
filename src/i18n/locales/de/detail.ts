@@ -1,7 +1,7 @@
 export default {
   back: "Zurück",
   notFound: "Sensor nicht gefunden.",
-  heroSubtitle: "Neuester veröffentlichter Messwert von SensorCity.",
+  heroSubtitle: "Neuester von SensorCity veröffentlichter Messwert.",
   primaryValue: "Primärwert",
   tabs: {
     aria: "Sensor-Detailbereiche",
@@ -12,7 +12,7 @@ export default {
     raw: "Rohdaten",
   },
   currentReadings: "Aktuelle Messwerte",
-  currentIntro: "Messwerte und Kennungen aus dem neuesten veröffentlichten Datensatz.",
+  currentIntro: "Messwerte und Kennungen aus dem neuesten Datensatz.",
   lastMeasuredAt: "Zuletzt gemessen {{date}}",
   facts: {
     lastMeasured: "Zuletzt gemessen",
@@ -30,7 +30,7 @@ export default {
     status: {
       loading: "Sensorstandorte werden geladen...",
       error: "Weitere Sensorstandorte konnten nicht geladen werden.",
-      showing: "{{count}} verortete Sensoren werden angezeigt.",
+      showing: "{{count}} verortete Sensoren angezeigt.",
     },
     popup: {
       lastReading: "Letzter Messwert:",
@@ -47,13 +47,13 @@ export default {
   profile: {
     heading: "Tiefenprofil",
     intro:
-      "Vergleichen Sie Messwerte nach Tiefe und Zeit. Stufe 0 liegt der Oberfläche am nächsten.",
+      "Messwerte nach Tiefe und Zeit vergleichen. Stufe 0 liegt der Oberfläche am nächsten.",
     quantity: "Messgröße",
     tableCaption:
       "Stufe 0 liegt der Oberfläche am nächsten; genaue Tiefen werden nicht veröffentlicht.",
   },
   rawAttributes: "Rohdaten",
-  rawIntro: "Nicht leere Originalfelder aus dem neuesten API-Datensatz.",
+  rawIntro: "Nicht leere Felder aus dem neuesten API-Datensatz.",
   rawTableCaption: "Rohattribute für {{name}}",
   rawField: "Feld",
   rawValue: "Wert",
@@ -77,7 +77,7 @@ export default {
       aria: "Balkendiagramm des durchschnittlichen {{label}} nach Tagesstunde",
       caption:
         "Höchstwert gegen {{peak}}:00 Uhr ({{peakValue}}), Tiefstwert gegen {{trough}}:00 Uhr ({{troughValue}}).",
-      summary: "Stündliche Mittelwerte aus dem verfügbaren Verlauf.",
+      summary: "Stündliche Mittelwerte aus dem Verlauf.",
     },
   },
 } as const;

@@ -2,30 +2,30 @@ export default {
   badge: "Stadtklima",
   heading: "Wie warm ist es gerade in Karlsruhe?",
   intro:
-    "Warme und kühle Orte auf einen Blick. Jede Fläche nutzt den nächstgelegenen aktuellen Sensor; Rot ist im Vergleich wärmer, Blau kühler.",
+    "Warme und kühle Orte auf einen Blick. Jede Fläche übernimmt den nächstgelegenen aktuellen Sensor; Rot ist wärmer, Blau kühler als die übrigen.",
   introLinkPrefix: "Lieber alle Sensoren sehen? ",
   introLink: "Vollständige Sensorkarte öffnen",
   canvasAria: "Temperaturkarte",
   mapAria: "Temperaturkarte von Karlsruhe",
   emptyToMap:
-    "Derzeit sind keine aktuellen Temperaturmesswerte verfügbar.",
+    "Keine aktuellen Temperaturmesswerte.",
   status: {
     loading: "Sensoren werden geladen …",
     error: "Die Kartendaten konnten nicht geladen werden.",
     showingRange_one:
-      "{{count}} kürzlich aktualisierter Sensor auf der Karte, misst {{min}}–{{max}} °C.",
+      "{{count}} Sensor auf der Karte, misst {{min}}–{{max}} °C.",
     showingRange_other:
-      "{{count}} kürzlich aktualisierte Sensoren auf der Karte, messen {{min}}–{{max}} °C.",
-    showing_one: "{{count}} kürzlich aktualisierter Sensor auf der Karte.",
-    showing_other: "{{count}} kürzlich aktualisierte Sensoren auf der Karte.",
+      "{{count}} Sensoren auf der Karte, messen {{min}}–{{max}} °C.",
+    showing_one: "{{count}} Sensor auf der Karte.",
+    showing_other: "{{count}} Sensoren auf der Karte.",
   },
   legend: {
     cooler: "Kühler",
     warmer: "Wärmer",
     caption_one:
-      "Jede Fläche nutzt den nächstgelegenen aktuellen Sensor ({{count}} insgesamt).",
+      "Jede Fläche übernimmt den nächstgelegenen aktuellen Sensor ({{count}} insgesamt).",
     caption_other:
-      "Jede Fläche nutzt den nächstgelegenen aktuellen Sensor ({{count}} insgesamt).",
+      "Jede Fläche übernimmt den nächstgelegenen aktuellen Sensor ({{count}} insgesamt).",
   },
   popup: {
     viewDetails: "Details anzeigen",
@@ -35,7 +35,7 @@ export default {
     badge: "Stadt + Community",
     heading: "Live-Temperaturen in ganz Karlsruhe",
     intro:
-      "Live-Messwerte aus dem städtischen SensorCity-Netz und nahegelegenen Stationen von openSenseMap und sensor.community vergleichen.",
+      "Live-Messwerte des städtischen SensorCity-Netzes mit nahen Stationen von openSenseMap und sensor.community vergleichen.",
     introLinkPrefix: "Lieber nur das Stadtnetz? ",
     introLink: "Temperaturkarte nur mit Stadtsensoren öffnen",
     provider: {
@@ -47,7 +47,7 @@ export default {
     providerBreakdown:
       "{{sensorcity}} Stadt · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
     communityUnavailable:
-      "Einige Community-Daten sind nicht verfügbar; geladene Messwerte werden angezeigt.",
+      "Einige Community-Daten wurden nicht geladen; angezeigt wird, was vorliegt.",
     attribution:
       "Community-Messwerte über openSenseMap (opensensemap.org) und sensor.community, beide lizenziert unter CC BY-SA 4.0.",
   },
@@ -60,7 +60,7 @@ export default {
     dwdOption: "Rheinstetten (DWD-Wetterstation)",
     averageOption: "Durchschnitt aller Sensoren",
     legendCaption:
-      "Abweichung zu {{name}} — Rot ist wärmer, Blau ist kühler.",
+      "Abweichung zu {{name}} — Rot wärmer, Blau kühler.",
     status_one:
       "Eingefärbt nach Abweichung zu {{name}} ({{count}} Sensor).",
     status_other:
@@ -68,25 +68,25 @@ export default {
     asOf: "Basislinien-Messwert von {{time}} Uhr.",
     dwdReading: "DWD-Basislinie: {{value}} um {{time}} Uhr.",
     unavailableLive:
-      "Keine Live-Basislinie verfügbar; absolute Temperaturen werden angezeigt.",
+      "Keine Live-Basislinie; absolute Temperaturen werden angezeigt.",
     unavailable:
-      "Die gewählte Basislinie hat für diese Ansicht keinen Messwert; absolute Temperaturen werden angezeigt.",
+      "Die gewählte Basislinie hat hier keinen Messwert; absolute Temperaturen werden angezeigt.",
   },
   insights: {
     heading: "Temperatur-Verlaufsanalyse",
     intro:
-      "Karlsruhes Temperatursensoren im verfügbaren Archiv vergleichen.",
+      "Karlsruhes Temperatursensoren über das Archiv vergleichen.",
     selectedArchiveTime: "Gewählter Archivzeitpunkt",
-    empty: "Derzeit ist kein Temperatur-Archiv verfügbar.",
+    empty: "Kein Temperatur-Archiv verfügbar.",
     noCurrent:
-      "Für einen Live-Vergleich sind mindestens zwei aktuelle Messwerte nötig.",
+      "Ein Live-Vergleich braucht mindestens zwei aktuelle Messwerte.",
     live: {
       heading: "Live-Temperaturstatistik",
       intro:
         "Sensoren vergleichen, die in der letzten Stunde aktualisiert wurden.",
     },
     cta: {
-      hint: "Dies lädt das gesamte verfügbare Archiv aller Temperatursensoren und kann einige Sekunden dauern.",
+      hint: "Lädt das gesamte Archiv aller Temperatursensoren; kann einige Sekunden dauern.",
       button: "Verlaufsanalyse laden",
     },
     kpi: {
@@ -100,7 +100,7 @@ export default {
     volatile: {
       label: "Schwankungsreichster Sensor",
       body:
-        "{{name}} hat die größte historische Spanne: {{range}} ({{min}} bis {{max}}).",
+        "{{name}} hat die größte Spanne: {{range}} ({{min}} bis {{max}}).",
     },
     tabs: {
       label: "Ansichten der Temperatur-Verlaufsanalyse",
@@ -110,7 +110,7 @@ export default {
     },
     table: {
       caption: "Temperaturvergleich nach Sensor, in Grad Celsius",
-      unitContext: "Alle Werte sind in °C angegeben. Horizontal scrollen, um alle Spalten zu vergleichen.",
+      unitContext: "Alle Werte in °C. Seitwärts scrollen für alle Spalten.",
       scrollLabel: "Horizontal scrollbares Temperatur-Ranking pro Sensor",
       sensor: "Sensor",
       now: "Jetzt",
@@ -120,7 +120,7 @@ export default {
       range: "Spanne",
       vsCity: "vs. Stadt-Ø",
       sortBy: "Nach {{column}} sortieren",
-      note: "„vs. Stadt-Ø“ vergleicht jeden aktuellen Messwert mit dem aktuellen Stadtdurchschnitt ({{value}}). Positive Werte sind wärmer.",
+      note: "„vs. Stadt-Ø“ vergleicht jeden Messwert mit dem aktuellen Stadtdurchschnitt ({{value}}). Positiv heißt wärmer.",
     },
     spreadChart: {
       label: "Stadtweite Temperaturspanne im Zeitverlauf",
@@ -128,9 +128,9 @@ export default {
     historyMap: {
       heading: "Historische Temperaturkarte",
       intro:
-        "Die Temperaturkarte in {{hours}}-Stunden-Schritten aus dem Archiv abspielen.",
+        "Die Karte in {{hours}}-Stunden-Schritten aus dem Archiv abspielen.",
       empty:
-        "Im Archiv sind keine historischen Kartenansichten verfügbar.",
+        "Keine historischen Kartenansichten im Archiv.",
       mapAria: "Historische Temperatur-Voronoi-Karte von Karlsruhe",
       sliderLabel: "Archivzeitpunkt",
       status:
@@ -140,9 +140,9 @@ export default {
       baselineStatus_other:
         "{{date}}: Eingefärbt nach Abweichung zu {{name}} ({{count}} Sensoren).",
       legendCaption_one:
-        "Jede Fläche nutzt den nächstgelegenen Sensor in diesem {{hours}}-Stunden-Zeitraum ({{count}} Sensor).",
+        "Jede Fläche übernimmt den nächstgelegenen Sensor in diesem {{hours}}-Stunden-Zeitraum ({{count}} Sensor).",
       legendCaption_other:
-        "Jede Fläche nutzt den nächstgelegenen Sensor in diesem {{hours}}-Stunden-Zeitraum ({{count}} Sensoren).",
+        "Jede Fläche übernimmt den nächstgelegenen Sensor in diesem {{hours}}-Stunden-Zeitraum ({{count}} Sensoren).",
     },
   },
 } as const;

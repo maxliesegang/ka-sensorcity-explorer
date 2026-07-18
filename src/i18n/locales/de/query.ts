@@ -31,5 +31,5 @@ export default {
     status: "{{from}}–{{to}} von {{total}} · Seite {{page}} von {{pages}}",
   },
   transferLimit:
-    "Serverlimit erreicht. Weitere Zeilen können passen. Grenzen Sie die Abfrage ein oder rufen Sie eine weitere Serverseite ab. Downloads enthalten nur zurückgegebene Zeilen.",
+    "Serverlimit erreicht. Möglicherweise passen weitere Zeilen. Grenzen Sie die Abfrage ein oder rufen Sie die nächste Serverseite ab. Downloads enthalten nur die zurückgegebenen Zeilen.",
 } as const;

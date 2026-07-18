@@ -2,29 +2,29 @@ export default {
   badge: "City climate",
   heading: "How warm is Karlsruhe right now?",
   intro:
-    "See warm and cool areas at a glance. Each area uses its nearest recent sensor; red is warmer and blue cooler relative to the other sensors.",
-  introLinkPrefix: "Looking for every sensor instead? ",
+    "Warm and cool areas at a glance. Each area takes its nearest recent sensor; red is warmer, blue cooler than the rest.",
+  introLinkPrefix: "Want every sensor instead? ",
   introLink: "Open the full sensor map",
   canvasAria: "Temperature map",
   mapAria: "Temperature field map of Karlsruhe",
-  emptyToMap: "No recent temperature readings are available.",
+  emptyToMap: "No recent temperature readings.",
   status: {
     loading: "Loading sensors…",
     error: "We couldn't load the map data.",
     showingRange_one:
-      "{{count}} recently updated sensor on the map, reading {{min}}–{{max}} °C.",
+      "{{count}} sensor on the map, reading {{min}}–{{max}} °C.",
     showingRange_other:
-      "{{count}} recently updated sensors on the map, reading {{min}}–{{max}} °C.",
-    showing_one: "{{count}} recently updated sensor on the map.",
-    showing_other: "{{count}} recently updated sensors on the map.",
+      "{{count}} sensors on the map, reading {{min}}–{{max}} °C.",
+    showing_one: "{{count}} sensor on the map.",
+    showing_other: "{{count}} sensors on the map.",
   },
   legend: {
     cooler: "Cooler",
     warmer: "Warmer",
     caption_one:
-      "Each area uses its nearest recent sensor ({{count}} total).",
+      "Each area takes its nearest recent sensor ({{count}} total).",
     caption_other:
-      "Each area uses its nearest recent sensor ({{count}} total).",
+      "Each area takes its nearest recent sensor ({{count}} total).",
   },
   popup: {
     viewDetails: "View details",
@@ -34,7 +34,7 @@ export default {
     badge: "City + community",
     heading: "Live temperatures across Karlsruhe",
     intro:
-      "Compare live readings from the city's SensorCity network and nearby openSenseMap and sensor.community stations.",
+      "Compare live readings from the city's SensorCity network with nearby openSenseMap and sensor.community stations.",
     introLinkPrefix: "Prefer the city network alone? ",
     introLink: "Open the city-only temperature map",
     provider: {
@@ -46,7 +46,7 @@ export default {
     providerBreakdown:
       "{{sensorcity}} city · {{opensensemap}} openSenseMap · {{sensorcommunity}} sensor.community",
     communityUnavailable:
-      "Some community data is unavailable; showing the readings that loaded.",
+      "Some community data didn't load; showing what we have.",
     attribution:
       "Community readings via openSenseMap (opensensemap.org) and sensor.community, both licensed CC BY-SA 4.0.",
   },
@@ -59,7 +59,7 @@ export default {
     dwdOption: "Rheinstetten (DWD weather station)",
     averageOption: "Average of all sensors",
     legendCaption:
-      "Difference from {{name}} — red is warmer, blue is cooler.",
+      "Difference from {{name}} — red warmer, blue cooler.",
     status_one:
       "Coloured by difference from {{name}} ({{count}} sensor).",
     status_other:
@@ -67,25 +67,25 @@ export default {
     asOf: "Baseline reading from {{time}}.",
     dwdReading: "DWD baseline: {{value}} at {{time}}.",
     unavailableLive:
-      "No live baseline station is available; showing absolute temperatures.",
+      "No live baseline station; showing absolute temperatures.",
     unavailable:
-      "The selected baseline has no reading for this view; showing absolute temperatures.",
+      "The chosen baseline has no reading here; showing absolute temperatures.",
   },
   insights: {
     heading: "Temperature history analysis",
     intro:
-      "Compare Karlsruhe's temperature sensors across the available archive.",
+      "Compare Karlsruhe's temperature sensors across the archive.",
     selectedArchiveTime: "Selected archive time",
-    empty: "No temperature sensor archive is available right now.",
+    empty: "No temperature archive available.",
     noCurrent:
-      "At least two recent readings are needed for a live comparison.",
+      "A live comparison needs at least two recent readings.",
     live: {
       heading: "Live temperature statistics",
       intro:
-        "Compare sensors updated within the last hour.",
+        "Compare sensors updated in the last hour.",
     },
     cta: {
-      hint: "This loads the full available archive for every temperature sensor and may take a few seconds.",
+      hint: "Loads the full archive for every temperature sensor; may take a few seconds.",
       button: "Load history analysis",
     },
     kpi: {
@@ -99,7 +99,7 @@ export default {
     volatile: {
       label: "Most volatile sensor",
       body:
-        "{{name}} has the widest historical range: {{range}} ({{min}} to {{max}}).",
+        "{{name}} has the widest range: {{range}} ({{min}} to {{max}}).",
     },
     tabs: {
       label: "Temperature history views",
@@ -109,7 +109,7 @@ export default {
     },
     table: {
       caption: "Temperature comparison by sensor, in degrees Celsius",
-      unitContext: "All values are in °C. Scroll horizontally to compare every column.",
+      unitContext: "All values in °C. Scroll sideways to see every column.",
       scrollLabel: "Scrollable per-sensor temperature ranking",
       sensor: "Sensor",
       now: "Now",
@@ -119,7 +119,7 @@ export default {
       range: "Range",
       vsCity: "vs city avg",
       sortBy: "Sort by {{column}}",
-      note: "“vs city avg” compares each current reading with the current city average ({{value}}). Positive values are warmer.",
+      note: "“vs city avg” compares each reading with the city average now ({{value}}). Positive is warmer.",
     },
     spreadChart: {
       label: "City-wide temperature spread over time",
@@ -127,9 +127,9 @@ export default {
     historyMap: {
       heading: "Historical temperature map",
       intro:
-        "Replay the temperature map in {{hours}}-hour archive steps.",
+        "Replay the map in {{hours}}-hour archive steps.",
       empty:
-        "No historical map views are available in the archive.",
+        "No historical map views in the archive.",
       mapAria: "Historical temperature Voronoi map of Karlsruhe",
       sliderLabel: "Archive time",
       status:
@@ -139,9 +139,9 @@ export default {
       baselineStatus_other:
         "{{date}}: Coloured by difference from {{name}} ({{count}} sensors).",
       legendCaption_one:
-        "Each area uses its nearest sensor in this {{hours}}-hour interval ({{count}} sensor).",
+        "Each area takes its nearest sensor in this {{hours}}-hour interval ({{count}} sensor).",
       legendCaption_other:
-        "Each area uses its nearest sensor in this {{hours}}-hour interval ({{count}} sensors).",
+        "Each area takes its nearest sensor in this {{hours}}-hour interval ({{count}} sensors).",
     },
   },
 } as const;
