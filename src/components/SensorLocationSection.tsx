@@ -1,30 +1,53 @@
-import L from "leaflet";
+import type { Feature } from "geojson";
+import type * as maplibregl from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { KernButton } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 
 import { fetchSensors } from "../api/sensorcity";
 import { getCategoryColor, categoryLabelKey } from "../config/layers";
+import {
+  addBuildingExtrusionLayer,
+  DEFAULT_MAP_ZOOM,
+  KARLSRUHE_CENTER,
+} from "../config/basemap";
 import { useAsync } from "../hooks/useAsync";
-import { DEFAULT_ZOOM, KARLSRUHE, useLeafletMap } from "../hooks/useLeafletMap";
+import { useMapLibreMap } from "../hooks/useMapLibreMap";
 import type { Sensor } from "../types";
 import { formatReadingTime } from "../utils/format";
 import { escapeHtml } from "../utils/html";
+import {
+  addLayerIfMissing,
+  createPointFeature,
+  extendLngLatBounds,
+  upsertGeoJsonSource,
+  type LngLatBounds,
+  type LngLatTuple,
+} from "../utils/maplibreGeoJson";
+import {
+  bindInteractiveCircleLayer,
+  createInteractiveCirclePaint,
+  type InteractiveCircleStyle,
+} from "../utils/maplibreMarkers";
 import { formatPrimaryReadingLine } from "../utils/sensorMeasurements";
 
+const SENSOR_SOURCE_ID = "sensor-locations";
+const SENSOR_LAYER_ID = "sensor-locations-circle";
 const SENSOR_ZOOM = 16;
-const FIT_OPTIONS: L.FitBoundsOptions = { padding: [24, 24], maxZoom: 14 };
 
-function sensorLatLng(sensor: Sensor): L.LatLngTuple | null {
-  return sensor.lat != null && sensor.lon != null
-    ? [sensor.lat, sensor.lon]
-    : null;
+// The selected sensor gets the `highlight` ring (dark, larger); the rest stay small.
+const MARKER_STYLE: InteractiveCircleStyle = {
+  default: { radius: 5, strokeWidth: 1 },
+  hovered: { radius: 7, strokeWidth: 2 },
+  active: { radius: 8, strokeWidth: 3 },
+  highlighted: { radius: 10, strokeWidth: 3 },
+};
+
+function getSensorCoordinates(sensor: Sensor): LngLatTuple | null {
+  return sensor.lat != null && sensor.lon != null ? [sensor.lon, sensor.lat] : null;
 }
 
-function mergeSelectedSensor(
-  sensor: Sensor,
-  sensors: Sensor[] | null | undefined,
-): Sensor[] {
+function mergeSelectedSensor(sensor: Sensor, sensors: Sensor[] | null | undefined): Sensor[] {
   if (!sensors) return [sensor];
   return sensors.some((item) => item.objectId === sensor.objectId)
     ? sensors
@@ -36,12 +59,12 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
   const { t } = useTranslation("detail");
   const { t: tc } = useTranslation("common");
   const sensors = useAsync(fetchSensors, []);
-  const { containerRef, mapRef, groupsRef } = useLeafletMap(["markers"]);
-  const boundsRef = useRef<L.LatLngBounds | null>(null);
-  const [mappedCount, setMappedCount] = useState(0);
+  const { containerRef, mapRef, isStyleReady } = useMapLibreMap();
+  const sensorBoundsRef = useRef<LngLatBounds | null>(null);
+  const [mappedSensorCount, setMappedSensorCount] = useState(0);
 
-  const selectedLatLng = useMemo(
-    () => sensorLatLng(sensor),
+  const selectedSensorCoordinates = useMemo(
+    () => getSensorCoordinates(sensor),
     [sensor.lat, sensor.lon],
   );
   const mapSensors = useMemo(
@@ -49,68 +72,75 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
     [sensor, sensors.data],
   );
 
+  // Create the circle layer + interactions once the style is ready (and again
+  // after a theme swap, which resets `isStyleReady`).
   useEffect(() => {
-    const group = groupsRef.current.markers;
-    if (!group) return;
+    const map = mapRef.current;
+    if (!map || !isStyleReady) return;
+    addBuildingExtrusionLayer(map);
+    upsertGeoJsonSource(map, SENSOR_SOURCE_ID, []);
+    addLayerIfMissing(map, {
+      id: SENSOR_LAYER_ID,
+      type: "circle",
+      source: SENSOR_SOURCE_ID,
+      paint: createInteractiveCirclePaint(MARKER_STYLE),
+    });
+    return bindInteractiveCircleLayer(map, {
+      sourceId: SENSOR_SOURCE_ID,
+      layerId: SENSOR_LAYER_ID,
+      popupClassName: "sensor-popup",
+      tooltipClassName: "sensor-tooltip",
+    });
+  }, [isStyleReady, mapRef]);
 
-    group.clearLayers();
-    boundsRef.current = null;
+  // Populate markers and centre the view whenever the data changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isStyleReady) return;
 
-    const bounds = L.latLngBounds([]);
-    let count = 0;
+    const features: Feature[] = [];
+    let bounds: LngLatBounds | null = null;
 
-    for (const item of mapSensors) {
-      const latLng = sensorLatLng(item);
-      if (!latLng) continue;
-
+    // Draw the selected sensor last so it renders on top of its neighbours.
+    const ordered = [...mapSensors].sort((a, b) =>
+      a.objectId === sensor.objectId ? 1 : b.objectId === sensor.objectId ? -1 : 0,
+    );
+    for (const item of ordered) {
+      const coordinates = getSensorCoordinates(item);
+      if (!coordinates) continue;
       const isSelected = item.objectId === sensor.objectId;
       const color = getCategoryColor(item.category);
       const label = tc(categoryLabelKey(item.category));
-      const marker = L.circleMarker(latLng, {
-        radius: isSelected ? 10 : 5,
-        color: isSelected ? "#131525" : color,
-        fillColor: color,
-        fillOpacity: isSelected ? 0.95 : 0.62,
-        weight: isSelected ? 3 : 1,
-      })
-        .bindTooltip(`${escapeHtml(item.name)} - ${escapeHtml(label)}`)
-        .bindPopup(renderPopup(item, label, isSelected, t, tc))
-        .addTo(group);
-
-      if (isSelected) marker.bringToFront();
-      bounds.extend(latLng);
-      count++;
+      features.push(
+        createPointFeature(coordinates[0], coordinates[1], item.objectId, {
+          color,
+          isHighlighted: isSelected,
+          tooltip: `${item.name} - ${label}`,
+          popup: buildLocationPopupHtml(item, label, isSelected, t, tc),
+        }),
+      );
+      bounds = extendLngLatBounds(bounds, coordinates);
     }
 
-    boundsRef.current = count > 0 ? bounds : null;
-    setMappedCount(count);
-    resetMapView(mapRef.current, selectedLatLng, bounds, count);
-  }, [groupsRef, mapRef, mapSensors, selectedLatLng, sensor.objectId, t, tc]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const id = window.setTimeout(() => map.invalidateSize(), 0);
-    return () => window.clearTimeout(id);
-  }, [mapRef, mappedCount, sensors.loading, sensors.error]);
+    upsertGeoJsonSource(map, SENSOR_SOURCE_ID, features);
+    sensorBoundsRef.current = bounds;
+    setMappedSensorCount(features.length);
+    resetMapView(map, selectedSensorCoordinates, bounds);
+  }, [isStyleReady, mapRef, mapSensors, selectedSensorCoordinates, sensor.objectId, t, tc]);
 
   function focusSensor() {
     const map = mapRef.current;
-    if (!map || !selectedLatLng) return;
-    map.invalidateSize();
-    map.setView(selectedLatLng, SENSOR_ZOOM);
+    if (!map || !selectedSensorCoordinates) return;
+    map.flyTo({ center: selectedSensorCoordinates, zoom: SENSOR_ZOOM });
   }
 
   function fitAllSensors() {
     const map = mapRef.current;
     if (!map) return;
-
-    map.invalidateSize();
-    if (boundsRef.current) {
-      map.fitBounds(boundsRef.current, FIT_OPTIONS);
+    if (sensorBoundsRef.current) {
+      map.fitBounds(sensorBoundsRef.current, { padding: 24, maxZoom: 14 });
     } else {
-      map.setView(KARLSRUHE, DEFAULT_ZOOM);
+      map.flyTo({ center: KARLSRUHE_CENTER, zoom: DEFAULT_MAP_ZOOM });
     }
   }
 
@@ -118,7 +148,7 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
     ? t("location.status.loading")
     : sensors.error
       ? t("location.status.error")
-      : t("location.status.showing", { count: mappedCount });
+      : t("location.status.showing", { count: mappedSensorCount });
 
   return (
     <section className="sensor-detail__section sensor-detail__section--plain sensor-location">
@@ -126,9 +156,7 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
         <div>
           <h2 className="kern-heading-small">{t("location.heading")}</h2>
           <p className="kern-body kern-body--small kern-body--muted">
-            {selectedLatLng
-              ? t("location.subtitle")
-              : t("location.noCoordinates")}
+            {selectedSensorCoordinates ? t("location.subtitle") : t("location.noCoordinates")}
           </p>
         </div>
         <div className="sensor-location__actions">
@@ -137,7 +165,7 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
             variant="secondary"
             className="kern-btn--small"
             onClick={focusSensor}
-            disabled={!selectedLatLng}
+            disabled={!selectedSensorCoordinates}
             icon="home"
             label={t("location.focusSensor")}
           />
@@ -165,31 +193,27 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
 }
 
 function resetMapView(
-  map: L.Map | null,
-  selectedLatLng: L.LatLngTuple | null,
-  bounds: L.LatLngBounds,
-  count: number,
+  map: maplibregl.Map,
+  selectedSensorCoordinates: LngLatTuple | null,
+  bounds: LngLatBounds | null,
 ) {
-  if (!map) return;
-
-  map.invalidateSize();
-  if (selectedLatLng) {
-    map.setView(selectedLatLng, SENSOR_ZOOM, { animate: false });
-  } else if (count > 0) {
-    map.fitBounds(bounds, FIT_OPTIONS);
+  if (selectedSensorCoordinates) {
+    map.jumpTo({ center: selectedSensorCoordinates, zoom: SENSOR_ZOOM });
+  } else if (bounds) {
+    map.fitBounds(bounds, { padding: 24, maxZoom: 14, animate: false });
   } else {
-    map.setView(KARLSRUHE, DEFAULT_ZOOM);
+    map.jumpTo({ center: KARLSRUHE_CENTER, zoom: DEFAULT_MAP_ZOOM });
   }
 }
 
-function renderPopup(
+function buildLocationPopupHtml(
   sensor: Sensor,
   label: string,
   isSelected: boolean,
   translate: (key: string) => string,
   translateCommon: (key: string) => string,
 ): string {
-  const action = isSelected
+  const navigationContent = isSelected
     ? escapeHtml(translate("location.popup.currentSensor"))
     : `<a href="#/sensor/${sensor.objectId}">${escapeHtml(
         translate("location.popup.viewDetails"),
@@ -204,6 +228,6 @@ function renderPopup(
         ? `${escapeHtml(formatReadingTime(sensor.measuredAt))}<br/>`
         : ""
     }
-    ${action}
+    ${navigationContent}
   `;
 }

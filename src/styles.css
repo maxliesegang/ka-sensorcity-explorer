@@ -469,22 +469,21 @@ body {
   background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
 }
 
-/* Leaflet markers, tooltips and popups, restyled to match the KERN UX chrome
-   and to give clear pointer/touch feedback. */
-.sensor-marker {
-  cursor: pointer;
-  /* `r` (radius) can't transition, but the drop-shadow glow can — so hover/
-     active feedback animates smoothly even as JS bumps the radius. */
-  transition: filter 0.15s ease;
+/* MapLibre tooltips and popups, restyled to match the KERN UX chrome. Markers
+   are GPU-rendered (see createInteractiveCirclePaint), so their hover/active feedback lives
+   in the paint expressions rather than CSS, and per-cell value labels are drawn
+   by a symbol layer (native zoom sizing + collision) rather than DOM elements. */
+
+/* Hover tooltip: a lightweight popup (no close button), styled from matching
+   background/text tokens so the chip stays readable in both themes. */
+
+/* MapLibre sets max-width inline on the outer container; override it so the
+   single-line label can grow to fit long titles. */
+.sensor-tooltip.maplibregl-popup {
+  max-width: none !important;
 }
 
-.sensor-marker:hover {
-  filter: drop-shadow(0 0 4px rgba(19, 21, 37, 0.45));
-}
-
-/* Use matching background/text tokens (not the text token as a background) so
-   the chip stays readable in both the light and dark themes. */
-.leaflet-tooltip.sensor-tooltip {
+.sensor-tooltip .maplibregl-popup-content {
   padding: 0.2rem 0.5rem;
   border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
   border-radius: var(--kern-metric-border-radius-default, 4px);
@@ -495,124 +494,139 @@ body {
   font-weight: var(--kern-typography-font-weight-semi-bold, 600);
   box-shadow: 0 2px 8px rgba(19, 21, 37, 0.25);
   white-space: nowrap;
+  /* Single-line label: override MapLibre's default 240px cap so long titles
+     (e.g. "105 - Ettlinger Straße …") aren't clipped. */
+  max-width: none;
 }
 
-.leaflet-tooltip.sensor-tooltip::before {
-  border-top-color: var(--kern-color-layout-background-default-contextual, #fff);
+/* The tooltip follows the cursor, so its arrow points nowhere useful — drop it. */
+.sensor-tooltip .maplibregl-popup-tip {
+  display: none;
 }
 
 /* Hover tooltips are a pointer-only affordance; on touch the tap opens the
    popup directly, so suppress them to avoid a sticky label. */
 @media (hover: none) {
-  .leaflet-tooltip.sensor-tooltip {
+  .sensor-tooltip {
     display: none;
   }
 }
 
-/* Permanent value labels at each cell centre so the reading (or Δ from the
-   baseline) can be read straight off the map. Unboxed so they blend into the
-   field, but drawn as a fixed dark glyph wrapped in a solid white halo so they
-   stay legible over any cell colour — including the near-white centre of the
-   diverging deviation scale. The `--temp-label-scale` custom property is set on
-   the map container from the zoom level, so labels shrink when zoomed out and
-   stop overlapping. */
-.leaflet-tooltip.temperature-field-label {
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: #1a1a1a;
-  font: inherit;
-  font-size: calc(0.8125rem * var(--temp-label-scale, 1));
-  font-weight: var(--kern-typography-font-weight-bold, 700);
-  line-height: 1.2;
-  box-shadow: none;
-  white-space: nowrap;
-  pointer-events: none;
-  /* Layered offsets + blur build an opaque white outline around the glyph. */
-  text-shadow:
-    -1px -1px 0 #fff,
-    1px -1px 0 #fff,
-    -1px 1px 0 #fff,
-    1px 1px 0 #fff,
-    0 0 3px #fff;
-}
-
-/* Drop Leaflet's default tooltip arrow — these are plain labels. */
-.leaflet-tooltip.temperature-field-label::before {
-  display: none;
-}
-
-/* Leaflet hardcodes a white popup background; set it (and the tip) from the
+/* MapLibre hardcodes a white popup background; set it (and the tip) from the
    same KERN token as the text so both flip together and stay readable in the
    dark theme. */
-.sensor-popup .leaflet-popup-content-wrapper {
-  padding: 0;
-  border-radius: var(--kern-metric-border-radius-default, 4px);
-  background: var(--kern-color-layout-background-default-contextual, #fff);
-  color: var(--kern-color-layout-text-default-contextual, #131525);
-  box-shadow: 0 6px 24px rgba(19, 21, 37, 0.22);
-}
-
-.sensor-popup .leaflet-popup-content {
+.sensor-popup .maplibregl-popup-content {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.15rem;
   margin: 0;
-  padding: 0.7rem 0.85rem;
-  min-width: 11rem;
-  color: inherit;
-  line-height: 1.35;
-}
-
-.sensor-popup .leaflet-popup-tip {
+  padding: 0.85rem 1rem;
+  min-width: 12rem;
+  max-width: 17rem;
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-large, 12px);
   background: var(--kern-color-layout-background-default-contextual, #fff);
-  box-shadow: 0 6px 24px rgba(19, 21, 37, 0.22);
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  line-height: 1.35;
+  box-shadow:
+    0 1px 2px rgba(19, 21, 37, 0.08),
+    0 12px 32px -8px rgba(19, 21, 37, 0.28);
 }
 
-/* The close button inherits a dark colour from Leaflet; tie it to the text
-   token so it's visible against the dark-theme background too. */
-.sensor-popup .leaflet-popup-close-button {
+/* The tip is a CSS triangle: MapLibre makes it by colouring the ONE border edge
+   that faces the marker and leaving the other three transparent. Colouring all
+   four (as before) fills the whole box into a square — so override only the
+   facing edge, per anchor, with our background token. A drop-shadow gives the
+   nub the same elevation as the card it points out of. */
+.sensor-popup .maplibregl-popup-tip {
+  filter: drop-shadow(0 1px 1px rgba(19, 21, 37, 0.18));
+}
+
+.sensor-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.sensor-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.sensor-popup.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.sensor-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.sensor-popup.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.sensor-popup.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.sensor-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+.sensor-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--kern-color-layout-background-default-contextual, #fff);
+}
+
+/* Tie the close button to the text token so it's visible in the dark theme too. */
+.sensor-popup .maplibregl-popup-close-button {
   color: var(--kern-color-layout-text-muted-contextual, #404565);
+  font-size: 1.1rem;
+  padding: 0 0.35rem;
 }
 
 .sensor-popup__cat {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   color: var(--kern-color-layout-text-muted-contextual, #404565);
-  font-size: 0.8125rem;
-  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  font-size: 0.6875rem;
+  font-weight: var(--kern-typography-font-weight-bold, 700);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* The accent dot carries the category/heat colour; a faint ring lifts it off
+   the surface so pale colours stay visible. */
+.sensor-popup__cat .cat-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 12%, transparent);
 }
 
 .sensor-popup__name {
-  font-size: 1rem;
+  margin-top: 0.15rem;
+  font-size: 1.0625rem;
   font-weight: var(--kern-typography-font-weight-semi-bold, 600);
+  line-height: 1.25;
 }
 
 .sensor-popup__meta {
-  color: var(--kern-color-layout-text-muted-contextual, #404565);
-  font-size: 0.8125rem;
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font-size: 0.875rem;
+  font-weight: var(--kern-typography-font-weight-semi-bold, 600);
 }
 
 .sensor-popup__note {
   color: var(--kern-color-layout-text-muted-contextual, #404565);
   font-size: 0.75rem;
-  opacity: 0.85;
 }
 
 .sensor-popup__link {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  margin-top: 0.15rem;
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--kern-color-layout-border-contextual, #a5aac3) 60%, transparent);
   color: var(--kern-color-action-default-contextual, #2044aa);
+  font-size: 0.875rem;
   font-weight: var(--kern-typography-font-weight-semi-bold, 600);
   text-decoration: none;
 }
 
-.sensor-popup__link:hover {
-  text-decoration: underline;
+.sensor-popup__link span[aria-hidden] {
+  transition: transform 0.15s ease;
+}
+
+.sensor-popup__link:hover span[aria-hidden] {
+  transform: translateX(0.15rem);
 }
 
 /* Secondary "set as reference" action — a small outlined button under the
@@ -3071,11 +3085,4 @@ code,
   .temperature-baseline-controls__toggle {
     min-height: 0;
   }
-}
-
-/* Baseline station marker: the ring weight/colour/radius are set via Leaflet
-   path options in drawTemperatureField; add a subtle glow so it reads as the
-   anchor even where the contrasting ring overlaps a similar fill. */
-.temperature-baseline-marker {
-  filter: drop-shadow(0 0 3px rgba(19, 21, 37, 0.55));
 }

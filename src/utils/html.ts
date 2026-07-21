@@ -1,4 +1,4 @@
-// Small HTML helpers for content injected into Leaflet popups/tooltips, which
+// Small HTML helpers for content injected into map popups/tooltips, which
 // take raw HTML strings rather than React nodes.
 
 /** HTML-escape a string for safe inclusion in popup/tooltip markup. */

@@ -1,9 +1,9 @@
-// Interactive Leaflet map of live sensors, coloured by category, with a
-// toggleable category filter. Uses the raw Leaflet API (no react-leaflet):
-// the map is created once and a single layer group is cleared/repopulated as
-// the sensor data and filters change.
+// Interactive MapLibre map of live sensors, coloured by category, with a
+// toggleable category filter. The map is created once (via useMapLibreMap); a
+// single GeoJSON source is repopulated as the sensor data and filters change,
+// and the circle layer's colour comes straight from each feature's properties.
 
-import L from "leaflet";
+import type { Feature } from "geojson";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
@@ -16,22 +16,36 @@ import {
   getCategoryColor,
   categoryLabelKey,
 } from "../config/layers";
-import { useAsync } from "../hooks/useAsync";
-import { DEFAULT_ZOOM, KARLSRUHE, useLeafletMap } from "../hooks/useLeafletMap";
 import {
-  createMarkerInteractions,
-  SENSOR_POPUP_OPTIONS,
-  SENSOR_TOOLTIP_OPTIONS,
-  sensorPopupHtml,
-  type MarkerInteractionStyles,
-} from "../utils/leafletMarkers";
+  addBuildingExtrusionLayer,
+  DEFAULT_MAP_ZOOM,
+  KARLSRUHE_CENTER,
+} from "../config/basemap";
+import { useAsync } from "../hooks/useAsync";
+import { useMapLibreMap } from "../hooks/useMapLibreMap";
+import {
+  addLayerIfMissing,
+  createPointFeature,
+  extendLngLatBounds,
+  upsertGeoJsonSource,
+  type LngLatBounds,
+} from "../utils/maplibreGeoJson";
+import {
+  bindInteractiveCircleLayer,
+  createInteractiveCirclePaint,
+  buildSensorPopupHtml,
+  type InteractiveCircleStyle,
+} from "../utils/maplibreMarkers";
 import { formatPrimaryReadingLine } from "../utils/sensorMeasurements";
 
+const SENSOR_SOURCE_ID = "sensors";
+const SENSOR_LAYER_ID = "sensors-circle";
+
 // Resting/hover/active ring sizes for the category markers.
-const MARKER_STYLES: MarkerInteractionStyles = {
-  rest: { radius: 7, weight: 2, color: "#fff" },
-  hover: { radius: 10, weight: 3 },
-  active: { radius: 11, weight: 4 },
+const MARKER_STYLE: InteractiveCircleStyle = {
+  default: { radius: 7, strokeWidth: 2 },
+  hovered: { radius: 10, strokeWidth: 3 },
+  active: { radius: 11, strokeWidth: 4 },
 };
 
 export function MapView() {
@@ -51,77 +65,72 @@ export function MapView() {
     ),
   );
 
-  const { containerRef, mapRef, groupsRef } = useLeafletMap(["markers"]);
-  const boundsRef = useRef<L.LatLngBounds | null>(null);
+  const { containerRef, mapRef, isStyleReady } = useMapLibreMap();
+  const visibleSensorBoundsRef = useRef<LngLatBounds | null>(null);
   const hasFittedInitialViewRef = useRef(false);
-  const [shownCount, setShownCount] = useState(0);
+  const [visibleSensorCount, setVisibleSensorCount] = useState(0);
+
+  // Create the circle layer + interactions once the style is ready (and again
+  // after a theme swap, which resets `isStyleReady`).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isStyleReady) return;
+    addBuildingExtrusionLayer(map);
+    upsertGeoJsonSource(map, SENSOR_SOURCE_ID, []);
+    addLayerIfMissing(map, {
+      id: SENSOR_LAYER_ID,
+      type: "circle",
+      source: SENSOR_SOURCE_ID,
+      paint: createInteractiveCirclePaint(MARKER_STYLE),
+    });
+    return bindInteractiveCircleLayer(map, {
+      sourceId: SENSOR_SOURCE_ID,
+      layerId: SENSOR_LAYER_ID,
+      popupClassName: "sensor-popup",
+      tooltipClassName: "sensor-tooltip",
+    });
+  }, [isStyleReady, mapRef]);
 
   // Repopulate markers whenever the sensor data or the active filters change.
   useEffect(() => {
-    const group = groupsRef.current.markers;
-    if (!group) return;
+    const map = mapRef.current;
+    if (!map || !isStyleReady) return;
 
-    group.clearLayers();
-    boundsRef.current = null;
-    const data = sensors.data;
-    if (!data) return;
+    const features: Feature[] = [];
+    let bounds: LngLatBounds | null = null;
 
-    const attachInteractions = createMarkerInteractions(MARKER_STYLES);
-
-    let count = 0;
-    const bounds = L.latLngBounds([]);
-    for (const sensor of data) {
+    for (const sensor of sensors.data ?? []) {
       if (sensor.lat == null || sensor.lon == null) continue;
       if (!visibleCategories[sensor.category]) continue;
 
-      const latLng: L.LatLngTuple = [sensor.lat, sensor.lon];
       const color = getCategoryColor(sensor.category);
       const label = tc(categoryLabelKey(sensor.category));
-      const marker = L.circleMarker(latLng, {
-        ...MARKER_STYLES.rest,
-        fillColor: color,
-        fillOpacity: 0.9,
-        className: "sensor-marker",
-      })
-        .bindTooltip(`${sensor.name} — ${label}`, SENSOR_TOOLTIP_OPTIONS)
-        .bindPopup(
-          sensorPopupHtml({
+      features.push(
+        createPointFeature(sensor.lon, sensor.lat, sensor.objectId, {
+          color,
+          tooltip: `${sensor.name} — ${label}`,
+          popup: buildSensorPopupHtml({
             color,
             label,
             name: sensor.name,
-            meta: formatPrimaryReadingLine(sensor, tc),
+            readingSummary: formatPrimaryReadingLine(sensor, tc),
             readingTime: sensor.measuredAt,
             href: `#/sensor/${sensor.objectId}`,
-            cta: t("popup.viewDetails"),
+            linkLabel: t("popup.viewDetails"),
           }),
-          SENSOR_POPUP_OPTIONS,
-        )
-        .addTo(group);
-
-      // While its popup is open the ring is drawn in the category colour.
-      attachInteractions(marker, color);
-
-      bounds.extend(latLng);
-      count++;
+        }),
+      );
+      bounds = extendLngLatBounds(bounds, [sensor.lon, sensor.lat]);
     }
 
-    boundsRef.current = count > 0 ? bounds : null;
-    if (count > 0 && mapRef.current && !hasFittedInitialViewRef.current) {
-      mapRef.current.fitBounds(bounds, { padding: [24, 24], maxZoom: 14 });
+    upsertGeoJsonSource(map, SENSOR_SOURCE_ID, features);
+    visibleSensorBoundsRef.current = bounds;
+    if (bounds && !hasFittedInitialViewRef.current) {
+      map.fitBounds(bounds, { padding: 24, maxZoom: 14, animate: false });
       hasFittedInitialViewRef.current = true;
     }
-    setShownCount(count);
-  }, [sensors.data, visibleCategories, t, tc]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const id = window.setTimeout(() => {
-      map.invalidateSize();
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, [sensors.loading, sensors.error, shownCount, visibleCategories]);
+    setVisibleSensorCount(features.length);
+  }, [isStyleReady, mapRef, sensors.data, visibleCategories, t, tc]);
 
   function toggleCategoryVisibility(categoryKey: string) {
     setVisibleCategories((currentVisibility) => ({
@@ -147,11 +156,10 @@ export function MapView() {
   function resetView() {
     const map = mapRef.current;
     if (!map) return;
-    map.invalidateSize();
-    if (boundsRef.current) {
-      map.fitBounds(boundsRef.current, { padding: [24, 24], maxZoom: 14 });
+    if (visibleSensorBoundsRef.current) {
+      map.fitBounds(visibleSensorBoundsRef.current, { padding: 24, maxZoom: 14 });
     } else {
-      map.setView(KARLSRUHE, DEFAULT_ZOOM);
+      map.flyTo({ center: KARLSRUHE_CENTER, zoom: DEFAULT_MAP_ZOOM });
     }
   }
 
@@ -166,7 +174,7 @@ export function MapView() {
     ? t("status.loading")
     : sensors.error
       ? t("status.error")
-      : t("status.showing", { count: shownCount });
+      : t("status.showing", { count: visibleSensorCount });
 
   return (
     <div>
@@ -185,7 +193,7 @@ export function MapView() {
       <section className="map-shell" aria-label={t("controlsAria")}>
         <div className="map-toolbar">
           <div className="map-toolbar__summary">
-            <span className="map-toolbar__metric">{shownCount}</span>
+            <span className="map-toolbar__metric">{visibleSensorCount}</span>
             <span className="kern-body kern-body--small">{t("visibleSensors")}</span>
           </div>
           <div className="map-toolbar__meta">

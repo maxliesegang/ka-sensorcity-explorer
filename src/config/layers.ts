@@ -92,7 +92,7 @@ function soilDepthProfile(
  * to the archive layer holding its history and the measurements worth showing.
  *
  * `color` is a categorical accent (dots, card top-borders, chart strokes) read
- * directly in JS — inline styles, SVG, Leaflet — so it can't be a theme-aware
+ * directly in JS — inline styles, SVG, map layers — so it can't be a theme-aware
  * CSS variable. The hues are therefore tuned to mid-luminance values that clear
  * the 3:1 graphical-contrast bar against *both* the light (#fff) and dark KERN
  * surfaces, rather than the darker tones that only read well in light mode.

@@ -3,8 +3,8 @@ import ReactDOM from "react-dom/client";
 
 // KERN UX React kit styles (design system CSS + Fira Sans font).
 import "@kern-ux-annex/kern-react-kit/kern-react-kit.css";
-// Leaflet base styles (used by the map view).
-import "leaflet/dist/leaflet.css";
+// MapLibre GL base styles (map controls, popups, canvas layout).
+import "maplibre-gl/dist/maplibre-gl.css";
 // App-specific layout/styles on top of KERN tokens.
 import "./styles.css";
 

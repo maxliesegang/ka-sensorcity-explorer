@@ -1,4 +1,3 @@
-import type L from "leaflet";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -8,7 +7,8 @@ import type {
 } from "../api/temperatureInsights";
 import { DWD_BASELINE_ID, getBaselineLabel } from "../config/temperatureBaselines";
 import { useAsync } from "../hooks/useAsync";
-import { useLeafletMap } from "../hooks/useLeafletMap";
+import { useMapLibreMap } from "../hooks/useMapLibreMap";
+import { useTemperatureFieldController } from "../hooks/useTemperatureFieldController";
 import { useTemperatureBaselineSelection } from "../hooks/useTemperatureBaselineSelection";
 import {
   useTemperatureFieldLabelVisibility,
@@ -17,17 +17,10 @@ import {
 } from "../hooks/useTemperatureFieldLabels";
 import {
   formatReadingTime,
-  formatSignedDelta,
-  formatTime,
   formatTimestamp,
   formatValue,
 } from "../utils/format";
 import { escapeHtml } from "../utils/html";
-import {
-  clearTemperatureFieldLayers,
-  drawTemperatureField,
-  fitTemperatureFieldToPoints,
-} from "../utils/leafletTemperatureField";
 import { buildTemperatureScale } from "../utils/temperatureScale";
 import {
   buildAbsoluteTemperatureLegend,
@@ -37,7 +30,10 @@ import {
   resolveBaselineTemperature,
   type TemperatureBaselineReading,
 } from "../utils/temperatureFieldModel";
-import { TemperatureLegend } from "./TemperatureLegend";
+import {
+  TemperatureBaselineStatus,
+  TemperatureFieldLegend,
+} from "./TemperatureFieldIndicators";
 import { TemperatureBaselineControls } from "./TemperatureBaselineControls";
 import {
   fetchRheinstettenHourly,
@@ -51,7 +47,7 @@ interface Props {
   onSelectedTimeChange?: (time: number | null) => void;
 }
 
-const UNIT = "°C";
+const TEMPERATURE_UNIT = "°C";
 
 function toBaselineReading(point: HistoricalTemperatureFieldPoint): TemperatureBaselineReading {
   return {
@@ -67,7 +63,8 @@ export function HistoricalTemperatureField({
   onSelectedTimeChange,
 }: Props) {
   const { t } = useTranslation("temperature");
-  const { containerRef, mapRef, groupsRef } = useLeafletMap(["field", "markers"]);
+  const mapHandle = useMapLibreMap();
+  const { containerRef, isStyleReady } = mapHandle;
   const latestIndex = Math.max(0, snapshots.length - 1);
   const [selectedIndex, setSelectedIndex] = useState(latestIndex);
 
@@ -162,57 +159,60 @@ export function HistoricalTemperatureField({
     [isDeviationMapActive, selectedSnapshot, baselineTemperature],
   );
 
+  // The replay map has no per-marker action, so no options beyond the shared
+  // hover/popup styling.
+  const fieldControllerRef = useTemperatureFieldController(
+    mapHandle,
+    { popupClassName: "sensor-popup", tooltipClassName: "sensor-tooltip" },
+    allSnapshotPoints,
+  );
+
   useEffect(() => {
-    const map = mapRef.current;
-    const field = groupsRef.current.field;
-    const markers = groupsRef.current.markers;
-    if (!map || !field || !markers) return;
+    const fieldController = fieldControllerRef.current;
+    if (!fieldController) return;
 
     if (!selectedSnapshot || !temperatureScale) {
-      clearTemperatureFieldLayers(field, markers);
+      fieldController.clear();
       return;
     }
 
-    function bindPoint(layer: L.Layer, point: HistoricalTemperatureFieldPoint): void {
-      const value = formatValue(point.temperature, UNIT);
-      layer
-        .bindTooltip(`${point.name}: ${value}`)
-        .bindPopup(
-          `<strong>${escapeHtml(point.name)}</strong><br/>` +
-            `${value}<br/>` +
-            `${escapeHtml(formatReadingTime(selectedSnapshot.timestamp))}<br/>` +
-            `<a href="#/sensor/${point.objectId}">${escapeHtml(t("popup.viewDetails"))}</a>`,
-        );
-    }
+    const snapshotTime = selectedSnapshot.timestamp;
+    const tooltip = (point: HistoricalTemperatureFieldPoint) =>
+      `${point.name}: ${formatValue(point.temperature, TEMPERATURE_UNIT)}`;
+    const popup = (point: HistoricalTemperatureFieldPoint) =>
+      `<strong>${escapeHtml(point.name)}</strong><br/>` +
+      `${formatValue(point.temperature, TEMPERATURE_UNIT)}<br/>` +
+      `${escapeHtml(formatReadingTime(snapshotTime))}<br/>` +
+      `<a href="#/sensor/${point.objectId}">${escapeHtml(t("popup.viewDetails"))}</a>`;
 
     if (baselineDeviationScale && baselineTemperature != null) {
-      drawTemperatureField({
-        map,
-        field,
-        markers,
+      fieldController.render<HistoricalTemperatureFieldPoint>({
         points: selectedSnapshot.points,
-        color: (point) => baselineDeviationScale.css(point.temperature - baselineTemperature),
-        bindLayer: bindPoint,
-        label: showLabels
+        getId: (point) => point.objectId,
+        getColor: (point) =>
+          baselineDeviationScale.css(point.temperature - baselineTemperature),
+        getTooltipText: tooltip,
+        getPopupHtml: popup,
+        getLabel: showLabels
           ? (point) => formatTemperatureDeviationLabel(point.temperature - baselineTemperature)
           : undefined,
-        fitBounds: false,
-        highlight: (point) => String(point.objectId) === baselineId,
+        isHighlighted: (point) => String(point.objectId) === baselineId,
       });
       return;
     }
 
-    drawTemperatureField({
-      map,
-      field,
-      markers,
+    fieldController.render<HistoricalTemperatureFieldPoint>({
       points: selectedSnapshot.points,
-      color: (point) => temperatureScale.css(point.temperature),
-      bindLayer: bindPoint,
-      label: showLabels ? (point) => formatTemperatureLabel(point.temperature) : undefined,
-      fitBounds: false,
+      getId: (point) => point.objectId,
+      getColor: (point) => temperatureScale.css(point.temperature),
+      getTooltipText: tooltip,
+      getPopupHtml: popup,
+      getLabel: showLabels
+        ? (point) => formatTemperatureLabel(point.temperature)
+        : undefined,
     });
   }, [
+    isStyleReady,
     selectedSnapshot,
     temperatureScale,
     t,
@@ -220,17 +220,8 @@ export function HistoricalTemperatureField({
     baselineTemperature,
     baselineId,
     showLabels,
+    fieldControllerRef,
   ]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const id = window.setTimeout(() => {
-      map.invalidateSize();
-      fitTemperatureFieldToPoints(map, allSnapshotPoints);
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, [allSnapshotPoints]);
 
   const legend = useMemo(() => {
     if (!temperatureScale || !selectedSnapshot) return null;
@@ -241,7 +232,10 @@ export function HistoricalTemperatureField({
 
   if (snapshots.length === 0 || !selectedSnapshot) {
     return (
-      <section className="historical-temperature-field" aria-labelledby="historical-temperature-field-heading">
+      <section
+        className="historical-temperature-field"
+        aria-labelledby="historical-temperature-field-heading"
+      >
         <h3 id="historical-temperature-field-heading" className="kern-heading-small">
           {t("insights.historyMap.heading")}
         </h3>
@@ -253,7 +247,10 @@ export function HistoricalTemperatureField({
   }
 
   return (
-    <section className="historical-temperature-field" aria-labelledby="historical-temperature-field-heading">
+    <section
+      className="historical-temperature-field"
+      aria-labelledby="historical-temperature-field-heading"
+    >
       <div className="section-toolbar">
         <div>
           <h3 id="historical-temperature-field-heading" className="kern-heading-small">
@@ -296,25 +293,17 @@ export function HistoricalTemperatureField({
               : t("insights.historyMap.status", {
                   date: formatTimestamp(selectedSnapshot.timestamp),
                   count: selectedSnapshot.points.length,
-                  min: formatValue(temperatureScale?.min, UNIT),
-                  max: formatValue(temperatureScale?.max, UNIT),
+                min: formatValue(temperatureScale?.min, TEMPERATURE_UNIT),
+                max: formatValue(temperatureScale?.max, TEMPERATURE_UNIT),
                 })}
           </span>
-          {isDeviationMapActive && dwdBaselineObservation && (
-            <span className="kern-body kern-body--small kern-body--muted">
-              {t("baseline.dwdReading", {
-                value: formatValue(dwdBaselineObservation.temperature, UNIT),
-                time: formatTime(dwdBaselineObservation.timestamp),
-              })}
-            </span>
-          )}
-          {isBaselineTemperatureUnavailable && (
-            <span className="kern-body kern-body--small kern-body--muted">
-              {isDwdBaselineSelected && dwdBaseline.error
-                ? dwdBaseline.error
-                : t("baseline.unavailable")}
-            </span>
-          )}
+          <TemperatureBaselineStatus
+            isDeviationMapActive={isDeviationMapActive}
+            dwdObservation={dwdBaselineObservation}
+            isBaselineTemperatureUnavailable={isBaselineTemperatureUnavailable}
+            isDwdBaselineSelected={isDwdBaselineSelected}
+            dwdError={dwdBaseline.error}
+          />
         </div>
 
         <div
@@ -349,27 +338,13 @@ export function HistoricalTemperatureField({
           </div>
         </div>
 
-        {legend &&
-          (legend.kind === "deviation" ? (
-            <TemperatureLegend
-              gradient={legend.gradient}
-              minLabel={formatSignedDelta(legend.min, UNIT)}
-              midLabel="0 °C"
-              midPos={legend.zeroPos}
-              maxLabel={formatSignedDelta(legend.max, UNIT)}
-              caption={t("baseline.legendCaption", { name: baselineLabel })}
-            />
-          ) : (
-            <TemperatureLegend
-              gradient={legend.gradient}
-              minLabel={formatValue(legend.min, UNIT)}
-              maxLabel={formatValue(legend.max, UNIT)}
-              caption={t("insights.historyMap.legendCaption", {
-                count: legend.count,
-                hours: bucketHours,
-              })}
-            />
-          ))}
+        <TemperatureFieldLegend
+          legend={legend}
+          getAbsoluteCaption={(count) =>
+            t("insights.historyMap.legendCaption", { count, hours: bucketHours })
+          }
+          deviationCaption={t("baseline.legendCaption", { name: baselineLabel })}
+        />
       </div>
     </section>
   );

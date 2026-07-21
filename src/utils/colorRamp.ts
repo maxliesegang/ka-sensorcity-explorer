@@ -1,6 +1,6 @@
 // Sampling a discrete list of colour stops as a continuous ramp.
 //
-// Shared by the colour scales that are read directly in JS (SVG fills, Leaflet
+// Shared by the colour scales that are read directly in JS (SVG fills, map
 // styles, CSS gradients) rather than through a theme-aware CSS variable.
 
 export type Rgb = [number, number, number];

@@ -16,8 +16,8 @@ Built with **Vite + React + TypeScript**, styled with the
 - **Sensors** — a searchable, sortable, filterable list of every live sensor
   (table and card views), each linking to its detail page. The
   keyboard/screen-reader-friendly counterpart to the map.
-- **Map** — all geolocated sensors on a Leaflet/OpenStreetMap map, filterable by
-  category, each linking to its detail page.
+- **Map** — all geolocated sensors on a MapLibre GL / OpenFreeMap vector map (with
+  3D buildings), filterable by category, each linking to its detail page.
 - **Temperature** — a live temperature field for Karlsruhe drawn as
   nearest-sensor (Voronoi/Thiessen) regions, with absolute and baseline-relative
   ("deviation") colour modes, a choice of baseline station (including the DWD
@@ -113,16 +113,16 @@ src/
 ├── components/              Layout, Status (loading/error/empty), LineChart and
 │                            DepthProfileChart (SVG), temperature field/legend/
 │                            insights, and UI.
-├── hooks/                   useAsync (abortable async-state), useLeafletMap
+├── hooks/                   useAsync (abortable async-state), useMapLibreMap
 │                            (create-once/teardown map lifecycle), + others.
 ├── i18n/                    react-i18next setup + per-namespace en/de dicts.
 ├── utils/                   format (locale-aware), voronoi (Thiessen cells),
 │                            colour ramps + temperature/depth-profile scales,
-│                            depthProfile (depth×time grid), stats, Leaflet.
+│                            depthProfile (depth×time grid), stats, MapLibre.
 ├── views/                   One file per route: Overview, Sensors, Map,
 │                            TemperatureField, SensorDetail, Query, About.
 ├── types.ts                Shared domain types.
-└── App.tsx / main.tsx      Router + bootstrap (KERN + Leaflet CSS + i18n).
+└── App.tsx / main.tsx      Router + bootstrap (KERN + MapLibre CSS + i18n).
 ```
 
 ### Internationalization

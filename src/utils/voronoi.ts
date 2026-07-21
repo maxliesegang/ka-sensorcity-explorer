@@ -1,12 +1,13 @@
 // Voronoi (Thiessen) cells for geolocated points, clipped to the points'
 // convex hull. Pure planar math in [x=lon, y=lat] — fine at city scale — with
-// no React/Leaflet/DOM dependency. Output rings are [lat, lon] for Leaflet.
+// no React/map/DOM dependency. Output rings are [lon, lat] pairs, matching
+// GeoJSON / MapLibre coordinate order so they can feed a source directly.
 
 import { Delaunay } from "d3-delaunay";
 
 export interface VoronoiCell<T> {
   point: T; // the originating point
-  polygon: Array<[number, number]>; // ring as [lat, lon] pairs, Leaflet-ready, NOT closed
+  polygon: Array<[number, number]>; // ring as [lon, lat] pairs, GeoJSON-ready, NOT closed
 }
 
 type Pt = [number, number]; // [x=lon, y=lat]
@@ -138,7 +139,8 @@ export function voronoiCells<T extends { lat: number; lon: number }>(
     if (clipped.length < 3) continue;
     out.push({
       point: points[i],
-      polygon: clipped.map(([x, y]) => [y, x] as [number, number]),
+      // clipped is already [x=lon, y=lat] — exactly GeoJSON order.
+      polygon: clipped.map(([x, y]) => [x, y] as [number, number]),
     });
   }
   return out;
