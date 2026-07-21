@@ -6,4 +6,14 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   base: "./",
   plugins: [react()],
+  resolve: {
+    // The CSP build expects a separate worker file and does not create a Blob
+    // worker by stringifying code that Vite may minify again.
+    alias: [
+      {
+        find: /^maplibre-gl$/,
+        replacement: "maplibre-gl/dist/maplibre-gl-csp.js",
+      },
+    ],
+  },
 });
