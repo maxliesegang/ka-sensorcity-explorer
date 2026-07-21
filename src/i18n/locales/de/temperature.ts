@@ -128,21 +128,40 @@ export default {
     historyMap: {
       heading: "Historische Temperaturkarte",
       intro:
-        "Die Karte in {{hours}}-Stunden-Schritten aus dem Archiv abspielen.",
+        "Das Archiv auf einer Zeitleiste mit {{interval}} Auflösung erkunden. Jeder Sensor zeigt seinen letzten früheren Messwert innerhalb der gewählten Aktualitätsgrenze.",
       empty:
         "Keine historischen Kartenansichten im Archiv.",
       mapAria: "Historische Temperatur-Voronoi-Karte von Karlsruhe",
-      sliderLabel: "Archivzeitpunkt",
+      sliderLabel: "Archivzeitleiste",
+      selectedTime: "Ausgewählter Zeitpunkt",
+      navigationStepLabel: "Schrittweite",
+      maxReadingAgeLabel: "Messwerte einbeziehen bis",
+      earlier: "Früher",
+      later: "Später",
+      latest: "Zum neuesten Zeitpunkt",
+      timelinePosition: "Zeitpunkt {{current}} von {{total}}",
+      minutes_one: "{{count}} Minute",
+      minutes_other: "{{count}} Minuten",
+      hours_one: "{{count}} Stunde",
+      hours_other: "{{count}} Stunden",
       status:
-        "{{date}}: {{count}} Sensoren, {{min}}–{{max}} in der Stadt.",
+        "{{date}}: {{count}} von {{total}} Sensoren, höchstens {{minutes}} Min. alt · {{min}}–{{max}} in der Stadt.",
       baselineStatus_one:
-        "{{date}}: Eingefärbt nach Abweichung zu {{name}} ({{count}} Sensor).",
+        "{{date}}: Eingefärbt nach Abweichung zu {{name}} · {{count}} von {{total}} Sensoren, höchstens {{minutes}} Min. alt.",
       baselineStatus_other:
-        "{{date}}: Eingefärbt nach Abweichung zu {{name}} ({{count}} Sensoren).",
+        "{{date}}: Eingefärbt nach Abweichung zu {{name}} · {{count}} von {{total}} Sensoren, höchstens {{minutes}} Min. alt.",
+      noReadingsForFrame:
+        "{{date}}: Keine Messwerte innerhalb von {{minutes}} Minuten ({{total}} Sensoren im Archiv verfügbar).",
+      lowCoverage:
+        "Geringe Abdeckung: {{count}} von {{total}} Sensoren. Für eine dichtere Karte eine größere Aktualitätsgrenze wählen.",
+      readingAgeCompact_one: "{{count}} Min. alt",
+      readingAgeCompact_other: "{{count}} Min. alt",
+      readingAge_one: "{{count}} Minute vor dem ausgewählten Zeitpunkt",
+      readingAge_other: "{{count}} Minuten vor dem ausgewählten Zeitpunkt",
       legendCaption_one:
-        "Jede Fläche übernimmt den nächstgelegenen Sensor in diesem {{hours}}-Stunden-Zeitraum ({{count}} Sensor).",
+        "Jede Fläche übernimmt den nächsten verfügbaren Sensor; Messwerte sind höchstens {{minutes}} Minuten alt ({{count}} Sensor).",
       legendCaption_other:
-        "Jede Fläche übernimmt den nächstgelegenen Sensor in diesem {{hours}}-Stunden-Zeitraum ({{count}} Sensoren).",
+        "Jede Fläche übernimmt den nächsten verfügbaren Sensor; Messwerte sind höchstens {{minutes}} Minuten alt ({{count}} Sensoren).",
     },
   },
 } as const;

@@ -108,8 +108,8 @@ export function TemperatureInsights({ insights }: { insights: TemperatureInsight
   const { t } = useTranslation("temperature");
   const { current, mostVolatile, perSensor, spreadSeries } = insights;
   const latestArchiveTime =
-    insights.fieldSnapshots.length > 0
-      ? insights.fieldSnapshots[insights.fieldSnapshots.length - 1].timestamp
+    insights.fieldFrames.length > 0
+      ? insights.fieldFrames[insights.fieldFrames.length - 1].timestamp
       : null;
   const [selectedArchiveTime, setSelectedArchiveTime] = useState<number | null>(
     latestArchiveTime,
@@ -265,8 +265,8 @@ function HistoryViews({
       >
         {activeTab === "map" && (
           <HistoricalTemperatureField
-            snapshots={insights.fieldSnapshots}
-            bucketHours={insights.bucketHours}
+            frames={insights.fieldFrames}
+            frameIntervalMinutes={insights.fieldFrameIntervalMinutes}
             onSelectedTimeChange={onSelectedArchiveTimeChange}
           />
         )}

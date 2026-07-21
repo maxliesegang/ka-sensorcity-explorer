@@ -43,11 +43,12 @@ export interface HistoricalTemperatureFieldPoint {
   lat: number;
   lon: number;
   temperature: number;
+  observedAt: number; // actual archive reading time; never later than the frame
 }
 
-export interface TemperatureFieldSnapshot {
-  timestamp: number; // bucket-start epoch ms
-  points: HistoricalTemperatureFieldPoint[]; // geolocated sensor temperatures in this time bucket
+export interface HistoricalTemperatureFieldFrame {
+  timestamp: number; // selected time on the replay timeline
+  points: HistoricalTemperatureFieldPoint[]; // latest eligible geolocated readings at this time
 }
 
 export interface TemperatureInsightsData {
@@ -64,11 +65,13 @@ export interface TemperatureInsightsData {
   perSensor: TemperatureSensorStats[]; // sorted by `current` DESC (nulls last)
   mostVolatile: TemperatureSensorStats | null; // sensor with the largest historical `range`
   spreadSeries: TemperatureSpreadPoint[]; // oldest -> newest; only buckets with sensorCount >= 2
-  fieldSnapshots: TemperatureFieldSnapshot[]; // oldest -> newest; frames for historical Voronoi replay
-  bucketHours: number; // bucket width used for spreadSeries
+  fieldFrames: HistoricalTemperatureFieldFrame[]; // oldest -> newest; historical Voronoi replay
+  fieldFrameIntervalMinutes: number; // interval between point-in-time replay frames
 }
 
-const BUCKET_HOURS = 1;
+const SPREAD_BUCKET_HOURS = 1;
+const FIELD_FRAME_INTERVAL_MINUTES = 5;
+const FIELD_FRAME_MAX_READING_AGE_MINUTES = 60;
 const CONCURRENCY = 6;
 
 const EMPTY_INSIGHTS = (): TemperatureInsightsData => ({
@@ -78,8 +81,8 @@ const EMPTY_INSIGHTS = (): TemperatureInsightsData => ({
   perSensor: [],
   mostVolatile: null,
   spreadSeries: [],
-  fieldSnapshots: [],
-  bucketHours: BUCKET_HOURS,
+  fieldFrames: [],
+  fieldFrameIntervalMinutes: FIELD_FRAME_INTERVAL_MINUTES,
 });
 
 /** Fresh live temperature for a sensor, or null when stale / not finite. */
@@ -206,34 +209,18 @@ function buildCurrentComparison(
   };
 }
 
-function buildBucketedHistory(
-  sensors: Sensor[],
+function buildTemperatureSpreadSeries(
   histories: TimeSeriesPoint[][],
   bucketMs: number,
-): Pick<TemperatureInsightsData, "spreadSeries" | "fieldSnapshots"> {
+): TemperatureSpreadPoint[] {
   const perSensorBuckets = histories.map((points) => bucketMeans(points, bucketMs));
   const spreadBuckets = new Map<number, number[]>();
-  const fieldBuckets = new Map<number, HistoricalTemperatureFieldPoint[]>();
 
-  for (let i = 0; i < perSensorBuckets.length; i++) {
-    const sensor = sensors[i];
-    for (const [key, value] of perSensorBuckets[i]) {
+  for (const sensorBuckets of perSensorBuckets) {
+    for (const [key, value] of sensorBuckets) {
       const values = spreadBuckets.get(key);
       if (values) values.push(value);
       else spreadBuckets.set(key, [value]);
-
-      if (sensor.lat != null && sensor.lon != null) {
-        const point: HistoricalTemperatureFieldPoint = {
-          objectId: sensor.objectId,
-          name: sensor.name,
-          lat: sensor.lat,
-          lon: sensor.lon,
-          temperature: value,
-        };
-        const points = fieldBuckets.get(key);
-        if (points) points.push(point);
-        else fieldBuckets.set(key, [point]);
-      }
     }
   }
 
@@ -258,14 +245,67 @@ function buildBucketedHistory(
     });
   }
   spreadSeries.sort((a, b) => a.timestamp - b.timestamp);
+  return spreadSeries;
+}
 
-  const fieldSnapshots: TemperatureFieldSnapshot[] = [];
-  for (const [timestamp, points] of fieldBuckets) {
-    if (points.length >= 2) fieldSnapshots.push({ timestamp, points });
+/** Build point-in-time frames from the latest known reading for each sensor. */
+export function buildHistoricalTemperatureFieldFrames(
+  sensors: readonly Sensor[],
+  histories: readonly TimeSeriesPoint[][],
+  frameIntervalMs: number,
+  maxReadingAgeMs: number,
+): HistoricalTemperatureFieldFrame[] {
+  if (!Number.isFinite(frameIntervalMs) || frameIntervalMs <= 0) {
+    throw new RangeError("frameIntervalMs must be a positive finite number");
   }
-  fieldSnapshots.sort((a, b) => a.timestamp - b.timestamp);
+  if (!Number.isFinite(maxReadingAgeMs) || maxReadingAgeMs < 0) {
+    throw new RangeError("maxReadingAgeMs must be a non-negative finite number");
+  }
 
-  return { spreadSeries, fieldSnapshots };
+  let firstTimestamp = Infinity;
+  let lastTimestamp = -Infinity;
+  for (const history of histories) {
+    for (const point of history) {
+      if (point.timestamp < firstTimestamp) firstTimestamp = point.timestamp;
+      if (point.timestamp > lastTimestamp) lastTimestamp = point.timestamp;
+    }
+  }
+  if (!Number.isFinite(firstTimestamp) || !Number.isFinite(lastTimestamp)) return [];
+
+  const start = Math.floor(firstTimestamp / frameIntervalMs) * frameIntervalMs;
+  const end = Math.ceil(lastTimestamp / frameIntervalMs) * frameIntervalMs;
+  const cursors = histories.map(() => -1);
+  const frames: HistoricalTemperatureFieldFrame[] = [];
+
+  for (let timestamp = start; timestamp <= end; timestamp += frameIntervalMs) {
+    const points: HistoricalTemperatureFieldPoint[] = [];
+    for (let sensorIndex = 0; sensorIndex < sensors.length; sensorIndex += 1) {
+      const sensor = sensors[sensorIndex];
+      if (sensor.lat == null || sensor.lon == null) continue;
+
+      const history = histories[sensorIndex] ?? [];
+      let cursor = cursors[sensorIndex];
+      while (cursor + 1 < history.length && history[cursor + 1].timestamp <= timestamp) {
+        cursor += 1;
+      }
+      cursors[sensorIndex] = cursor;
+      if (cursor < 0) continue;
+
+      const reading = history[cursor];
+      if (timestamp - reading.timestamp > maxReadingAgeMs) continue;
+      points.push({
+        objectId: sensor.objectId,
+        name: sensor.name,
+        lat: sensor.lat,
+        lon: sensor.lon,
+        temperature: reading.value,
+        observedAt: reading.timestamp,
+      });
+    }
+    frames.push({ timestamp, points });
+  }
+
+  return frames;
 }
 
 /**
@@ -307,10 +347,15 @@ export async function fetchTemperatureInsights(
   );
   const current = buildCurrentComparison(temperatureSensors, currents, cityCurrentMean);
   const mostVolatile = mostVolatileSensor(perSensor);
-  const { spreadSeries, fieldSnapshots } = buildBucketedHistory(
+  const spreadSeries = buildTemperatureSpreadSeries(
+    histories,
+    SPREAD_BUCKET_HOURS * 3_600_000,
+  );
+  const fieldFrames = buildHistoricalTemperatureFieldFrames(
     temperatureSensors,
     histories,
-    BUCKET_HOURS * 3_600_000,
+    FIELD_FRAME_INTERVAL_MINUTES * 60_000,
+    FIELD_FRAME_MAX_READING_AGE_MINUTES * 60_000,
   );
 
   return {
@@ -320,7 +365,7 @@ export async function fetchTemperatureInsights(
     perSensor,
     mostVolatile,
     spreadSeries,
-    fieldSnapshots,
-    bucketHours: BUCKET_HOURS,
+    fieldFrames,
+    fieldFrameIntervalMinutes: FIELD_FRAME_INTERVAL_MINUTES,
   };
 }

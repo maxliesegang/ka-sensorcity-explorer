@@ -127,21 +127,40 @@ export default {
     historyMap: {
       heading: "Historical temperature map",
       intro:
-        "Replay the map in {{hours}}-hour archive steps.",
+        "Explore the archive on a {{interval}} timeline. Each sensor shows its latest earlier reading within the selected freshness limit.",
       empty:
         "No historical map views in the archive.",
       mapAria: "Historical temperature Voronoi map of Karlsruhe",
-      sliderLabel: "Archive time",
+      sliderLabel: "Archive timeline",
+      selectedTime: "Selected time",
+      navigationStepLabel: "Jump by",
+      maxReadingAgeLabel: "Include readings up to",
+      earlier: "Earlier",
+      later: "Later",
+      latest: "Jump to latest",
+      timelinePosition: "Time point {{current}} of {{total}}",
+      minutes_one: "{{count}} minute",
+      minutes_other: "{{count}} minutes",
+      hours_one: "{{count}} hour",
+      hours_other: "{{count}} hours",
       status:
-        "{{date}}: {{count}} sensors, {{min}}–{{max}} across the city.",
+        "{{date}}: {{count}} of {{total}} sensors, up to {{minutes}} min old · {{min}}–{{max}} across the city.",
       baselineStatus_one:
-        "{{date}}: Coloured by difference from {{name}} ({{count}} sensor).",
+        "{{date}}: Coloured by difference from {{name}} · {{count}} of {{total}} sensors, up to {{minutes}} min old.",
       baselineStatus_other:
-        "{{date}}: Coloured by difference from {{name}} ({{count}} sensors).",
+        "{{date}}: Coloured by difference from {{name}} · {{count}} of {{total}} sensors, up to {{minutes}} min old.",
+      noReadingsForFrame:
+        "{{date}}: No readings within {{minutes}} minutes ({{total}} sensors available in the archive).",
+      lowCoverage:
+        "Low coverage: {{count}} of {{total}} sensors. Choose a larger freshness limit for a denser map.",
+      readingAgeCompact_one: "{{count}} min old",
+      readingAgeCompact_other: "{{count}} min old",
+      readingAge_one: "{{count}} minute before the selected time",
+      readingAge_other: "{{count}} minutes before the selected time",
       legendCaption_one:
-        "Each area takes its nearest sensor in this {{hours}}-hour interval ({{count}} sensor).",
+        "Each area takes its nearest available sensor; readings are at most {{minutes}} minutes old ({{count}} sensor).",
       legendCaption_other:
-        "Each area takes its nearest sensor in this {{hours}}-hour interval ({{count}} sensors).",
+        "Each area takes its nearest available sensor; readings are at most {{minutes}} minutes old ({{count}} sensors).",
     },
   },
 } as const;

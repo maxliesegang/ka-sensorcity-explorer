@@ -2925,6 +2925,47 @@ code,
   background: var(--kern-color-layout-background-default-contextual, #fff);
 }
 
+.historical-temperature-field__time-row,
+.historical-temperature-field__timeline-row,
+.historical-temperature-field__latest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kern-metric-space-default, 1rem);
+}
+
+.historical-temperature-field__selected-time {
+  display: block;
+  margin-top: var(--kern-metric-space-x-small, 0.25rem);
+  font-size: 1.125rem;
+}
+
+.historical-temperature-field__setting-field {
+  min-width: 10rem;
+}
+
+.historical-temperature-field__settings {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--kern-metric-space-small, 0.5rem);
+}
+
+.historical-temperature-field__coverage-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  padding: var(--kern-metric-space-small, 0.5rem) var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-feedback-warning-border, #d39100);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-feedback-warning-background, #fff4ce);
+  color: var(--kern-color-feedback-warning-text, #503b00);
+}
+
+.historical-temperature-field__timeline {
+  flex: 1;
+  min-width: 8rem;
+}
+
 .historical-temperature-field__slider {
   width: 100%;
   accent-color: var(--kern-color-action-default-contextual, #2044aa);
@@ -2939,6 +2980,32 @@ code,
 
 .historical-temperature-field__range-labels span:last-child {
   text-align: right;
+}
+
+@media (max-width: 640px) {
+  .historical-temperature-field__time-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .historical-temperature-field__setting-field {
+    width: 100%;
+  }
+
+  .historical-temperature-field__settings {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .historical-temperature-field__timeline-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .historical-temperature-field__timeline {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
 }
 
 /* Call to action shown before the (heavy) analysis is loaded on demand. */
