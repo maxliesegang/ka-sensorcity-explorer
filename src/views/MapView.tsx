@@ -7,7 +7,7 @@ import type { Feature } from "geojson";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { fetchSensors } from "../api/sensorcity";
 import { AsyncBoundary } from "../components/Status";
 import { CollapsibleFilters } from "../components/CollapsibleFilters";
@@ -16,6 +16,7 @@ import {
   getCategoryColor,
   categoryLabelKey,
 } from "../config/layers";
+import { useUrlState } from "../hooks/useUrlState";
 import {
   addBuildingExtrusionLayer,
   DEFAULT_MAP_ZOOM,
@@ -41,6 +42,33 @@ import { formatPrimaryReadingLine } from "../utils/sensorMeasurements";
 const SENSOR_SOURCE_ID = "sensors";
 const SENSOR_LAYER_ID = "sensors-circle";
 
+const CATEGORY_KEYS = CATEGORIES.map((category) => category.key);
+
+// The visible-category filter is deep-linked in `?cat=`: absent means all
+// categories are shown, `none` means all are hidden, otherwise it is a
+// comma-separated list of the visible keys. A shared map link therefore
+// reproduces exactly which layers the sender had on.
+function getVisibleCategories(params: URLSearchParams): Set<string> {
+  const raw = params.get("cat");
+  if (raw == null) {
+    // Legacy single-category deep link (?category=Key) pre-selects just that one.
+    const legacy = params.get("category");
+    if (legacy && CATEGORY_KEYS.includes(legacy)) return new Set([legacy]);
+    return new Set(CATEGORY_KEYS);
+  }
+  if (raw === "none") return new Set();
+  const requested = raw.split(",");
+  return new Set(CATEGORY_KEYS.filter((key) => requested.includes(key)));
+}
+
+/** Serialize a visible set to its `?cat=` form: all → "" (param dropped), none → "none". */
+function toVisibleCategoriesParam(visible: Set<string>): string {
+  if (visible.size === CATEGORY_KEYS.length) return "";
+  if (visible.size === 0) return "none";
+  // Keep config order for a stable, readable URL.
+  return CATEGORY_KEYS.filter((key) => visible.has(key)).join(",");
+}
+
 // Resting/hover/active ring sizes for the category markers.
 const MARKER_STYLE: InteractiveCircleStyle = {
   default: { radius: 7, strokeWidth: 2 },
@@ -50,20 +78,22 @@ const MARKER_STYLE: InteractiveCircleStyle = {
 
 export function MapView() {
   const sensors = useAsync(fetchSensors, []);
-  const [params] = useSearchParams();
+  const [params, updateParams] = useUrlState();
   const { t } = useTranslation("map");
   const { t: tc } = useTranslation("common");
 
-  // Optional ?category= deep-link pre-selects a single category.
-  const initialCategory = params.get("category");
-  const [visibleCategories, setVisibleCategories] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(
-      CATEGORIES.map((category) => [
-        category.key,
-        initialCategory ? category.key === initialCategory : true,
-      ]),
-    ),
+  // Which categories are shown lives in the URL (`?cat=`), so the filter is
+  // shareable. Derive a set + a key→boolean record the render effect reads.
+  const visibleSet = useMemo(() => getVisibleCategories(params), [params]);
+  const visibleCategories = useMemo(
+    () => Object.fromEntries(CATEGORY_KEYS.map((key) => [key, visibleSet.has(key)])),
+    [visibleSet],
   );
+
+  // Writing `cat` also clears any legacy `category` param so the two can't disagree.
+  function commitVisibleCategories(next: Set<string>) {
+    updateParams({ cat: toVisibleCategoriesParam(next), category: null });
+  }
 
   const { containerRef, mapRef, isStyleReady } = useMapLibreMap();
   const visibleSensorBoundsRef = useRef<LngLatBounds | null>(null);
@@ -133,24 +163,18 @@ export function MapView() {
   }, [isStyleReady, mapRef, sensors.data, visibleCategories, t, tc]);
 
   function toggleCategoryVisibility(categoryKey: string) {
-    setVisibleCategories((currentVisibility) => ({
-      ...currentVisibility,
-      [categoryKey]: !currentVisibility[categoryKey],
-    }));
+    const next = new Set(visibleSet);
+    if (next.has(categoryKey)) next.delete(categoryKey);
+    else next.add(categoryKey);
+    commitVisibleCategories(next);
   }
 
   function setAllCategoriesVisible(value: boolean) {
-    setVisibleCategories(
-      Object.fromEntries(CATEGORIES.map((category) => [category.key, value])),
-    );
+    commitVisibleCategories(value ? new Set(CATEGORY_KEYS) : new Set());
   }
 
   function showOnlyCategory(categoryKey: string) {
-    setVisibleCategories(
-      Object.fromEntries(
-        CATEGORIES.map((category) => [category.key, category.key === categoryKey]),
-      ),
-    );
+    commitVisibleCategories(new Set([categoryKey]));
   }
 
   function resetView() {

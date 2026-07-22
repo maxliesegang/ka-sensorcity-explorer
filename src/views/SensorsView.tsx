@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, type CSSProperties } from "react";
 import { KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { fetchSensors } from "../api/sensorcity";
@@ -17,6 +17,8 @@ import {
   measurementLabelKey,
 } from "../config/layers";
 import { useAsync } from "../hooks/useAsync";
+import { useUrlState } from "../hooks/useUrlState";
+import { toEnum, toPositiveInt } from "../utils/urlParams";
 import type { Sensor } from "../types";
 import { formatTimestamp, timeAgo } from "../utils/format";
 import {
@@ -32,17 +34,6 @@ type PageSize = 12 | 24 | 48;
 
 const SORT_KEYS: SortKey[] = ["name", "category", "value", "measuredAt"];
 const PAGE_SIZES: PageSize[] = [12, 24, 48];
-
-/** Coerce a raw URL param to one of `allowed`, falling back when it is absent or unknown. */
-function toEnum<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
-  return value != null && allowed.includes(value as T) ? (value as T) : fallback;
-}
-
-/** Coerce a raw URL param to a positive integer, falling back when it is not one. */
-function toPositiveInt(value: string | null, fallback: number): number {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-}
 
 function numericCompare(a: number | null, b: number | null, dir: SortDir): number {
   if (a == null && b == null) return 0;
@@ -98,7 +89,7 @@ function compareSensors(
 
 export function SensorsView() {
   const sensors = useAsync(fetchSensors, []);
-  const [params, setParams] = useSearchParams();
+  const [params, updateParams] = useUrlState();
   const { t } = useTranslation("sensors");
 
   const categoryParam = params.get("category") ?? "";
@@ -110,30 +101,26 @@ export function SensorsView() {
   const pageSize = Number(toEnum(params.get("pageSize"), ["12", "24", "48"], "24")) as PageSize;
   const page = toPositiveInt(params.get("page"), 1);
 
-  function updateParams(updates: Record<string, string>, resetPage = false) {
-    const nextParams = new URLSearchParams(params);
-    for (const [key, value] of Object.entries(updates)) {
-      if (value) nextParams.set(key, value);
-      else nextParams.delete(key);
-    }
-    if (resetPage) nextParams.set("page", "1");
-    setParams(nextParams, { replace: true });
+  // Filter/sort changes reset paging so the user isn't stranded on a page that
+  // no longer exists; `page: "1"` is dropped from the URL as the default.
+  function updateFilters(updates: Record<string, string>) {
+    updateParams({ ...updates, page: "1" });
   }
 
   function setCategory(next: string) {
-    updateParams({ category: next }, true);
+    updateFilters({ category: next });
   }
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {
-      updateParams({ direction: sortDir === "asc" ? "desc" : "asc" }, true);
+      updateFilters({ direction: sortDir === "asc" ? "desc" : "asc" });
     } else {
-      updateParams({ sort: key, direction: defaultSortDir(key) }, true);
+      updateFilters({ sort: key, direction: defaultSortDir(key) });
     }
   }
 
   function changeSortKey(key: SortKey) {
-    updateParams({ sort: key, direction: defaultSortDir(key) }, true);
+    updateFilters({ sort: key, direction: defaultSortDir(key) });
   }
 
   return (
@@ -155,19 +142,19 @@ export function SensorsView() {
             category={category}
             onCategoryChange={setCategory}
             search={search}
-            onSearchChange={(value) => updateParams({ search: value }, true)}
+            onSearchChange={(value) => updateFilters({ search: value })}
             sortKey={sortKey}
             sortDir={sortDir}
             onSort={toggleSort}
             onSortKeyChange={changeSortKey}
-            onSortDirectionChange={(value) => updateParams({ direction: value }, true)}
+            onSortDirectionChange={(value) => updateFilters({ direction: value })}
             viewMode={viewMode}
-            onViewModeChange={(value) => updateParams({ view: value }, true)}
+            onViewModeChange={(value) => updateFilters({ view: value })}
             page={page}
             pageSize={pageSize}
             onPageChange={(value) => updateParams({ page: String(value) })}
-            onPageSizeChange={(value) => updateParams({ pageSize: String(value) }, true)}
-            onReset={() => updateParams({ search: "", category: "" }, true)}
+            onPageSizeChange={(value) => updateFilters({ pageSize: String(value) })}
+            onReset={() => updateFilters({ search: "", category: "" })}
           />
         )}
       </AsyncBoundary>

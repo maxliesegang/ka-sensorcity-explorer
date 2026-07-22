@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { KernAlert, KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { ARCGIS_MAX_PAGE_SIZE, query, queryUrl } from "../api/arcgis";
 import type { QueryParams } from "../api/arcgis";
 import { LAYERS, TEMPERATURE_CATEGORY_KEY } from "../config/layers";
@@ -83,13 +84,55 @@ function toCsv(features: Feature[]): string {
   ]);
 }
 
+// Defaults for the form fields; values equal to these are dropped from the URL
+// so a shared link only carries what the user actually changed.
+const DEFAULT_WHERE = "1=1";
+const DEFAULT_OUT_FIELDS = "*";
+const DEFAULT_COUNT = 25;
+
+/** Coerce a raw `?layer=` param to a known layer id, falling back to the first layer. */
+function toLayerId(raw: string | null): number {
+  const parsed = Number(raw);
+  return LAYERS.some((layer) => layer.id === parsed) ? parsed : 1;
+}
+
+/** Coerce a raw `?count=` param to a positive record count within the service cap. */
+function toRecordCount(raw: string | null): number {
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1) return DEFAULT_COUNT;
+  return Math.min(parsed, ARCGIS_MAX_PAGE_SIZE);
+}
+
 export function QueryView() {
   const { t } = useTranslation("query");
-  const [layerId, setLayerId] = useState(1);
-  const [where, setWhere] = useState("1=1");
-  const [outFields, setOutFields] = useState("*");
-  const [orderByFields, setOrderByFields] = useState("");
-  const [resultRecordCount, setResultRecordCount] = useState(25);
+  // The query form is deep-linkable: seed each field from the URL on mount, then
+  // sync edits back below. Local state stays authoritative for the inputs so
+  // free-text fields edit smoothly (clearing one doesn't snap back to a default).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [layerId, setLayerId] = useState(() => toLayerId(searchParams.get("layer")));
+  const [where, setWhere] = useState(() => searchParams.get("where") ?? DEFAULT_WHERE);
+  const [outFields, setOutFields] = useState(
+    () => searchParams.get("out") ?? DEFAULT_OUT_FIELDS,
+  );
+  const [orderByFields, setOrderByFields] = useState(
+    () => searchParams.get("order") ?? "",
+  );
+  const [resultRecordCount, setResultRecordCount] = useState(() =>
+    toRecordCount(searchParams.get("count")),
+  );
+
+  // Reflect the form into the URL (replace, so edits don't stack in history).
+  // QueryView owns the whole query string, so rebuild it from scratch each time
+  // rather than merging — this drops defaults cleanly.
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (layerId !== 1) next.set("layer", String(layerId));
+    if (where && where !== DEFAULT_WHERE) next.set("where", where);
+    if (outFields && outFields !== DEFAULT_OUT_FIELDS) next.set("out", outFields);
+    if (orderByFields) next.set("order", orderByFields);
+    if (resultRecordCount !== DEFAULT_COUNT) next.set("count", String(resultRecordCount));
+    setSearchParams(next, { replace: true });
+  }, [layerId, where, outFields, orderByFields, resultRecordCount, setSearchParams]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -1,8 +1,10 @@
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo } from "react";
 import type { CSSProperties } from "react";
 import { KernButton, KernRadioGroup } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
+
+import { useEnumParam } from "../hooks/useUrlState";
 
 import { resolveHistorySource } from "../api/history";
 import { fetchHistoryRows, fetchSensor } from "../api/sensorcity";
@@ -72,10 +74,16 @@ function SensorDetail({ sensor }: { sensor: Sensor }) {
     ? tc(categoryLabelKey(category.key))
     : sensor.category;
   const measurements = category?.measurements ?? [];
-  const [selectedField, setSelectedField] = useState(measurements[0]?.field ?? "");
-  const [activeTab, setActiveTab] = useState<DetailTab>("current");
   const primary = measurements[0];
   const depthProfiles = getDepthProfiles(category);
+
+  // Which tab, chart field and depth profile are open all live in the URL, so a
+  // link to a sensor reopens the exact view that was shared.
+  const [selectedField, setSelectedField] = useEnumParam(
+    "field",
+    measurements.map(({ field }) => field),
+    measurements[0]?.field ?? "",
+  );
 
   const tabs: DetailTabItem<DetailTab>[] = [
     {
@@ -122,6 +130,15 @@ function SensorDetail({ sensor }: { sensor: Sensor }) {
       panel: <RawAttributes sensor={sensor} />,
     },
   ];
+
+  // Validate against the tabs this sensor actually has: a `?tab=profile` link to
+  // a sensor without a profile tab falls back to "current" rather than showing
+  // nothing.
+  const [activeTab, setActiveTab] = useEnumParam(
+    "tab",
+    tabs.map(({ id }) => id),
+    "current",
+  );
 
   return (
     <div
@@ -342,7 +359,12 @@ function DepthProfileSection({
   const { t } = useTranslation("detail");
   const { t: tc } = useTranslation("common");
   const pickerId = useId().replace(/:/g, "");
-  const [selectedKey, setSelectedKey] = useState(profiles[0].key);
+  // The chosen quantity is deep-linked (`?profile=`) alongside the active tab.
+  const [selectedKey, selectProfile] = useEnumParam(
+    "profile",
+    profiles.map((p) => p.key),
+    profiles[0].key,
+  );
   const profile = profiles.find((p) => p.key === selectedKey) ?? profiles[0];
   const rows = useAsync(
     (s) =>
@@ -355,12 +377,6 @@ function DepthProfileSection({
       ),
     [archiveLayerId, sensor.deviceId, profile.key],
   );
-
-  function selectProfile(key: string) {
-    if (profiles.some((candidate) => candidate.key === key)) {
-      setSelectedKey(key);
-    }
-  }
 
   return (
     <section className="sensor-detail__section sensor-detail__section--plain">

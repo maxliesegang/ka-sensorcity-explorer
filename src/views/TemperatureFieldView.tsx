@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { KernBadge, KernButton } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { useBoolParam } from "../hooks/useUrlState";
 import { fetchSensors } from "../api/sensorcity";
 import { fetchTemperatureInsights } from "../api/temperatureInsights";
 import { categoryLabelKey, TEMPERATURE_CATEGORY_KEY } from "../config/layers";
@@ -39,7 +40,9 @@ import {
 
 export function TemperatureFieldView() {
   const sensors = useAsync(fetchSensors, []);
-  const [showInsights, setShowInsights] = useState(false);
+  // The heavier insights section is opt-in and deep-linked (`?insights=1`), so a
+  // shared link can land straight on the expanded analytics.
+  const [showInsights, setShowInsights] = useBoolParam("insights", false);
   const insights = useAsync(fetchTemperatureInsights, [], { enabled: showInsights });
   const { t } = useTranslation("temperature");
   const { t: tc } = useTranslation("common");
