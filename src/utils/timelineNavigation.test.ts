@@ -8,6 +8,14 @@ const frames = [0, 15, 30, 60, 90, 180].map((minutes) => ({
 }));
 
 describe("findTimelineStepIndex", () => {
+  it("supports one-minute navigation when one-minute frames are available", () => {
+    const minuteFrames = [0, 1, 2, 3].map((minutes) => ({
+      timestamp: minutes * MINUTE,
+    }));
+    expect(findTimelineStepIndex(minuteFrames, 1, 1, 1)).toBe(2);
+    expect(findTimelineStepIndex(minuteFrames, 2, 1, -1)).toBe(1);
+  });
+
   it("supports five-minute navigation when fine-grained frames are available", () => {
     const fineFrames = [0, 5, 10, 15].map((minutes) => ({
       timestamp: minutes * MINUTE,

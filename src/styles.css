@@ -3082,6 +3082,213 @@ code,
   fill: currentColor;
 }
 
+/* Sensor history workspace ------------------------------------------------ */
+.history-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-default, 1rem);
+}
+
+.history-navigator {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  overflow: hidden;
+}
+
+.history-navigator__toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-default, 1rem);
+  padding: var(--kern-metric-space-default, 1rem);
+}
+
+.history-navigator__ranges {
+  margin-top: var(--kern-metric-space-x-small, 0.25rem);
+}
+
+.history-navigator__window {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--kern-metric-space-default, 1rem);
+  min-height: 5rem;
+  padding: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-default, 1rem);
+  border-top: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+}
+
+.history-navigator__window-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--kern-metric-space-2x-small, 0.125rem);
+  min-width: 0;
+  text-align: center;
+}
+
+.history-navigator__window-label strong {
+  overflow-wrap: anywhere;
+  color: var(--kern-color-layout-text-default-contextual, #131525);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-navigator__window-label .kern-btn {
+  margin-top: var(--kern-metric-space-x-small, 0.25rem);
+}
+
+.history-overview__heading h3,
+.history-overview__heading p {
+  margin: 0;
+}
+
+.history-overview__heading p {
+  margin-top: var(--kern-metric-space-2x-small, 0.125rem);
+}
+
+.history-overview__cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--kern-metric-space-small, 0.5rem);
+  margin-top: var(--kern-metric-space-small, 0.5rem);
+}
+
+.history-overview__cards .pulse-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-x-small, 0.25rem);
+  min-width: 0;
+}
+
+.history-overview__cards .pulse-stat__value {
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.history-overview__cards .pulse-stat__value--text {
+  font-size: 1.125rem;
+  line-height: 1.2;
+}
+
+.history-overview__cards .pulse-stat p {
+  margin: auto 0 0;
+}
+
+.history-overview__latest {
+  border-top: 3px solid var(--category-color, var(--kern-color-action-default-contextual, #2044aa));
+}
+
+.history-overview__arrow {
+  color: var(--category-color, var(--kern-color-action-default-contextual, #2044aa));
+}
+
+.history-deep-dive {
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-default-contextual, #fff);
+  overflow: hidden;
+}
+
+.history-deep-dive > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  min-height: 3.5rem;
+  padding: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-default, 1rem);
+  cursor: pointer;
+  list-style: none;
+}
+
+.history-deep-dive > summary::-webkit-details-marker {
+  display: none;
+}
+
+.history-deep-dive > summary::before {
+  content: "›";
+  flex: 0 0 auto;
+  color: var(--kern-color-action-default-contextual, #2044aa);
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: transform 0.12s ease;
+}
+
+.history-deep-dive[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.history-deep-dive > summary > span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kern-metric-space-2x-small, 0.125rem);
+}
+
+.history-deep-dive > summary small {
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+}
+
+.history-deep-dive[open] > summary {
+  border-bottom: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+}
+
+.history-deep-dive .history-analysis {
+  margin-top: 0;
+  padding: var(--kern-metric-space-default, 1rem);
+}
+
+@media (max-width: 800px) {
+  .history-overview__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .history-navigator__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .history-navigator__toolbar > .kern-btn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .history-navigator__ranges {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .history-navigator__ranges .segmented-control__option {
+    flex: 1 0 auto;
+  }
+
+  .history-navigator__window {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .history-navigator__window-label {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .history-navigator__window > .kern-btn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .history-overview__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Baseline deviation controls --------------------------------------------- */
 /* Presentational control strip used by both temperature maps. The baseline
    selector stays mounted in absolute mode so the toggle does not shift. */

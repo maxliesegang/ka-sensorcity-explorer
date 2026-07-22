@@ -12,6 +12,8 @@ import { LAYERS, TEMPERATURE_CATEGORY_KEY } from "../config/layers";
 import { Empty, ErrorMessage, Loading } from "../components/Status";
 import type { AttributeValue, Feature, QueryResponse } from "../types";
 import type { FieldInfo } from "../types";
+import { rowsToCsv } from "../utils/csv";
+import { downloadTextFile } from "../utils/download";
 import { formatTimestamp } from "../utils/format";
 
 const PRESETS = [
@@ -71,31 +73,14 @@ function formatCell(
     : cell(value);
 }
 
-function download(filename: string, mime: string, content: string) {
-  const url = URL.createObjectURL(new Blob([content], { type: mime }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-function csvEscape(value: AttributeValue | undefined): string {
-  const text = value == null ? "" : String(value);
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
 function toCsv(features: Feature[]): string {
   const columns = columnsFor(features);
-  const lines = [
-    columns.map(csvEscape).join(","),
+  return rowsToCsv([
+    columns,
     ...features.map((feature) =>
-      columns.map((column) => csvEscape(feature.attributes[column])).join(","),
+      columns.map((column) => feature.attributes[column]),
     ),
-  ];
-  return lines.join("\n");
+  ]);
 }
 
 export function QueryView() {
@@ -342,10 +327,10 @@ function QueryResult({
             variant="secondary"
             className="kern-btn--x-small"
             onClick={() =>
-              download(
+              downloadTextFile(
                 "sensorcity-query.json",
-                "application/json",
                 JSON.stringify(result.features, null, 2),
+                "application/json",
               )
             }
             label={t("downloadJson")}
@@ -354,7 +339,9 @@ function QueryResult({
             type="button"
             variant="secondary"
             className="kern-btn--x-small"
-            onClick={() => download("sensorcity-query.csv", "text/csv", toCsv(result.features))}
+            onClick={() =>
+              downloadTextFile("sensorcity-query.csv", toCsv(result.features), "text/csv")
+            }
             label={t("downloadCsv")}
           />
         </div>

@@ -1,27 +1,21 @@
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { TimeSeriesPoint } from "../api/sensorcity";
 import { formatValue } from "../utils/format";
-import {
-  computeHistoryStats,
-  type HistoryStats,
-  type HourlyAverage,
-} from "../utils/historyStats";
+import type { HistoryStats, HourlyAverage } from "../utils/historyStats";
 
 interface Props {
-  points: TimeSeriesPoint[];
+  stats: HistoryStats;
   unit?: string;
   label?: string;
   color?: string;
 }
 
 const DEFAULT_COLOR = "#1f77b4";
-const HEADING_ID = "history-analysis-heading";
-
 // Below this many points the averages, volatility and diurnal shape aren't
-// meaningful, so the analysis defers entirely to the parent's line chart.
-const MIN_POINTS = 3;
+// meaningful, so callers gate the section on it and the analysis defers to the
+// plain line chart.
+export const HISTORY_ANALYSIS_MIN_POINTS = 3;
 
 /** Trend arrow glyph for each direction; decorative (paired with text). */
 const TREND_GLYPH: Record<HistoryStats["trend"]["direction"], string> = {
@@ -43,16 +37,17 @@ interface StatCard {
 /**
  * Presentational historical analysis for a single sensor measurement's time
  * series. The single-sensor analog of {@link TemperatureInsights}: it performs
- * no fetching — points arrive as props and all statistics are computed
- * synchronously via {@link computeHistoryStats}. The parent owns the line chart
- * and loading/empty/error states; this renders nothing (returns null) for empty
- * or low-sample series.
+ * no fetching and no statistics of its own — the caller passes the already
+ * computed {@link HistoryStats} for the visible window (the explorer needs the
+ * same stats for its summary, so computing them once avoids a second pass). The
+ * parent owns the line chart and loading/empty/error states; this renders
+ * nothing for low-sample series.
  */
-export function SensorHistoryAnalysis({ points, unit, label, color }: Props) {
+export function SensorHistoryAnalysis({ stats, unit, label, color }: Props) {
   const { t } = useTranslation("detail");
-  const stats = useMemo(() => computeHistoryStats(points), [points]);
+  const headingId = useId();
 
-  if (!stats || stats.count < MIN_POINTS) return null;
+  if (stats.count < HISTORY_ANALYSIS_MIN_POINTS) return null;
 
   const cards: StatCard[] = [
     {
@@ -72,8 +67,8 @@ export function SensorHistoryAnalysis({ points, unit, label, color }: Props) {
   });
 
   return (
-    <section className="temp-insights history-analysis" aria-labelledby={HEADING_ID}>
-      <h3 id={HEADING_ID} className="kern-heading-small">
+    <section className="temp-insights history-analysis" aria-labelledby={headingId}>
+      <h3 id={headingId} className="kern-heading-small">
         {t("analysis.heading")}
       </h3>
 

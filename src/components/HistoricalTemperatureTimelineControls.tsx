@@ -5,7 +5,7 @@ import type { HistoricalTemperatureFieldFrame } from "../api/temperatureInsights
 import { formatTimestamp } from "../utils/format";
 import { findTimelineStepIndex } from "../utils/timelineNavigation";
 
-const NAVIGATION_STEP_OPTIONS_MINUTES = [5, 15, 60, 360, 1_440] as const;
+const NAVIGATION_STEP_OPTIONS_MINUTES = [1, 5, 15, 60, 360, 1_440] as const;
 const MAX_READING_AGE_OPTIONS_MINUTES = [15, 30, 60] as const;
 
 interface Props {

@@ -10,8 +10,7 @@ import type { HistoryRow } from "../api/sensorcity";
 import { DepthProfileChart } from "../components/DepthProfileChart";
 import { DetailTabs } from "../components/DetailTabs";
 import type { DetailTabItem } from "../components/DetailTabs";
-import { LineChart } from "../components/LineChart";
-import { SensorHistoryAnalysis } from "../components/SensorHistoryAnalysis";
+import { SensorHistoryExplorer } from "../components/SensorHistoryExplorer";
 import { SensorLocationSection } from "../components/SensorLocationSection";
 import { getReadingsPanel } from "../components/readings/panel";
 import { AsyncBoundary, Empty } from "../components/Status";
@@ -235,6 +234,7 @@ function HistorySection({
 }) {
   const { t } = useTranslation("detail");
   const { t: tc } = useTranslation("common");
+  const pickerId = useId().replace(/:/g, "");
   const selected = category?.measurements.find((m) => m.field === selectedField);
   const source = resolveHistorySource(sensor, category, selectedField);
   const history = useAsync(
@@ -258,9 +258,9 @@ function HistorySection({
         <div>
           <h2 className="kern-heading-small">{t("history")}</h2>
           <p className="kern-body kern-body--small kern-body--muted">
-            {source.metadata.url ? (
+            {t("historyIntro")} {source.metadata.url ? (
               <>
-                {t("historySource")}{" "}
+                <span aria-hidden="true">·</span> {t("historySource")}{" "}
                 <a
                   className="kern-link"
                   href={source.metadata.url}
@@ -271,17 +271,20 @@ function HistorySection({
                 </a>
               </>
             ) : (
-              t("historySourceLabel", { source: source.metadata.label })
+              <>
+                <span aria-hidden="true">·</span>{" "}
+                {t("historySourceLabel", { source: source.metadata.label })}
+              </>
             )}
           </p>
         </div>
         <div className="field kern-form-input">
-          <label className="kern-label" htmlFor="measurement-select">
+          <label className="kern-label" htmlFor={`${pickerId}-measurement-select`}>
             {t("measurement")}
           </label>
           <div className="kern-form-input__select-wrapper">
             <select
-              id="measurement-select"
+              id={`${pickerId}-measurement-select`}
               className="kern-form-input__select"
               value={selectedField}
               onChange={(e) => onSelectField(e.target.value)}
@@ -304,28 +307,18 @@ function HistorySection({
           points.length === 0 ? (
             <Empty label={t("noHistory")} />
           ) : (
-            <>
-              <LineChart
-                points={points}
-                unit={selected?.unit}
-                label={
-                  selected
-                    ? tc(measurementLabelKey(selected.field))
-                    : tc("chart.measurement")
-                }
-                color={getCategoryColor(sensor.category)}
-              />
-              <SensorHistoryAnalysis
-                points={points}
-                unit={selected?.unit}
-                label={
-                  selected
-                    ? tc(measurementLabelKey(selected.field))
-                    : tc("chart.measurement")
-                }
-                color={getCategoryColor(sensor.category)}
-              />
-            </>
+            <SensorHistoryExplorer
+              key={`${sensor.objectId}:${selectedField}`}
+              points={points}
+              unit={selected?.unit}
+              label={
+                selected
+                  ? tc(measurementLabelKey(selected.field))
+                  : tc("chart.measurement")
+              }
+              color={getCategoryColor(sensor.category)}
+              sensorName={sensor.name}
+            />
           )
         }
       </AsyncBoundary>

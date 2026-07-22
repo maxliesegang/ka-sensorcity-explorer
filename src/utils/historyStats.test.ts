@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import type { TimeSeriesPoint } from "../api/sensorcity";
-import { computeHistoryStats } from "./historyStats";
+import { buildHistoryStats } from "./historyStats";
 
 function atLocalHour(hour: number, minute = 0): number {
   return new Date(2025, 0, 1, hour, minute).getTime();
 }
 
-describe("computeHistoryStats", () => {
+describe("buildHistoryStats", () => {
   it("returns null for an empty series", () => {
-    expect(computeHistoryStats([])).toBeNull();
+    expect(buildHistoryStats([])).toBeNull();
   });
 
   it("computes core statistics from unsorted points", () => {
@@ -22,7 +22,7 @@ describe("computeHistoryStats", () => {
       { timestamp: atLocalHour(1), value: 12 },
     ];
 
-    const stats = computeHistoryStats(points);
+    const stats = buildHistoryStats(points);
 
     expect(stats).not.toBeNull();
     expect(stats).toMatchObject({
@@ -42,7 +42,7 @@ describe("computeHistoryStats", () => {
   });
 
   it("groups hourly averages and picks peak and trough hours", () => {
-    const stats = computeHistoryStats([
+    const stats = buildHistoryStats([
       { timestamp: atLocalHour(2), value: 20 },
       { timestamp: atLocalHour(1), value: 12 },
       { timestamp: atLocalHour(1, 30), value: 18 },
@@ -59,7 +59,7 @@ describe("computeHistoryStats", () => {
   });
 
   it("keeps small relative trends steady", () => {
-    const stats = computeHistoryStats([
+    const stats = buildHistoryStats([
       { timestamp: atLocalHour(0), value: 100 },
       { timestamp: atLocalHour(1), value: 100 },
       { timestamp: atLocalHour(2), value: 50 },
@@ -72,7 +72,7 @@ describe("computeHistoryStats", () => {
   });
 
   it("handles flat series without forcing a trend direction", () => {
-    const stats = computeHistoryStats([
+    const stats = buildHistoryStats([
       { timestamp: atLocalHour(0), value: 5 },
       { timestamp: atLocalHour(1), value: 5 },
       { timestamp: atLocalHour(2), value: 5 },

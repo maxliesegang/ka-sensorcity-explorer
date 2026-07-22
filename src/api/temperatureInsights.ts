@@ -70,7 +70,7 @@ export interface TemperatureInsightsData {
 }
 
 const SPREAD_BUCKET_HOURS = 1;
-const FIELD_FRAME_INTERVAL_MINUTES = 5;
+const FIELD_FRAME_INTERVAL_MINUTES = 1;
 const FIELD_FRAME_MAX_READING_AGE_MINUTES = 60;
 const CONCURRENCY = 6;
 

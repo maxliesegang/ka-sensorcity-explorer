@@ -49,11 +49,11 @@ function mean(values: number[]): number {
 }
 
 /**
- * Compute single-series historical statistics for one sensor's history.
+ * Build single-series historical statistics for one sensor's history.
  * Returns null for empty input. Points need not be sorted: endpoints are
  * derived by min/max timestamp, and the trend uses a chronological sort.
  */
-export function computeHistoryStats(points: TimeSeriesPoint[]): HistoryStats | null {
+export function buildHistoryStats(points: TimeSeriesPoint[]): HistoryStats | null {
   const count = points.length;
   if (count === 0) return null;
 

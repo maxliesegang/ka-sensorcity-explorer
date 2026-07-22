@@ -150,6 +150,15 @@ export function LineChart({
 
         <path d={model.path} fill="none" stroke={color} strokeWidth={2.5} />
 
+        {model.screen.length === 1 && (
+          <circle
+            cx={model.screen[0].x}
+            cy={model.screen[0].y}
+            r={4}
+            fill={color}
+          />
+        )}
+
         <text x={PAD.left} y={height - 8} className="chart__axis">
           {formatTimestamp(model.minX)}
         </text>
