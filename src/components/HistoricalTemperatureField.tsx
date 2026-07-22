@@ -26,11 +26,11 @@ import {
   formatValue,
 } from "../utils/format";
 import { escapeHtml } from "../utils/html";
-import { buildTemperatureScale } from "../utils/temperatureScale";
+import { buildAbsoluteTemperatureScale } from "../utils/temperatureScale";
 import { findTimelineStepIndex } from "../utils/timelineNavigation";
 import {
-  buildAbsoluteTemperatureLegend,
-  buildDeviationTemperatureLegend,
+  buildTemperatureLegend,
+  buildTemperatureDeviationLegend,
   buildBaselineDeviationScale,
   buildTemperatureBaselineOptions,
   resolveBaselineTemperature,
@@ -146,10 +146,10 @@ export function HistoricalTemperatureField({
   const includedSensorCount = selectedFrame?.points.length ?? 0;
   const hasLowCoverage =
     availableSensorCount > 0 && includedSensorCount / availableSensorCount < MIN_COVERAGE_RATIO;
-  const temperatureScale = useMemo(
+  const absoluteTemperatureScale = useMemo(
     () =>
       selectedFrame && selectedFrame.points.length > 0
-        ? buildTemperatureScale(selectedFrame.points)
+        ? buildAbsoluteTemperatureScale(selectedFrame.points)
         : null,
     [selectedFrame],
   );
@@ -172,7 +172,7 @@ export function HistoricalTemperatureField({
     [replayBaselineReadings, t],
   );
 
-  const { mode, setMode, baselineId, setBaselineId } =
+  const { displayMode, setDisplayMode, baselineId, setBaselineId } =
     useTemperatureBaselineSelection(baselineOptions);
 
   // Opt-in per-cell value labels, persisted (shared with the live map). Off by
@@ -180,7 +180,8 @@ export function HistoricalTemperatureField({
   const [showLabels, setShowLabels] = useTemperatureFieldLabelVisibility();
 
   // DWD baseline for the full replay range — fetched once in DWD deviation mode.
-  const isDwdBaselineSelected = mode === "deviation" && baselineId === DWD_BASELINE_ID;
+  const isDwdBaselineSelected =
+    displayMode === "deviation" && baselineId === DWD_BASELINE_ID;
   const firstFrameTime = frames.length > 0 ? frames[0].timestamp : 0;
   const lastFrameTime = frames.length > 0 ? frames[frames.length - 1].timestamp : 0;
   const dwdBaseline = useAsync(
@@ -204,25 +205,27 @@ export function HistoricalTemperatureField({
   const baselineTemperature = useMemo(
     () =>
       resolveBaselineTemperature({
-        mode,
+        displayMode,
         baselineId,
         readings: selectedBaselineReadings,
         // Match against real observations only — never a forecast-padded hour
         // near the tail of the archive window.
         dwdTemperature: dwdBaselineObservation?.temperature,
       }),
-    [mode, baselineId, selectedBaselineReadings, dwdBaselineObservation],
+    [displayMode, baselineId, selectedBaselineReadings, dwdBaselineObservation],
   );
 
-  const isDeviationMapActive = mode === "deviation" && baselineTemperature != null;
-  const isBaselineTemperatureUnavailable = mode === "deviation" && baselineTemperature == null;
+  const isDeviationModeActive =
+    displayMode === "deviation" && baselineTemperature != null;
+  const isBaselineTemperatureUnavailable =
+    displayMode === "deviation" && baselineTemperature == null;
 
-  const baselineDeviationScale = useMemo(
+  const deviationScale = useMemo(
     () =>
-      isDeviationMapActive && selectedFrame
+      isDeviationModeActive && selectedFrame
         ? buildBaselineDeviationScale(selectedFrame.points, baselineTemperature)
         : null,
-    [isDeviationMapActive, selectedFrame, baselineTemperature],
+    [isDeviationModeActive, selectedFrame, baselineTemperature],
   );
 
   // The replay map has no per-marker action, so no options beyond the shared
@@ -237,7 +240,7 @@ export function HistoricalTemperatureField({
     const fieldController = fieldControllerRef.current;
     if (!fieldController) return;
 
-    if (!selectedFrame || !temperatureScale) {
+    if (!selectedFrame || !absoluteTemperatureScale) {
       fieldController.clear();
       return;
     }
@@ -256,12 +259,12 @@ export function HistoricalTemperatureField({
         `<a href="#/sensor/${point.objectId}">${escapeHtml(t("popup.viewDetails"))}</a>`;
     };
 
-    if (baselineDeviationScale && baselineTemperature != null) {
+    if (deviationScale && baselineTemperature != null) {
       fieldController.render<HistoricalTemperatureFieldPoint>({
         points: selectedFrame.points,
         getId: (point) => point.objectId,
         getColor: (point) =>
-          baselineDeviationScale.css(point.temperature - baselineTemperature),
+          deviationScale.css(point.temperature - baselineTemperature),
         getTooltipText: tooltip,
         getPopupHtml: popup,
         getLabel: showLabels
@@ -275,7 +278,7 @@ export function HistoricalTemperatureField({
     fieldController.render<HistoricalTemperatureFieldPoint>({
       points: selectedFrame.points,
       getId: (point) => point.objectId,
-      getColor: (point) => temperatureScale.css(point.temperature),
+      getColor: (point) => absoluteTemperatureScale.css(point.temperature),
       getTooltipText: tooltip,
       getPopupHtml: popup,
       getLabel: showLabels
@@ -285,21 +288,21 @@ export function HistoricalTemperatureField({
   }, [
     isStyleReady,
     selectedFrame,
-    temperatureScale,
+    absoluteTemperatureScale,
     t,
-    baselineDeviationScale,
+    deviationScale,
     baselineTemperature,
     baselineId,
     showLabels,
     fieldControllerRef,
   ]);
 
-  const legend = useMemo(() => {
-    if (!temperatureScale || !selectedFrame) return null;
-    return baselineDeviationScale
-      ? buildDeviationTemperatureLegend(baselineDeviationScale)
-      : buildAbsoluteTemperatureLegend(temperatureScale, selectedFrame.points.length);
-  }, [temperatureScale, selectedFrame, baselineDeviationScale]);
+  const legendModel = useMemo(() => {
+    if (!absoluteTemperatureScale || !selectedFrame) return null;
+    return deviationScale
+      ? buildTemperatureDeviationLegend(deviationScale)
+      : buildTemperatureLegend(absoluteTemperatureScale, selectedFrame.points.length);
+  }, [absoluteTemperatureScale, selectedFrame, deviationScale]);
 
   if (frames.length === 0 || !selectedFrame) {
     return (
@@ -340,15 +343,15 @@ export function HistoricalTemperatureField({
 
       <div className="map-shell historical-temperature-field__shell">
         <TemperatureBaselineControls
-          id="historical-temperature-baseline-controls-select"
-          mode={mode}
-          onModeChange={setMode}
+          baselineSelectId="historical-temperature-baseline-controls-select"
+          displayMode={displayMode}
+          onDisplayModeChange={setDisplayMode}
           baselineId={baselineId}
-          onBaselineChange={setBaselineId}
-          options={baselineOptions}
-          modeLabel={t("baseline.modeLabel")}
-          modeAbsoluteLabel={t("baseline.modeAbsolute")}
-          modeDeviationLabel={t("baseline.modeDeviation")}
+          onBaselineIdChange={setBaselineId}
+          baselineOptions={baselineOptions}
+          displayModeLabel={t("baseline.displayModeLabel")}
+          temperatureModeLabel={t("baseline.temperatureMode")}
+          deviationModeLabel={t("baseline.deviationMode")}
           baselineSelectLabel={t("baseline.selectLabel")}
           showLabels={showLabels}
           onShowLabelsChange={setShowLabels}
@@ -363,7 +366,7 @@ export function HistoricalTemperatureField({
                   total: availableSensorCount,
                   minutes: maxReadingAgeMinutes,
                 })
-              : isDeviationMapActive
+              : isDeviationModeActive
               ? t("insights.historyMap.baselineStatus", {
                   date: formatTimestamp(selectedFrame.timestamp),
                   name: baselineLabel,
@@ -376,16 +379,16 @@ export function HistoricalTemperatureField({
                   count: includedSensorCount,
                   total: availableSensorCount,
                   minutes: maxReadingAgeMinutes,
-                  min: formatValue(temperatureScale?.min, TEMPERATURE_UNIT),
-                  max: formatValue(temperatureScale?.max, TEMPERATURE_UNIT),
+                  min: formatValue(absoluteTemperatureScale?.min, TEMPERATURE_UNIT),
+                  max: formatValue(absoluteTemperatureScale?.max, TEMPERATURE_UNIT),
                 })}
           </span>
           <TemperatureBaselineStatus
-            isDeviationMapActive={isDeviationMapActive}
-            dwdObservation={dwdBaselineObservation}
+            isDeviationModeActive={isDeviationModeActive}
+            dwdBaselineObservation={dwdBaselineObservation}
             isBaselineTemperatureUnavailable={isBaselineTemperatureUnavailable}
             isDwdBaselineSelected={isDwdBaselineSelected}
-            dwdError={dwdBaseline.error}
+            dwdBaselineError={dwdBaseline.error}
           />
         </div>
         {hasLowCoverage && (
@@ -426,8 +429,8 @@ export function HistoricalTemperatureField({
         />
 
         <TemperatureFieldLegend
-          legend={legend}
-          getAbsoluteCaption={(count) =>
+          legend={legendModel}
+          getTemperatureCaption={(count) =>
             t("insights.historyMap.legendCaption", {
               count,
               minutes: maxReadingAgeMinutes,

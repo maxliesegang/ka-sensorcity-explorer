@@ -1,7 +1,7 @@
 // Opt-in per-cell value labels for the temperature maps (live + historical).
 //
 // One place owns the feature: the persisted on/off preference (shared by both
-// maps, off by default) plus the text each cell shows in either colour mode.
+// maps, off by default) plus the text each cell shows in either display mode.
 // Keeping the formatters here keeps the two maps consistent.
 
 import { formatSignedDelta } from "../utils/format";
@@ -15,7 +15,7 @@ export function useTemperatureFieldLabelVisibility(): [boolean, (value: boolean)
   return usePersistedToggle(STORAGE_KEY, false);
 }
 
-/** Absolute-mode label, e.g. "21.4 °C". */
+/** Temperature-mode label, e.g. "21.4 °C". */
 export function formatTemperatureLabel(temperature: number): string {
   return `${temperature.toFixed(1)} ${UNIT}`;
 }

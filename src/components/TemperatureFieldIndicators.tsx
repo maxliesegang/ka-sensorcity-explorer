@@ -1,6 +1,6 @@
 // Model-aware chrome shared by every temperature-field view (live SensorCity,
 // the combined community blend, and the historical replay). Each view derives the
-// same `TemperatureLegendModel` and baseline state (see useTemperatureFieldModel);
+// same `TemperatureFieldLegendModel` and baseline state (see useTemperatureFieldModel);
 // these two pieces turn that model into UI so the three views stay in lock-step
 // and a fourth builds on them rather than copying the JSX.
 
@@ -8,27 +8,27 @@ import { useTranslation } from "react-i18next";
 
 import type { DwdHourlyPoint } from "../api/brightsky";
 import { formatSignedDelta, formatTime, formatValue } from "../utils/format";
-import type { TemperatureLegendModel } from "../utils/temperatureFieldModel";
+import type { TemperatureFieldLegendModel } from "../utils/temperatureFieldModel";
 import { TemperatureLegend } from "./TemperatureLegend";
 
 const TEMPERATURE_UNIT = "°C";
 
 interface TemperatureFieldLegendProps {
-  legend: TemperatureLegendModel | null;
-  getAbsoluteCaption: (count: number) => string;
+  legend: TemperatureFieldLegendModel | null;
+  getTemperatureCaption: (count: number) => string;
   deviationCaption: string;
 }
 
 /**
- * Render a `TemperatureLegendModel` as the shared `TemperatureLegend`, picking the
- * absolute vs. diverging-deviation presentation from the model's `kind`. Captions
- * differ per view, so they're supplied by the caller — `getAbsoluteCaption` receives
+ * Render a `TemperatureFieldLegendModel` as the shared `TemperatureLegend`, picking the
+ * temperature vs. diverging-deviation presentation from the model's `kind`. Captions
+ * differ per view, so they're supplied by the caller — `getTemperatureCaption` receives
  * the model's sensor count; `deviationCaption` is prebuilt (it names the baseline).
  * Renders nothing when there is no legend yet.
  */
 export function TemperatureFieldLegend({
   legend,
-  getAbsoluteCaption,
+  getTemperatureCaption,
   deviationCaption,
 }: TemperatureFieldLegendProps) {
   if (!legend) return null;
@@ -49,7 +49,7 @@ export function TemperatureFieldLegend({
       gradient={legend.gradient}
       minLabel={formatValue(legend.min, TEMPERATURE_UNIT)}
       maxLabel={formatValue(legend.max, TEMPERATURE_UNIT)}
-      caption={getAbsoluteCaption(legend.count)}
+      caption={getTemperatureCaption(legend.count)}
     />
   );
 }
@@ -62,35 +62,35 @@ export function TemperatureFieldLegend({
  * outside deviation mode.
  */
 interface TemperatureBaselineStatusProps {
-  isDeviationMapActive: boolean;
-  dwdObservation: DwdHourlyPoint | null;
+  isDeviationModeActive: boolean;
+  dwdBaselineObservation: DwdHourlyPoint | null;
   isBaselineTemperatureUnavailable: boolean;
   isDwdBaselineSelected: boolean;
-  dwdError: string | null;
+  dwdBaselineError: string | null;
 }
 
 export function TemperatureBaselineStatus({
-  isDeviationMapActive,
-  dwdObservation,
+  isDeviationModeActive,
+  dwdBaselineObservation,
   isBaselineTemperatureUnavailable,
   isDwdBaselineSelected,
-  dwdError,
+  dwdBaselineError,
 }: TemperatureBaselineStatusProps) {
   const { t } = useTranslation("temperature");
   return (
     <>
-      {isDeviationMapActive && dwdObservation && (
+      {isDeviationModeActive && dwdBaselineObservation && (
         <span className="kern-body kern-body--small kern-body--muted">
           {t("baseline.dwdReading", {
-            value: formatValue(dwdObservation.temperature, TEMPERATURE_UNIT),
-            time: formatTime(dwdObservation.timestamp),
+            value: formatValue(dwdBaselineObservation.temperature, TEMPERATURE_UNIT),
+            time: formatTime(dwdBaselineObservation.timestamp),
           })}
         </span>
       )}
       {isBaselineTemperatureUnavailable && (
         <span className="kern-body kern-body--small kern-body--muted">
-          {isDwdBaselineSelected && dwdError
-            ? dwdError
+          {isDwdBaselineSelected && dwdBaselineError
+            ? dwdBaselineError
             : t("baseline.unavailable")}
         </span>
       )}

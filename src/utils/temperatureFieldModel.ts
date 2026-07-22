@@ -3,9 +3,9 @@ import {
   DWD_BASELINE_ID,
   type BaselineOption,
   type SyntheticBaselineLabels,
-  type TemperatureFieldMode,
   withSyntheticBaselineOptions,
 } from "../config/temperatureBaselines";
+import type { TemperatureDisplayMode } from "../types";
 import { mean } from "./stats";
 import {
   buildTemperatureDeviationScale,
@@ -24,9 +24,9 @@ interface LegendStop {
   css: string;
 }
 
-export type TemperatureLegendModel =
+export type TemperatureFieldLegendModel =
   | {
-      kind: "absolute";
+      kind: "temperature";
       gradient: string;
       min: number;
       max: number;
@@ -56,17 +56,17 @@ export function buildTemperatureBaselineOptions(
 }
 
 export function resolveBaselineTemperature({
-  mode,
+  displayMode,
   baselineId,
   readings,
   dwdTemperature,
 }: {
-  mode: TemperatureFieldMode;
+  displayMode: TemperatureDisplayMode;
   baselineId: string | null;
   readings: readonly TemperatureBaselineReading[];
   dwdTemperature?: number | null;
 }): number | null {
-  if (mode !== "deviation" || baselineId == null) return null;
+  if (displayMode !== "deviation" || baselineId == null) return null;
   if (baselineId === DWD_BASELINE_ID) return dwdTemperature ?? null;
   if (baselineId === AVERAGE_BASELINE_ID) {
     return mean(readings.map((reading) => reading.temperature));
@@ -92,12 +92,12 @@ export function buildBaselineDeviationScale(
     : null;
 }
 
-export function buildAbsoluteTemperatureLegend(
+export function buildTemperatureLegend(
   scale: TemperatureScale,
   count: number,
-): TemperatureLegendModel {
+): TemperatureFieldLegendModel {
   return {
-    kind: "absolute",
+    kind: "temperature",
     gradient: gradientFromStops(scale.stops(12)),
     min: scale.min,
     max: scale.max,
@@ -105,9 +105,9 @@ export function buildAbsoluteTemperatureLegend(
   };
 }
 
-export function buildDeviationTemperatureLegend(
+export function buildTemperatureDeviationLegend(
   scale: TemperatureDeviationScale,
-): TemperatureLegendModel {
+): TemperatureFieldLegendModel {
   return {
     kind: "deviation",
     gradient: gradientFromStops(scale.stops(12)),

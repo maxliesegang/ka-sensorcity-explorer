@@ -52,9 +52,9 @@ export default {
       "Community-Messwerte über openSenseMap (opensensemap.org) und sensor.community, beide lizenziert unter CC BY-SA 4.0.",
   },
   baseline: {
-    modeAbsolute: "Absolut",
-    modeDeviation: "Abweichung zur Basislinie",
-    modeLabel: "Farbmodus",
+    temperatureMode: "Temperatur",
+    deviationMode: "Abweichung zur Basislinie",
+    displayModeLabel: "Kartenwerte",
     selectLabel: "Basislinie",
     showLabels: "Werte auf Karte anzeigen",
     dwdOption: "Rheinstetten (DWD-Wetterstation)",
@@ -68,9 +68,9 @@ export default {
     asOf: "Basislinien-Messwert von {{time}} Uhr.",
     dwdReading: "DWD-Basislinie: {{value}} um {{time}} Uhr.",
     unavailableLive:
-      "Keine Live-Basislinie; absolute Temperaturen werden angezeigt.",
+      "Keine Live-Basislinie; Temperaturen werden angezeigt.",
     unavailable:
-      "Die gewählte Basislinie hat hier keinen Messwert; absolute Temperaturen werden angezeigt.",
+      "Die gewählte Basislinie hat hier keinen Messwert; Temperaturen werden angezeigt.",
   },
   insights: {
     heading: "Temperatur-Verlaufsanalyse",

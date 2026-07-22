@@ -17,16 +17,16 @@ import {
   useTemperatureFieldLabelVisibility,
 } from "./useTemperatureFieldLabels";
 import {
-  buildAbsoluteTemperatureLegend,
+  buildTemperatureLegend,
   buildBaselineDeviationScale,
-  buildDeviationTemperatureLegend,
+  buildTemperatureDeviationLegend,
   buildTemperatureBaselineOptions,
   resolveBaselineTemperature,
   type TemperatureBaselineReading,
-  type TemperatureLegendModel,
+  type TemperatureFieldLegendModel,
 } from "../utils/temperatureFieldModel";
 import {
-  buildTemperatureScale,
+  buildAdaptiveTemperatureScale,
   type TemperatureFieldPoint,
 } from "../utils/temperatureScale";
 
@@ -34,9 +34,9 @@ import {
  * Derive the full temperature-field model from the points to draw and the
  * readings that can serve as a deviation baseline.
  *
- * `colorFor` / `labelFor` map a single temperature to its current-mode cell
- * colour and (opt-in) value label, so callers don't repeat the absolute-vs-
- * deviation branching at every draw site.
+ * `getColorForTemperature` / `formatLabelForTemperature` map one temperature to
+ * its current-mode cell colour and optional label, so callers do not repeat the
+ * temperature-vs-deviation branching at every draw site.
  */
 export function useTemperatureFieldModel(
   points: readonly TemperatureFieldPoint[],
@@ -53,12 +53,13 @@ export function useTemperatureFieldModel(
     [baselineReadings, t],
   );
 
-  const { mode, setMode, baselineId, setBaselineId } =
+  const { displayMode, setDisplayMode, baselineId, setBaselineId } =
     useTemperatureBaselineSelection(baselineOptions);
   const [showLabels, setShowLabels] = useTemperatureFieldLabelVisibility();
 
   // The DWD Rheinstetten baseline is fetched lazily — only while it's selected.
-  const isDwdBaselineSelected = mode === "deviation" && baselineId === DWD_BASELINE_ID;
+  const isDwdBaselineSelected =
+    displayMode === "deviation" && baselineId === DWD_BASELINE_ID;
   const dwdBaseline = useAsync(fetchRheinstettenCurrent, [], {
     enabled: isDwdBaselineSelected,
   });
@@ -79,63 +80,64 @@ export function useTemperatureFieldModel(
   const baselineTemperature = useMemo(
     () =>
       resolveBaselineTemperature({
-        mode,
+        displayMode,
         baselineId,
         readings: baselineReadings,
         dwdTemperature: dwdBaselineObservation?.temperature,
       }),
-    [mode, baselineId, baselineReadings, dwdBaselineObservation],
+    [displayMode, baselineId, baselineReadings, dwdBaselineObservation],
   );
 
-  const isDeviationMapActive = mode === "deviation" && baselineTemperature != null;
+  const isDeviationModeActive =
+    displayMode === "deviation" && baselineTemperature != null;
   // True when the user asked for deviation but no baseline reading resolved.
   const isBaselineTemperatureUnavailable =
-    mode === "deviation" && baselineTemperature == null;
+    displayMode === "deviation" && baselineTemperature == null;
 
-  const temperatureScale = useMemo(
-    () => (points.length > 0 ? buildTemperatureScale(points) : null),
+  const adaptiveTemperatureScale = useMemo(
+    () => (points.length > 0 ? buildAdaptiveTemperatureScale(points) : null),
     [points],
   );
-  const baselineDeviationScale = useMemo(
+  const deviationScale = useMemo(
     () =>
-      isDeviationMapActive
+      isDeviationModeActive
         ? buildBaselineDeviationScale(points, baselineTemperature)
         : null,
-    [isDeviationMapActive, points, baselineTemperature],
+    [isDeviationModeActive, points, baselineTemperature],
   );
 
-  const legend = useMemo<TemperatureLegendModel | null>(() => {
-    if (!temperatureScale) return null;
-    return baselineDeviationScale
-      ? buildDeviationTemperatureLegend(baselineDeviationScale)
-      : buildAbsoluteTemperatureLegend(temperatureScale, points.length);
-  }, [temperatureScale, baselineDeviationScale, points.length]);
+  const legendModel = useMemo<TemperatureFieldLegendModel | null>(() => {
+    if (!adaptiveTemperatureScale) return null;
+    return deviationScale
+      ? buildTemperatureDeviationLegend(deviationScale)
+      : buildTemperatureLegend(adaptiveTemperatureScale, points.length);
+  }, [adaptiveTemperatureScale, deviationScale, points.length]);
 
   // Cell colour for a temperature: deviation from the baseline when active,
-  // otherwise the absolute scale.
-  const colorFor = useCallback(
+  // otherwise the adaptive live temperature scale.
+  const getColorForTemperature = useCallback(
     (temperature: number): string => {
-      if (baselineDeviationScale && baselineTemperature != null) {
-        return baselineDeviationScale.css(temperature - baselineTemperature);
+      if (deviationScale && baselineTemperature != null) {
+        return deviationScale.css(temperature - baselineTemperature);
       }
-      return temperatureScale ? temperatureScale.css(temperature) : "";
+      return adaptiveTemperatureScale ? adaptiveTemperatureScale.css(temperature) : "";
     },
-    [baselineDeviationScale, baselineTemperature, temperatureScale],
+    [deviationScale, baselineTemperature, adaptiveTemperatureScale],
   );
 
-  // Per-cell label for a temperature, matching the active colour mode. Callers
+  // Per-cell label for a temperature, matching the active display mode. Callers
   // gate on `showLabels` (omitting the label callback entirely when off).
-  const labelFor = useCallback(
+  const formatLabelForTemperature = useCallback(
     (temperature: number): string =>
-      baselineDeviationScale && baselineTemperature != null
+      deviationScale && baselineTemperature != null
         ? formatTemperatureDeviationLabel(temperature - baselineTemperature)
         : formatTemperatureLabel(temperature),
-    [baselineDeviationScale, baselineTemperature],
+    [deviationScale, baselineTemperature],
   );
 
   return {
-    mode,
-    setMode,
+    displayMode,
+    setDisplayMode,
     baselineId,
     setBaselineId,
     showLabels,
@@ -143,15 +145,15 @@ export function useTemperatureFieldModel(
     baselineOptions,
     baselineLabel,
     isDwdBaselineSelected,
-    isDeviationMapActive,
+    isDeviationModeActive,
     isBaselineTemperatureUnavailable,
     dwdBaselineError: dwdBaseline.error,
     dwdBaselineObservation,
     baselineTemperature,
-    temperatureScale,
-    baselineDeviationScale,
-    legend,
-    colorFor,
-    labelFor,
+    adaptiveTemperatureScale,
+    deviationScale,
+    legendModel,
+    getColorForTemperature,
+    formatLabelForTemperature,
   };
 }

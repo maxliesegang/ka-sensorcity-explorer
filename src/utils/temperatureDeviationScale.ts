@@ -1,6 +1,6 @@
 // Diverging colour scale for temperature *differences* (Δ°C) from a baseline.
 //
-// Unlike the absolute scale in temperatureScale.ts (hue anchored to real temperature),
+// Unlike the temperature scales in temperatureScale.ts (hue anchored to temperature),
 // this scale is diverging around 0: cooler-than-baseline = blue, ~0 = neutral
 // near-white, warmer-than-baseline = red.
 //

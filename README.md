@@ -19,8 +19,8 @@ Built with **Vite + React + TypeScript**, styled with the
 - **Map** — all geolocated sensors on a MapLibre GL / OpenFreeMap vector map (with
   3D buildings), filterable by category, each linking to its detail page.
 - **Temperature** — a live temperature field for Karlsruhe drawn as
-  nearest-sensor (Voronoi/Thiessen) regions, with absolute and baseline-relative
-  ("deviation") colour modes, a choice of baseline station (including the DWD
+  nearest-sensor (Voronoi/Thiessen) regions, with temperature and baseline-relative
+  ("deviation") display modes, a choice of baseline station (including the DWD
   Rheinstetten reference and the sensor average), cross-sensor insights, and an
   optional historical replay.
 - **Sensor detail** — current readings plus an interactive time-series chart of

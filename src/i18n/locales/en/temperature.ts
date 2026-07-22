@@ -51,9 +51,9 @@ export default {
       "Community readings via openSenseMap (opensensemap.org) and sensor.community, both licensed CC BY-SA 4.0.",
   },
   baseline: {
-    modeAbsolute: "Absolute",
-    modeDeviation: "Difference from baseline",
-    modeLabel: "Colour mode",
+    temperatureMode: "Temperature",
+    deviationMode: "Difference from baseline",
+    displayModeLabel: "Map values",
     selectLabel: "Baseline",
     showLabels: "Show values on map",
     dwdOption: "Rheinstetten (DWD weather station)",
@@ -67,9 +67,9 @@ export default {
     asOf: "Baseline reading from {{time}}.",
     dwdReading: "DWD baseline: {{value}} at {{time}}.",
     unavailableLive:
-      "No live baseline station; showing absolute temperatures.",
+      "No live baseline station; showing temperatures.",
     unavailable:
-      "The chosen baseline has no reading here; showing absolute temperatures.",
+      "The chosen baseline has no reading here; showing temperatures.",
   },
   insights: {
     heading: "Temperature history analysis",

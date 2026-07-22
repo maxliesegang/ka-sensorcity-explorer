@@ -9,8 +9,6 @@
 // user can pick from. Codes are the leading numeric part of a sensor `name`
 // (format "NNN - Street", e.g. "132 - Wasserwerkstrasse").
 
-export type TemperatureFieldMode = "absolute" | "deviation";
-
 export interface BaselineOption {
   id: string;
   label: string;

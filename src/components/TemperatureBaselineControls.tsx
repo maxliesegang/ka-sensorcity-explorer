@@ -3,19 +3,20 @@
 // no translation hooks — every label and value arrives via props so it can be
 // shared by both the live and historical temperature maps.
 
-import type { BaselineOption, TemperatureFieldMode } from "../config/temperatureBaselines";
+import type { BaselineOption } from "../config/temperatureBaselines";
+import type { TemperatureDisplayMode } from "../types";
 
 export interface TemperatureBaselineControlsProps {
-  id: string;
-  mode: TemperatureFieldMode;
-  onModeChange: (mode: TemperatureFieldMode) => void;
+  baselineSelectId: string;
+  displayMode: TemperatureDisplayMode;
+  onDisplayModeChange: (mode: TemperatureDisplayMode) => void;
   baselineId: string | null;
-  onBaselineChange: (id: string) => void;
+  onBaselineIdChange: (id: string) => void;
   /** Selectable baseline options, already localized. */
-  options: BaselineOption[];
-  modeLabel: string;
-  modeAbsoluteLabel: string;
-  modeDeviationLabel: string;
+  baselineOptions: BaselineOption[];
+  displayModeLabel: string;
+  temperatureModeLabel: string;
+  deviationModeLabel: string;
   baselineSelectLabel: string;
   /** Whether per-cell value labels are drawn on the map. */
   showLabels: boolean;
@@ -24,50 +25,50 @@ export interface TemperatureBaselineControlsProps {
 }
 
 export function TemperatureBaselineControls({
-  id,
-  mode,
-  onModeChange,
+  baselineSelectId,
+  displayMode,
+  onDisplayModeChange,
   baselineId,
-  onBaselineChange,
-  options,
-  modeLabel,
-  modeAbsoluteLabel,
-  modeDeviationLabel,
+  onBaselineIdChange,
+  baselineOptions,
+  displayModeLabel,
+  temperatureModeLabel,
+  deviationModeLabel,
   baselineSelectLabel,
   showLabels,
   onShowLabelsChange,
   showLabelsLabel,
 }: TemperatureBaselineControlsProps) {
-  const baselineSelectDisabled = mode !== "deviation";
+  const baselineSelectDisabled = displayMode !== "deviation";
 
   return (
     <div className="temperature-baseline-controls">
       <div
         className="segmented-control temperature-baseline-controls__modes"
         role="group"
-        aria-label={modeLabel}
+        aria-label={displayModeLabel}
       >
         <button
           type="button"
           className={
             "segmented-control__option" +
-            (mode === "absolute" ? " segmented-control__option--active" : "")
+            (displayMode === "temperature" ? " segmented-control__option--active" : "")
           }
-          aria-pressed={mode === "absolute"}
-          onClick={() => onModeChange("absolute")}
+          aria-pressed={displayMode === "temperature"}
+          onClick={() => onDisplayModeChange("temperature")}
         >
-          {modeAbsoluteLabel}
+          {temperatureModeLabel}
         </button>
         <button
           type="button"
           className={
             "segmented-control__option" +
-            (mode === "deviation" ? " segmented-control__option--active" : "")
+            (displayMode === "deviation" ? " segmented-control__option--active" : "")
           }
-          aria-pressed={mode === "deviation"}
-          onClick={() => onModeChange("deviation")}
+          aria-pressed={displayMode === "deviation"}
+          onClick={() => onDisplayModeChange("deviation")}
         >
-          {modeDeviationLabel}
+          {deviationModeLabel}
         </button>
       </div>
 
@@ -77,20 +78,20 @@ export function TemperatureBaselineControls({
           (baselineSelectDisabled ? " temperature-baseline-controls__field--disabled" : "")
         }
       >
-        <label className="kern-label" htmlFor={id}>
+        <label className="kern-label" htmlFor={baselineSelectId}>
           {baselineSelectLabel}
         </label>
         <div className="kern-form-input__select-wrapper">
           <select
-            id={id}
+            id={baselineSelectId}
             className="kern-form-input__select"
-            value={baselineId ?? options[0]?.id ?? ""}
+            value={baselineId ?? baselineOptions[0]?.id ?? ""}
             disabled={baselineSelectDisabled}
-            onChange={(e) => onBaselineChange(e.target.value)}
+            onChange={(e) => onBaselineIdChange(e.target.value)}
           >
-            {options.map((opt) => (
-              <option key={opt.id} value={opt.id}>
-                {opt.label}
+            {baselineOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
               </option>
             ))}
           </select>

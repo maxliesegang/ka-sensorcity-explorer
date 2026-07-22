@@ -72,8 +72,8 @@ export function TemperatureFieldView() {
   );
 
   const {
-    mode,
-    setMode,
+    displayMode,
+    setDisplayMode,
     baselineId,
     setBaselineId,
     showLabels,
@@ -81,14 +81,14 @@ export function TemperatureFieldView() {
     baselineOptions,
     baselineLabel,
     isDwdBaselineSelected,
-    isDeviationMapActive,
+    isDeviationModeActive,
     isBaselineTemperatureUnavailable,
     dwdBaselineError,
     dwdBaselineObservation,
-    temperatureScale,
-    legend,
-    colorFor,
-    labelFor,
+    adaptiveTemperatureScale,
+    legendModel,
+    getColorForTemperature,
+    formatLabelForTemperature,
   } = useTemperatureFieldModel(temperaturePoints, baselineReadings);
 
   // The "set as reference" popup action only needs the clicked sensor's id
@@ -99,7 +99,7 @@ export function TemperatureFieldView() {
       popupClassName: "sensor-popup",
       tooltipClassName: "sensor-tooltip",
       onPopupAction: (properties, popup) => {
-        setMode("deviation");
+        setDisplayMode("deviation");
         setBaselineId(String(properties.objectId));
         popup.remove();
       },
@@ -113,7 +113,7 @@ export function TemperatureFieldView() {
     const fieldController = fieldControllerRef.current;
     if (!fieldController) return;
 
-    if (temperaturePoints.length === 0 || !temperatureScale) {
+    if (temperaturePoints.length === 0 || !adaptiveTemperatureScale) {
       fieldController.clear();
       setMappedSensorCount(0);
       return;
@@ -124,16 +124,16 @@ export function TemperatureFieldView() {
     fieldController.render<LiveTemperatureFieldPoint>({
       points: temperaturePoints,
       getId: (point) => point.sensor.objectId,
-      getColor: (point) => colorFor(point.temperature),
+      getColor: (point) => getColorForTemperature(point.temperature),
       getTooltipText: (point) =>
         `${point.sensor.name} — ${point.temperature.toFixed(1)} °C`,
       getPopupHtml: (point) => {
         // Hide the "set as reference" button when this sensor is already the
         // active deviation baseline (it's the highlighted marker).
         const isCurrentBaseline =
-          mode === "deviation" && baselineId === String(point.sensor.objectId);
+          displayMode === "deviation" && baselineId === String(point.sensor.objectId);
         return buildSensorPopupHtml({
-          color: colorFor(point.temperature),
+          color: getColorForTemperature(point.temperature),
           label: temperatureCategoryLabel,
           name: point.sensor.name,
           readingSummary: `${point.temperature.toFixed(1)} °C`,
@@ -145,9 +145,11 @@ export function TemperatureFieldView() {
             : { label: t("popup.setReference") },
         });
       },
-      getLabel: showLabels ? (point) => labelFor(point.temperature) : undefined,
+      getLabel: showLabels
+        ? (point) => formatLabelForTemperature(point.temperature)
+        : undefined,
       isHighlighted: (point) =>
-        mode === "deviation" && String(point.sensor.objectId) === baselineId,
+        displayMode === "deviation" && String(point.sensor.objectId) === baselineId,
       getProperties: (point) => ({ objectId: point.sensor.objectId }),
     });
 
@@ -156,30 +158,30 @@ export function TemperatureFieldView() {
     isStyleReady,
     fieldControllerRef,
     temperaturePoints,
-    temperatureScale,
+    adaptiveTemperatureScale,
     t,
     tc,
     baselineId,
-    mode,
+    displayMode,
     showLabels,
-    colorFor,
-    labelFor,
+    getColorForTemperature,
+    formatLabelForTemperature,
   ]);
 
   const mapStatus = sensors.loading
     ? t("status.loading")
     : sensors.error
       ? t("status.error")
-      : isDeviationMapActive
+      : isDeviationModeActive
         ? t("baseline.status", {
             name: baselineLabel,
             count: mappedSensorCount,
           })
-        : temperatureScale
+        : adaptiveTemperatureScale
         ? t("status.showingRange", {
             count: mappedSensorCount,
-            min: temperatureScale.min.toFixed(1),
-            max: temperatureScale.max.toFixed(1),
+            min: adaptiveTemperatureScale.min.toFixed(1),
+            max: adaptiveTemperatureScale.max.toFixed(1),
           })
         : t("status.showing", { count: mappedSensorCount });
 
@@ -201,15 +203,15 @@ export function TemperatureFieldView() {
 
       <section className="map-shell" aria-label={t("canvasAria")}>
         <TemperatureBaselineControls
-          id="city-temperature-baseline-controls-select"
-          mode={mode}
-          onModeChange={setMode}
+          baselineSelectId="city-temperature-baseline-controls-select"
+          displayMode={displayMode}
+          onDisplayModeChange={setDisplayMode}
           baselineId={baselineId}
-          onBaselineChange={setBaselineId}
-          options={baselineOptions}
-          modeLabel={t("baseline.modeLabel")}
-          modeAbsoluteLabel={t("baseline.modeAbsolute")}
-          modeDeviationLabel={t("baseline.modeDeviation")}
+          onBaselineIdChange={setBaselineId}
+          baselineOptions={baselineOptions}
+          displayModeLabel={t("baseline.displayModeLabel")}
+          temperatureModeLabel={t("baseline.temperatureMode")}
+          deviationModeLabel={t("baseline.deviationMode")}
           baselineSelectLabel={t("baseline.selectLabel")}
           showLabels={showLabels}
           onShowLabelsChange={setShowLabels}
@@ -219,11 +221,11 @@ export function TemperatureFieldView() {
         <div className="result-bar result-bar--compact" role="status" aria-live="polite">
           <span className="kern-body kern-body--small">{mapStatus}</span>
           <TemperatureBaselineStatus
-            isDeviationMapActive={isDeviationMapActive}
-            dwdObservation={dwdBaselineObservation}
+            isDeviationModeActive={isDeviationModeActive}
+            dwdBaselineObservation={dwdBaselineObservation}
             isBaselineTemperatureUnavailable={isBaselineTemperatureUnavailable}
             isDwdBaselineSelected={isDwdBaselineSelected}
-            dwdError={dwdBaselineError}
+            dwdBaselineError={dwdBaselineError}
           />
         </div>
 
@@ -241,8 +243,8 @@ export function TemperatureFieldView() {
         >
           {() => (
             <TemperatureFieldLegend
-              legend={legend}
-              getAbsoluteCaption={(count) => t("legend.caption", { count })}
+              legend={legendModel}
+              getTemperatureCaption={(count) => t("legend.caption", { count })}
               deviationCaption={t("baseline.legendCaption", { name: baselineLabel })}
             />
           )}

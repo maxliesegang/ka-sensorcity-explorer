@@ -50,7 +50,7 @@ export function useTemperatureFieldController(
   }, [isStyleReady, mapRef]);
 
   // Fit the view to the data only when the data itself changes — not on every
-  // redraw (toggling labels, switching colour mode), so those leave the current
+  // redraw (toggling labels, switching display mode), so those leave the current
   // pan/zoom untouched.
   useEffect(() => {
     const controller = controllerRef.current;
