@@ -27,6 +27,7 @@ import {
 } from "../utils/format";
 import { escapeHtml } from "../utils/html";
 import { buildTemperatureScale } from "../utils/temperatureScale";
+import { findTimelineStepIndex } from "../utils/timelineNavigation";
 import {
   buildAbsoluteTemperatureLegend,
   buildDeviationTemperatureLegend,
@@ -50,6 +51,9 @@ interface Props {
 
 const TEMPERATURE_UNIT = "°C";
 const MIN_COVERAGE_RATIO = 0.7;
+// Playback advances one navigation step per tick; one second reads as an
+// animation without racing past frames the eye can register.
+const PLAYBACK_INTERVAL_MS = 1_000;
 
 function toBaselineReading(point: HistoricalTemperatureFieldPoint): TemperatureBaselineReading {
   return {
@@ -71,10 +75,45 @@ export function HistoricalTemperatureField({
   const [selectedFrameIndex, setSelectedFrameIndex] = useState(latestFrameIndex);
   const [navigationStepMinutes, setNavigationStepMinutes] = useState(60);
   const [maxReadingAgeMinutes, setMaxReadingAgeMinutes] = useState(30);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
 
   useEffect(() => {
     setSelectedFrameIndex(latestFrameIndex);
+    setIsPlaying(false);
   }, [latestFrameIndex]);
+
+  // Advance one navigation step per tick while playing, stopping at the latest
+  // frame. Pressing play at the end restarts from the beginning (see togglePlay).
+  useEffect(() => {
+    if (!isPlaying) return;
+    const timer = setInterval(() => {
+      setSelectedFrameIndex((current) => {
+        if (current >= latestFrameIndex) return current;
+        return findTimelineStepIndex(frames, current, navigationStepMinutes, 1);
+      });
+    }, PLAYBACK_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [isPlaying, frames, navigationStepMinutes, latestFrameIndex]);
+
+  // At the end of the timeline, either restart (loop) or stop.
+  useEffect(() => {
+    if (!isPlaying || selectedFrameIndex < latestFrameIndex) return;
+    if (isLooping && latestFrameIndex > 0) {
+      setSelectedFrameIndex(0);
+    } else {
+      setIsPlaying(false);
+    }
+  }, [isPlaying, isLooping, selectedFrameIndex, latestFrameIndex]);
+
+  const togglePlay = () => {
+    setIsPlaying((playing) => {
+      if (!playing && selectedFrameIndex >= latestFrameIndex) {
+        setSelectedFrameIndex(0);
+      }
+      return !playing;
+    });
+  };
 
   const unfilteredFrame = frames[selectedFrameIndex] ?? null;
   const selectedFrame = useMemo(
@@ -373,7 +412,15 @@ export function HistoricalTemperatureField({
           selectedFrameIndex={selectedFrameIndex}
           navigationStepMinutes={navigationStepMinutes}
           maxReadingAgeMinutes={maxReadingAgeMinutes}
-          onSelectedFrameIndexChange={setSelectedFrameIndex}
+          isPlaying={isPlaying}
+          isLooping={isLooping}
+          onTogglePlay={togglePlay}
+          onLoopingChange={setIsLooping}
+          onSelectedFrameIndexChange={(index) => {
+            // Manual navigation takes over from playback.
+            setIsPlaying(false);
+            setSelectedFrameIndex(index);
+          }}
           onNavigationStepMinutesChange={setNavigationStepMinutes}
           onMaxReadingAgeMinutesChange={setMaxReadingAgeMinutes}
         />

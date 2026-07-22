@@ -6,13 +6,17 @@ import { formatTimestamp } from "../utils/format";
 import { findTimelineStepIndex } from "../utils/timelineNavigation";
 
 const NAVIGATION_STEP_OPTIONS_MINUTES = [1, 5, 15, 60, 360, 1_440] as const;
-const MAX_READING_AGE_OPTIONS_MINUTES = [15, 30, 60] as const;
+const MAX_READING_AGE_OPTIONS_MINUTES = [5, 10, 15, 30, 60] as const;
 
 interface Props {
   frames: HistoricalTemperatureFieldFrame[];
   selectedFrameIndex: number;
   navigationStepMinutes: number;
   maxReadingAgeMinutes: number;
+  isPlaying: boolean;
+  isLooping: boolean;
+  onTogglePlay: () => void;
+  onLoopingChange: (looping: boolean) => void;
   onSelectedFrameIndexChange: (index: number) => void;
   onNavigationStepMinutesChange: (minutes: number) => void;
   onMaxReadingAgeMinutesChange: (minutes: number) => void;
@@ -23,6 +27,10 @@ export function HistoricalTemperatureTimelineControls({
   selectedFrameIndex,
   navigationStepMinutes,
   maxReadingAgeMinutes,
+  isPlaying,
+  isLooping,
+  onTogglePlay,
+  onLoopingChange,
   onSelectedFrameIndexChange,
   onNavigationStepMinutesChange,
   onMaxReadingAgeMinutesChange,
@@ -87,6 +95,27 @@ export function HistoricalTemperatureTimelineControls({
       </div>
 
       <div className="historical-temperature-field__timeline-row">
+        <KernButton
+          type="button"
+          variant="primary"
+          label={
+            isPlaying
+              ? t("insights.historyMap.pause")
+              : t("insights.historyMap.play")
+          }
+          aria-pressed={isPlaying}
+          disabled={latestFrameIndex === 0}
+          onClick={onTogglePlay}
+        />
+        <label className="historical-temperature-field__loop-toggle">
+          <input
+            type="checkbox"
+            checked={isLooping}
+            disabled={latestFrameIndex === 0}
+            onChange={(event) => onLoopingChange(event.target.checked)}
+          />
+          <span className="kern-label">{t("insights.historyMap.loop")}</span>
+        </label>
         <KernButton
           type="button"
           variant="tertiary"

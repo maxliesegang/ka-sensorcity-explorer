@@ -2961,6 +2961,23 @@ code,
   color: var(--kern-color-feedback-warning-text, #503b00);
 }
 
+.historical-temperature-field__loop-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--kern-metric-space-x-small, 0.5rem);
+  margin: 0;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.historical-temperature-field__loop-toggle input {
+  cursor: pointer;
+}
+
+.historical-temperature-field__loop-toggle .kern-label {
+  margin: 0;
+}
+
 .historical-temperature-field__timeline {
   flex: 1;
   min-width: 8rem;
