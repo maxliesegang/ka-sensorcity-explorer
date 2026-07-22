@@ -1,8 +1,11 @@
 // Temperature color scale for the live temperature field.
 //
-// An anchored-relative "two-knob" color scale: hue is anchored to the absolute
-// temperature (so warm areas never look blue) while the live min..max range is
-// stretched across a minimum window so nearby values always stay distinguishable.
+// A purely *absolute* color scale: temperature maps to colour through a fixed
+// domain (D_MIN..D_MAX), so the same reading always paints the same colour, on
+// every render and across every view — 25 °C is one specific orange, full stop.
+// Nothing here stretches to the live min..max; when you need to resolve small
+// same-day differences, the deviation ("compare to baseline") mode is the tool
+// for that — it supplements, rather than distorts, this absolute reading.
 
 import { clamp01, hexToRgb, rgbToCss, sampleRamp, type Rgb } from "./colorRamp";
 
@@ -33,7 +36,13 @@ export interface RasterBounds {
   west: number;
 }
 
-// RdYlBu reversed (cold -> hot) at evenly spaced positions 0.0,0.1,...,1.0.
+// Master spectrum: a carefully-ordered cold -> hot ramp sampled at evenly spaced
+// positions 0.0, 0.1, ... 1.0. This is ColorBrewer's RdYlBu (reversed) — a
+// perceptually smooth, colorblind-considered diverging scheme running deep
+// indigo (cold) through a pale, "mild"-reading centre to deep crimson (hot). It
+// is deliberately kept distinct from the RdBu blue->white->red ramp used by the
+// deviation scale (see temperatureDeviationScale.ts) so the absolute and
+// baseline-relative modes never look like the same picture.
 const RAMP_HEX = [
   "#313695",
   "#4575b4",
@@ -50,26 +59,38 @@ const RAMP_HEX = [
 
 const RAMP_RGB: Rgb[] = RAMP_HEX.map(hexToRgb);
 
-// Absolute domain anchoring hue to real temperature (°C).
+// The fixed absolute domain the spectrum spans (°C). Chosen to cover Karlsruhe's
+// realistic year-round range with the ramp's pale centre landing on a mild
+// ~17.5 °C; readings outside it clamp to the deepest indigo / crimson. Because
+// this domain never moves, a given temperature keeps one colour forever — the
+// whole point of the absolute scale.
 const D_MIN = -5;
 const D_MAX = 40;
-// Minimum width of the colour window on the master ramp. Larger = more colour
-// contrast when the live readings are bunched together (e.g. a hot summer day
-// where every sensor sits within a few degrees). Kept within the warm half of
-// the ramp so closely-spaced warm readings still never tip into blue.
-const MIN_SPAN = 0.34;
-
-/** Sample the master RdYlBu-reversed ramp at u (clamped to [0,1]). */
-function masterRamp(u: number): Rgb {
-  return sampleRamp(RAMP_RGB, u);
-}
 
 /** Absolute position of a temperature within the fixed domain, clamped to [0,1]. */
 function absPos(temperature: number): number {
   return clamp01((temperature - D_MIN) / (D_MAX - D_MIN));
 }
 
-/** Build an anchored-relative temperature scale from the live points. */
+/**
+ * The absolute temperature colour, as a global pure mapping. These are the
+ * single source of truth for "what colour is this reading" — a fixed function of
+ * the temperature alone (mirroring `getCategoryColor`), so any view can colour a
+ * value without building a scale, and every view agrees on the result.
+ */
+export function getTemperatureColor(temperature: number): string {
+  return rgbToCss(getTemperatureColorRgb(temperature));
+}
+
+export function getTemperatureColorRgb(temperature: number): Rgb {
+  return sampleRamp(RAMP_RGB, absPos(temperature));
+}
+
+/**
+ * Build the absolute temperature scale. Colour comes from the global mapping
+ * above — the `points` only set the live min..max the legend labels (so it still
+ * reads real numbers) and the range its `stops` sample; never the colour itself.
+ */
 export function buildTemperatureScale(
   points: readonly TemperatureFieldPoint[],
 ): TemperatureScale {
@@ -84,49 +105,17 @@ export function buildTemperatureScale(
     max = D_MAX;
   }
 
-  // Anchor hue window to real temperature, then guarantee a minimum span.
-  const a0 = absPos(min);
-  const a1 = absPos(max);
-  let s0 = a0;
-  let s1 = a1;
-  if (s1 - s0 < MIN_SPAN) {
-    const mid = (a0 + a1) / 2;
-    s0 = mid - MIN_SPAN / 2;
-    s1 = mid + MIN_SPAN / 2;
-    // Shift the window inward if it overflows an edge, preserving width.
-    if (s0 < 0) {
-      s1 -= s0;
-      s0 = 0;
-    }
-    if (s1 > 1) {
-      s0 -= s1 - 1;
-      s1 = 1;
-    }
-    s0 = clamp01(s0);
-    s1 = clamp01(s1);
-  }
-
   const span = max - min;
-
-  function rgb(temperature: number): Rgb {
-    const f = span > 0 ? clamp01((temperature - min) / span) : 0.5;
-    const u = s0 + f * (s1 - s0);
-    return masterRamp(u);
-  }
-
-  function css(temperature: number): string {
-    return rgbToCss(rgb(temperature));
-  }
 
   function stops(n: number): LegendStop[] {
     const out: LegendStop[] = [];
     for (let i = 0; i < n; i++) {
       const pos = n > 1 ? i / (n - 1) : 0;
       const temperature = min + pos * span;
-      out.push({ pos, temperature, css: css(temperature) });
+      out.push({ pos, temperature, css: getTemperatureColor(temperature) });
     }
     return out;
   }
 
-  return { min, max, rgb, css, stops };
+  return { min, max, rgb: getTemperatureColorRgb, css: getTemperatureColor, stops };
 }
