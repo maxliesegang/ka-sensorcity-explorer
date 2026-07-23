@@ -134,8 +134,11 @@ export default {
       mapAria: "Historische Temperatur-Voronoi-Karte von Karlsruhe",
       sliderLabel: "Archivzeitleiste",
       selectedTime: "Ausgewählter Zeitpunkt",
+      timelineSettingsLabel: "Zeitleiste",
+      playbackSettingsLabel: "Wiedergabe",
       navigationStepLabel: "Schrittweite",
       maxReadingAgeLabel: "Messwerte einbeziehen bis",
+      playbackIntervalLabel: "Sekunden pro Bild",
       earlier: "Früher",
       later: "Später",
       play: "Abspielen",
@@ -147,6 +150,8 @@ export default {
       minutes_other: "{{count}} Minuten",
       hours_one: "{{count}} Stunde",
       hours_other: "{{count}} Stunden",
+      seconds_one: "{{count}} Sekunde",
+      seconds_other: "{{count}} Sekunden",
       status:
         "{{date}}: {{count}} von {{total}} Sensoren, höchstens {{minutes}} Min. alt · {{min}}–{{max}} in der Stadt.",
       baselineStatus_one:

@@ -2918,16 +2918,16 @@ code,
 .historical-temperature-field__controls {
   display: flex;
   flex-direction: column;
-  gap: var(--kern-metric-space-x-small, 0.25rem);
+  gap: var(--kern-metric-space-default, 1rem);
   padding: var(--kern-metric-space-default, 1rem);
   border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
-  border-radius: var(--kern-metric-border-radius-default, 4px);
+  border-radius: var(--kern-metric-border-radius-large, 8px);
   background: var(--kern-color-layout-background-default-contextual, #fff);
+  box-shadow: 0 1px 3px rgb(20 24 44 / 8%);
 }
 
-.historical-temperature-field__time-row,
-.historical-temperature-field__timeline-row,
-.historical-temperature-field__latest-row {
+.historical-temperature-field__timeline-header,
+.historical-temperature-field__transport-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2937,17 +2937,54 @@ code,
 .historical-temperature-field__selected-time {
   display: block;
   margin-top: var(--kern-metric-space-x-small, 0.25rem);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+.historical-temperature-field__position {
+  padding: var(--kern-metric-space-x-small, 0.25rem)
+    var(--kern-metric-space-small, 0.5rem);
+  border-radius: 999px;
+  background: var(--kern-color-layout-background-hued, #eef0f8);
+  color: var(--kern-color-layout-text-muted-contextual, #404565);
+  white-space: nowrap;
 }
 
 .historical-temperature-field__setting-field {
-  min-width: 10rem;
+  flex: 1;
+  min-width: 9rem;
 }
 
 .historical-temperature-field__settings {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(15rem, 1fr);
+  gap: var(--kern-metric-space-default, 1rem);
+}
+
+.historical-temperature-field__control-group {
+  min-width: 0;
+  margin: 0;
+  padding: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-default, 1rem)
+    var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #d7d9e2);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-hued, #f7f7fb);
+}
+
+.historical-temperature-field__control-group > legend {
+  padding: 0 var(--kern-metric-space-x-small, 0.25rem);
+  color: var(--kern-color-layout-text-default-contextual, #202338);
+}
+
+.historical-temperature-field__setting-fields {
   display: flex;
   align-items: flex-end;
   gap: var(--kern-metric-space-small, 0.5rem);
+}
+
+.historical-temperature-field__setting-fields--playback {
+  justify-content: space-between;
 }
 
 .historical-temperature-field__coverage-warning {
@@ -2965,7 +3002,9 @@ code,
   display: flex;
   align-items: center;
   gap: var(--kern-metric-space-x-small, 0.5rem);
-  margin: 0;
+  min-height: 2.75rem;
+  margin: 0 0 1px;
+  padding: 0 var(--kern-metric-space-x-small, 0.25rem);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -2979,12 +3018,18 @@ code,
 }
 
 .historical-temperature-field__timeline {
-  flex: 1;
-  min-width: 8rem;
+  min-width: 0;
+  padding: var(--kern-metric-space-small, 0.5rem)
+    var(--kern-metric-space-default, 1rem);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-background-hued, #f7f7fb);
 }
 
 .historical-temperature-field__slider {
+  display: block;
   width: 100%;
+  margin: var(--kern-metric-space-small, 0.5rem) 0
+    var(--kern-metric-space-x-small, 0.25rem);
   accent-color: var(--kern-color-action-default-contextual, #2044aa);
 }
 
@@ -2995,33 +3040,62 @@ code,
   color: var(--kern-color-layout-text-muted-contextual, #404565);
 }
 
+.historical-temperature-field__transport-row {
+  position: relative;
+  justify-content: flex-end;
+}
+
+.historical-temperature-field__transport {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--kern-metric-space-small, 0.5rem);
+  transform: translateX(-50%);
+}
+
 .historical-temperature-field__range-labels span:last-child {
   text-align: right;
 }
 
+@media (max-width: 900px) {
+  .historical-temperature-field__settings {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
-  .historical-temperature-field__time-row {
+  .historical-temperature-field__timeline-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .historical-temperature-field__position {
+    align-self: flex-start;
   }
 
   .historical-temperature-field__setting-field {
     width: 100%;
   }
 
-  .historical-temperature-field__settings {
+  .historical-temperature-field__setting-fields {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .historical-temperature-field__timeline-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .historical-temperature-field__setting-fields--playback {
+    align-items: flex-start;
   }
 
-  .historical-temperature-field__timeline {
-    grid-column: 1 / -1;
-    grid-row: 1;
+  .historical-temperature-field__transport-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .historical-temperature-field__transport {
+    position: static;
+    justify-content: space-between;
+    transform: none;
   }
 }
 

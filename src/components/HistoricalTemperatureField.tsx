@@ -51,9 +51,7 @@ interface Props {
 
 const TEMPERATURE_UNIT = "°C";
 const MIN_COVERAGE_RATIO = 0.7;
-// Playback advances one navigation step per tick; one second reads as an
-// animation without racing past frames the eye can register.
-const PLAYBACK_INTERVAL_MS = 1_000;
+const DEFAULT_PLAYBACK_INTERVAL_SECONDS = 1;
 
 function toBaselineReading(point: HistoricalTemperatureFieldPoint): TemperatureBaselineReading {
   return {
@@ -75,6 +73,9 @@ export function HistoricalTemperatureField({
   const [selectedFrameIndex, setSelectedFrameIndex] = useState(latestFrameIndex);
   const [navigationStepMinutes, setNavigationStepMinutes] = useState(60);
   const [maxReadingAgeMinutes, setMaxReadingAgeMinutes] = useState(30);
+  const [playbackIntervalSeconds, setPlaybackIntervalSeconds] = useState(
+    DEFAULT_PLAYBACK_INTERVAL_SECONDS,
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
 
@@ -92,9 +93,15 @@ export function HistoricalTemperatureField({
         if (current >= latestFrameIndex) return current;
         return findTimelineStepIndex(frames, current, navigationStepMinutes, 1);
       });
-    }, PLAYBACK_INTERVAL_MS);
+    }, playbackIntervalSeconds * 1_000);
     return () => clearInterval(timer);
-  }, [isPlaying, frames, navigationStepMinutes, latestFrameIndex]);
+  }, [
+    isPlaying,
+    frames,
+    navigationStepMinutes,
+    latestFrameIndex,
+    playbackIntervalSeconds,
+  ]);
 
   // At the end of the timeline, either restart (loop) or stop.
   useEffect(() => {
@@ -415,6 +422,7 @@ export function HistoricalTemperatureField({
           selectedFrameIndex={selectedFrameIndex}
           navigationStepMinutes={navigationStepMinutes}
           maxReadingAgeMinutes={maxReadingAgeMinutes}
+          playbackIntervalSeconds={playbackIntervalSeconds}
           isPlaying={isPlaying}
           isLooping={isLooping}
           onTogglePlay={togglePlay}
@@ -426,6 +434,7 @@ export function HistoricalTemperatureField({
           }}
           onNavigationStepMinutesChange={setNavigationStepMinutes}
           onMaxReadingAgeMinutesChange={setMaxReadingAgeMinutes}
+          onPlaybackIntervalSecondsChange={setPlaybackIntervalSeconds}
         />
 
         <TemperatureFieldLegend

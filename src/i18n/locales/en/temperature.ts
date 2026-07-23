@@ -133,8 +133,11 @@ export default {
       mapAria: "Historical temperature Voronoi map of Karlsruhe",
       sliderLabel: "Archive timeline",
       selectedTime: "Selected time",
+      timelineSettingsLabel: "Timeline",
+      playbackSettingsLabel: "Playback",
       navigationStepLabel: "Jump by",
       maxReadingAgeLabel: "Include readings up to",
+      playbackIntervalLabel: "Seconds per frame",
       earlier: "Earlier",
       later: "Later",
       play: "Play",
@@ -146,6 +149,8 @@ export default {
       minutes_other: "{{count}} minutes",
       hours_one: "{{count}} hour",
       hours_other: "{{count}} hours",
+      seconds_one: "{{count}} second",
+      seconds_other: "{{count}} seconds",
       status:
         "{{date}}: {{count}} of {{total}} sensors, up to {{minutes}} min old · {{min}}–{{max}} across the city.",
       baselineStatus_one:
