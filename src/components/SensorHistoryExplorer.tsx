@@ -165,95 +165,97 @@ export function SensorHistoryExplorer({
         </div>
       </section>
 
-      {stats ? (
-        <>
-          <section
-            className="history-overview"
-            aria-labelledby={overviewHeadingId}
-          >
-            <div className="history-overview__heading">
-              <h3 id={overviewHeadingId} className="kern-heading-small">
-                {t("historySummary.heading")}
-              </h3>
-              <p className="kern-body kern-body--small kern-body--muted">
-                {t("historySummary.intro", {
-                  range: t(`historyControls.ranges.${range}`),
-                })}
-              </p>
-            </div>
-            <div className="history-overview__cards">
-              <div className="pulse-stat history-overview__latest">
-                <span className="pulse-stat__value">
-                  {formatValue(stats.latest, unit)}
-                </span>
-                <span className="pulse-stat__label">
-                  {t("historySummary.latest")}
-                </span>
-                <p className="kern-body kern-body--small kern-body--muted">
-                  {formatTimestamp(stats.latestAt)}
-                </p>
-              </div>
-              <div className="pulse-stat">
-                <span className="pulse-stat__value">
-                  <span className="history-overview__arrow" aria-hidden="true">
-                    {directionGlyph}
-                  </span>{" "}
-                  {formatSignedDelta(delta, unit)}
-                </span>
-                <span className="pulse-stat__label">
-                  {t("historySummary.change")}
-                </span>
-                <p className="kern-body kern-body--small kern-body--muted">
-                  {t("historySummary.changeDetail")}
-                </p>
-              </div>
-              <div className="pulse-stat">
-                <span className="pulse-stat__value">
-                  {formatValue(stats.mean, unit)}
-                </span>
-                <span className="pulse-stat__label">
-                  {t("historySummary.average")}
-                </span>
-                <p className="kern-body kern-body--small kern-body--muted">
-                  {t("historySummary.readingCount", { count: stats.count })}
-                </p>
-              </div>
-              <div className="pulse-stat">
-                <span className="pulse-stat__value pulse-stat__value--text">
-                  {formatValue(stats.min, unit)} – {formatValue(stats.max, unit)}
-                </span>
-                <span className="pulse-stat__label">
-                  {t("historySummary.range")}
-                </span>
-                <p className="kern-body kern-body--small kern-body--muted">
-                  {t("historySummary.lowToHigh")}
-                </p>
-              </div>
-            </div>
-          </section>
+      <div className="history-explorer__body">
+        {stats ? (
+          <>
+            <LineChart points={visiblePoints} unit={unit} label={label} color={color} />
 
-          <LineChart points={visiblePoints} unit={unit} label={label} color={color} />
+            <section
+              className="history-overview"
+              aria-labelledby={overviewHeadingId}
+            >
+              <div className="history-overview__heading">
+                <h3 id={overviewHeadingId} className="kern-heading-small">
+                  {t("historySummary.heading")}
+                </h3>
+                <p className="kern-body kern-body--small kern-body--muted">
+                  {t("historySummary.intro", {
+                    range: t(`historyControls.ranges.${range}`),
+                  })}
+                </p>
+              </div>
+              <div className="history-overview__cards">
+                <div className="history-overview__stat history-overview__latest">
+                  <span className="pulse-stat__value">
+                    {formatValue(stats.latest, unit)}
+                  </span>
+                  <span className="pulse-stat__label">
+                    {t("historySummary.latest")}
+                  </span>
+                  <p className="kern-body kern-body--small kern-body--muted">
+                    {formatTimestamp(stats.latestAt)}
+                  </p>
+                </div>
+                <div className="history-overview__stat">
+                  <span className="pulse-stat__value">
+                    <span className="history-overview__arrow" aria-hidden="true">
+                      {directionGlyph}
+                    </span>{" "}
+                    {formatSignedDelta(delta, unit)}
+                  </span>
+                  <span className="pulse-stat__label">
+                    {t("historySummary.change")}
+                  </span>
+                  <p className="kern-body kern-body--small kern-body--muted">
+                    {t("historySummary.changeDetail")}
+                  </p>
+                </div>
+                <div className="history-overview__stat">
+                  <span className="pulse-stat__value">
+                    {formatValue(stats.mean, unit)}
+                  </span>
+                  <span className="pulse-stat__label">
+                    {t("historySummary.average")}
+                  </span>
+                  <p className="kern-body kern-body--small kern-body--muted">
+                    {t("historySummary.readingCount", { count: stats.count })}
+                  </p>
+                </div>
+                <div className="history-overview__stat">
+                  <span className="pulse-stat__value pulse-stat__value--text">
+                    {formatValue(stats.min, unit)} – {formatValue(stats.max, unit)}
+                  </span>
+                  <span className="pulse-stat__label">
+                    {t("historySummary.range")}
+                  </span>
+                  <p className="kern-body kern-body--small kern-body--muted">
+                    {t("historySummary.lowToHigh")}
+                  </p>
+                </div>
+              </div>
+            </section>
 
-          {stats.count >= HISTORY_ANALYSIS_MIN_POINTS && (
-            <details className="history-deep-dive">
-              <summary>
-                <span>
-                  <strong>{t("historyDeepDive.heading")}</strong>
-                  <small>{t("historyDeepDive.intro")}</small>
-                </span>
-              </summary>
-              <SensorHistoryAnalysis
-                stats={stats}
-                unit={unit}
-                label={label}
-                color={color}
-              />
-            </details>
-          )}
-        </>
-      ) : (
-        <Empty label={t("historyControls.noReadings")} />
-      )}
+            {stats.count >= HISTORY_ANALYSIS_MIN_POINTS && (
+              <details className="history-deep-dive">
+                <summary>
+                  <span>
+                    <strong>{t("historyDeepDive.heading")}</strong>
+                    <small>{t("historyDeepDive.intro")}</small>
+                  </span>
+                </summary>
+                <SensorHistoryAnalysis
+                  stats={stats}
+                  unit={unit}
+                  label={label}
+                  color={color}
+                />
+              </details>
+            )}
+          </>
+        ) : (
+          <Empty label={t("historyControls.noReadings")} />
+        )}
+      </div>
     </div>
   );
 }

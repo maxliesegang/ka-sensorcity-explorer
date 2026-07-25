@@ -270,14 +270,17 @@ function HistorySection({
   }
 
   return (
-    <section className="sensor-detail__section sensor-detail__section--plain">
-      <div className="section-toolbar">
-        <div>
+    <section className="sensor-detail__section sensor-detail__section--plain history-section">
+      <div className="section-toolbar history-section__header">
+        <div className="history-section__intro">
           <h2 className="kern-heading-small">{t("history")}</h2>
           <p className="kern-body kern-body--small kern-body--muted">
-            {t("historyIntro")} {source.metadata.url ? (
+            {t("historyIntro")}
+          </p>
+          <p className="kern-body kern-body--small history-section__source">
+            {source.metadata.url ? (
               <>
-                <span aria-hidden="true">·</span> {t("historySource")}{" "}
+                {t("historySource")}{" "}
                 <a
                   className="kern-link"
                   href={source.metadata.url}
@@ -288,14 +291,11 @@ function HistorySection({
                 </a>
               </>
             ) : (
-              <>
-                <span aria-hidden="true">·</span>{" "}
-                {t("historySourceLabel", { source: source.metadata.label })}
-              </>
+              t("historySourceLabel", { source: source.metadata.label })
             )}
           </p>
         </div>
-        <div className="field kern-form-input">
+        <div className="field kern-form-input history-section__measurement">
           <label className="kern-label" htmlFor={`${pickerId}-measurement-select`}>
             {t("measurement")}
           </label>
