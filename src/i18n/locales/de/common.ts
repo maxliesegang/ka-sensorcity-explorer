@@ -13,6 +13,7 @@ export default {
     overview: "Übersicht",
     map: "Karte",
     temperature: "Temperatur",
+    soil: "Boden",
     sensors: "Sensoren",
     query: "Abfrage",
     about: "Info",

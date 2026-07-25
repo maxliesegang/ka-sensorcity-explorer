@@ -1,21 +1,22 @@
-// Reusable, fully presentational control strip for the temperature maps'
-// baseline-station deviation mode. It owns no state, fetches no data and uses
+// Reusable, fully presentational control strip for a map field's
+// baseline deviation mode. It owns no state, fetches no data and uses
 // no translation hooks — every label and value arrives via props so it can be
-// shared by both the live and historical temperature maps.
+// shared by the temperature maps and the soil field.
 
 import type { BaselineOption } from "../config/temperatureBaselines";
-import type { TemperatureDisplayMode } from "../types";
+import type { FieldDisplayMode } from "../types";
 
-export interface TemperatureBaselineControlsProps {
+export interface FieldBaselineControlsProps {
   baselineSelectId: string;
-  displayMode: TemperatureDisplayMode;
-  onDisplayModeChange: (mode: TemperatureDisplayMode) => void;
+  displayMode: FieldDisplayMode;
+  onDisplayModeChange: (mode: FieldDisplayMode) => void;
   baselineId: string | null;
   onBaselineIdChange: (id: string) => void;
   /** Selectable baseline options, already localized. */
   baselineOptions: BaselineOption[];
   displayModeLabel: string;
-  temperatureModeLabel: string;
+  /** Label for the "show the reading itself" mode (e.g. "Temperature", "Moisture"). */
+  valueModeLabel: string;
   deviationModeLabel: string;
   baselineSelectLabel: string;
   /** Whether per-cell value labels are drawn on the map. */
@@ -24,7 +25,7 @@ export interface TemperatureBaselineControlsProps {
   showLabelsLabel: string;
 }
 
-export function TemperatureBaselineControls({
+export function FieldBaselineControls({
   baselineSelectId,
   displayMode,
   onDisplayModeChange,
@@ -32,13 +33,13 @@ export function TemperatureBaselineControls({
   onBaselineIdChange,
   baselineOptions,
   displayModeLabel,
-  temperatureModeLabel,
+  valueModeLabel,
   deviationModeLabel,
   baselineSelectLabel,
   showLabels,
   onShowLabelsChange,
   showLabelsLabel,
-}: TemperatureBaselineControlsProps) {
+}: FieldBaselineControlsProps) {
   const baselineSelectDisabled = displayMode !== "deviation";
 
   return (
@@ -52,12 +53,12 @@ export function TemperatureBaselineControls({
           type="button"
           className={
             "segmented-control__option" +
-            (displayMode === "temperature" ? " segmented-control__option--active" : "")
+            (displayMode === "value" ? " segmented-control__option--active" : "")
           }
-          aria-pressed={displayMode === "temperature"}
-          onClick={() => onDisplayModeChange("temperature")}
+          aria-pressed={displayMode === "value"}
+          onClick={() => onDisplayModeChange("value")}
         >
-          {temperatureModeLabel}
+          {valueModeLabel}
         </button>
         <button
           type="button"

@@ -1,6 +1,6 @@
 // Curated "Nullpunkt" baseline stations for the deviation mode.
 //
-// In deviation mode the map shows each sensor's temperature relative to a chosen
+// In deviation mode a field shows each sensor's reading relative to a chosen
 // baseline ("Nullpunkt") station. The baseline cannot be picked automatically:
 // the coldest sensor on a given night is frequently a high-altitude /
 // mountain-village station that reads cold purely because of elevation, not
@@ -60,26 +60,59 @@ export const DWD_BASELINE_ID = "dwd:rheinstetten";
  */
 export const AVERAGE_BASELINE_ID = "avg:sensors";
 
-/** Display labels for the synthetic (non-sensor) baseline options. */
-export interface SyntheticBaselineLabels {
-  dwd: string;
-  average: string;
-}
+/** The non-sensor baselines a field can offer. */
+export type SyntheticBaselineId = typeof DWD_BASELINE_ID | typeof AVERAGE_BASELINE_ID;
 
 /**
- * Prepend the synthetic baseline options to the per-sensor candidates, in the
- * order they should appear in the picker. Add new non-sensor baselines here so
- * both the live and historical maps pick them up.
+ * The order synthetic options appear in the picker, so a field chooses *which*
+ * it offers and never *where* they sit.
  */
-export function withSyntheticBaselineOptions(
+const SYNTHETIC_BASELINE_ORDER: readonly SyntheticBaselineId[] = [
+  DWD_BASELINE_ID,
+  AVERAGE_BASELINE_ID,
+];
+
+/**
+ * Display labels for the synthetic (non-sensor) baseline options. Partial
+ * because not every field offers every one: DWD Rheinstetten measures *air*
+ * temperature, which is no reference at all for a soil probe, so the soil field
+ * offers the city average alone.
+ */
+export type SyntheticBaselineLabels = Partial<Record<SyntheticBaselineId, string>>;
+
+/**
+ * Prepend the synthetic baseline options a field offers to its per-sensor
+ * candidates. An option is offered when `labels` names it, so adding a
+ * non-sensor baseline here reaches every field that has a label for it.
+ */
+function withSyntheticBaselineOptions(
   candidates: BaselineOption[],
   labels: SyntheticBaselineLabels,
 ): BaselineOption[] {
-  return [
-    { id: DWD_BASELINE_ID, label: labels.dwd },
-    { id: AVERAGE_BASELINE_ID, label: labels.average },
-    ...candidates,
-  ];
+  const synthetic = SYNTHETIC_BASELINE_ORDER.flatMap((id) => {
+    const label = labels[id];
+    return label ? [{ id, label }] : [];
+  });
+  return [...synthetic, ...candidates];
+}
+
+/**
+ * The picker's options: the sensors that can serve as a baseline (de-duplicated
+ * by id, ordered by label) behind the synthetic options the field offers.
+ */
+export function buildBaselineOptions(
+  candidates: readonly BaselineOption[],
+  labels: SyntheticBaselineLabels,
+): BaselineOption[] {
+  const byId = new Map<string, string>();
+  for (const candidate of candidates) {
+    if (!byId.has(candidate.id)) byId.set(candidate.id, candidate.label);
+  }
+
+  const sensors = Array.from(byId, ([id, label]) => ({ id, label })).sort((a, b) =>
+    a.label.localeCompare(b.label),
+  );
+  return withSyntheticBaselineOptions(sensors, labels);
 }
 
 export function getDefaultBaselineId(

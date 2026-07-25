@@ -13,6 +13,7 @@ import { OverviewView } from "./views/OverviewView";
 import { SensorsView } from "./views/SensorsView";
 import { MapView } from "./views/MapView";
 import { TemperatureFieldView } from "./views/TemperatureFieldView";
+import { SoilFieldView } from "./views/SoilFieldView";
 import { CombinedTemperatureFieldView } from "./views/CombinedTemperatureFieldView";
 import { SensorDetailView } from "./views/SensorDetailView";
 import { QueryView } from "./views/QueryView";
@@ -27,6 +28,7 @@ const TITLE_KEYS: Record<string, string> = {
   "/sensors": "nav.sensors",
   "/map": "nav.map",
   "/temperature": "nav.temperature",
+  "/soil": "nav.soil",
   "/query": "nav.query",
   "/about": "nav.about",
 };
@@ -106,6 +108,7 @@ export function App() {
           <Route path="/sensors" element={<SensorsView />} />
           <Route path="/map" element={<MapView />} />
           <Route path="/temperature" element={<TemperatureFieldView />} />
+          <Route path="/soil" element={<SoilFieldView />} />
           {/* Hidden from nav: combined SensorCity + community temperature field. */}
           <Route
             path="/combined-temperature"

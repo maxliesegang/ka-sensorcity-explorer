@@ -42,6 +42,20 @@ export function sampleRamp(stops: readonly Rgb[], u: number): Rgb {
   ];
 }
 
+/**
+ * Build a CSS `linear-gradient` from stops a scale has already sampled (each
+ * carrying its position 0..1 and its colour), for the scales that place their
+ * own stops rather than spanning a ramp evenly.
+ */
+export function gradientFromStops(
+  stops: readonly { pos: number; css: string }[],
+): string {
+  const samples = stops.map(
+    (stop) => `${stop.css} ${(stop.pos * 100).toFixed(2)}%`,
+  );
+  return `linear-gradient(to right, ${samples.join(", ")})`;
+}
+
 /** Build a CSS `linear-gradient` across the ramp, sampled at `steps` points. */
 export function rampGradient(
   stops: readonly Rgb[],

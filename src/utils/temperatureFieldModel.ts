@@ -1,11 +1,9 @@
 import {
   AVERAGE_BASELINE_ID,
   DWD_BASELINE_ID,
-  type BaselineOption,
-  type SyntheticBaselineLabels,
-  withSyntheticBaselineOptions,
 } from "../config/temperatureBaselines";
-import type { TemperatureDisplayMode } from "../types";
+import type { FieldDisplayMode } from "../types";
+import { fieldScaleFromStops, type FieldScale } from "./fieldScale";
 import { mean } from "./stats";
 import {
   buildTemperatureDeviationScale,
@@ -19,41 +17,16 @@ export interface TemperatureBaselineReading {
   temperature: number;
 }
 
-interface LegendStop {
-  pos: number;
-  css: string;
-}
-
-export type TemperatureFieldLegendModel =
-  | {
+export type TemperatureFieldLegendModel = FieldScale &
+  (
+    | {
       kind: "temperature";
-      gradient: string;
-      min: number;
-      max: number;
       count: number;
     }
-  | {
+    | {
       kind: "deviation";
-      gradient: string;
-      min: number;
-      max: number;
-      zeroPos: number;
-    };
-
-export function buildTemperatureBaselineOptions(
-  readings: readonly TemperatureBaselineReading[],
-  labels: SyntheticBaselineLabels,
-): BaselineOption[] {
-  const byId = new Map<string, string>();
-  for (const reading of readings) {
-    if (!byId.has(reading.id)) byId.set(reading.id, reading.label);
-  }
-
-  const candidates = Array.from(byId, ([id, label]) => ({ id, label })).sort(
-    (a, b) => a.label.localeCompare(b.label),
+    }
   );
-  return withSyntheticBaselineOptions(candidates, labels);
-}
 
 export function resolveBaselineTemperature({
   displayMode,
@@ -61,7 +34,7 @@ export function resolveBaselineTemperature({
   readings,
   dwdTemperature,
 }: {
-  displayMode: TemperatureDisplayMode;
+  displayMode: FieldDisplayMode;
   baselineId: string | null;
   readings: readonly TemperatureBaselineReading[];
   dwdTemperature?: number | null;
@@ -97,10 +70,8 @@ export function buildTemperatureLegend(
   count: number,
 ): TemperatureFieldLegendModel {
   return {
+    ...fieldScaleFromStops(scale, null),
     kind: "temperature",
-    gradient: gradientFromStops(scale.stops(12)),
-    min: scale.min,
-    max: scale.max,
     count,
   };
 }
@@ -109,17 +80,7 @@ export function buildTemperatureDeviationLegend(
   scale: TemperatureDeviationScale,
 ): TemperatureFieldLegendModel {
   return {
+    ...fieldScaleFromStops(scale, scale.zeroPos),
     kind: "deviation",
-    gradient: gradientFromStops(scale.stops(12)),
-    min: scale.min,
-    max: scale.max,
-    zeroPos: scale.zeroPos,
   };
-}
-
-function gradientFromStops(stops: readonly LegendStop[]): string {
-  const gradientStops = stops
-    .map((stop) => `${stop.css} ${(stop.pos * 100).toFixed(2)}%`)
-    .join(", ");
-  return `linear-gradient(to right, ${gradientStops})`;
 }

@@ -23,14 +23,16 @@ export function useUrlState() {
 
   const updateParams = useCallback(
     (updates: ParamUpdates) => {
-      const next = new URLSearchParams(params);
-      for (const [key, value] of Object.entries(updates)) {
-        if (value) next.set(key, value);
-        else next.delete(key);
-      }
-      setParams(next, { replace: true });
+      setParams((current) => {
+        const next = new URLSearchParams(current);
+        for (const [key, value] of Object.entries(updates)) {
+          if (value) next.set(key, value);
+          else next.delete(key);
+        }
+        return next;
+      }, { replace: true });
     },
-    [params, setParams],
+    [setParams],
   );
 
   return [params, updateParams] as const;

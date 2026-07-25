@@ -1,5 +1,5 @@
-// The temperature field for the map-based temperature views, as three MapLibre
-// layers over the basemap:
+// The value field for the map-based field views (temperature, soil), as three
+// MapLibre layers over the basemap:
 //   • cells   — Voronoi/Thiessen polygons filled with each sensor's colour (the field)
 //   • markers — a circle per sensor at its exact location
 //   • labels  — an optional per-cell value label (symbol layer, native collision + zoom sizing)
@@ -9,10 +9,16 @@
 // `render` just swaps the GeoJSON on data/mode/label changes. Because MapLibre's
 // `setStyle` (theme swap) discards custom layers, the owning view recreates the
 // controller whenever the map reports `isStyleReady` again.
+//
+// Everything here is quantity-agnostic: points need only lat/lon (`FieldPoint`)
+// and the caller supplies the colour, label and popup for each one. That is what
+// lets the soil field reuse it without pretending its readings are temperatures.
 
 import type { Feature } from "geojson";
 import type * as maplibregl from "maplibre-gl";
 
+import { boundsFromFieldPoints } from "./fieldBounds";
+import type { FieldPoint } from "./fieldPoint";
 import {
   addLayerIfMissing,
   createPointFeature,
@@ -30,16 +36,14 @@ import {
   type InteractiveCircleStyle,
   type InteractiveFeatureProperties,
 } from "./maplibreMarkers";
-import { boundsFromTemperatureFieldPoints } from "./temperatureFieldBounds";
-import type { TemperatureFieldPoint } from "./temperatureScale";
 import { voronoiCells } from "./voronoi";
 
-const CELL_SOURCE_ID = "temperature-cells";
-const CELL_LAYER_ID = "temperature-cells-fill";
-const MARKER_SOURCE_ID = "temperature-markers";
-const MARKER_LAYER_ID = "temperature-markers-circle";
-const LABEL_SOURCE_ID = "temperature-labels";
-const LABEL_LAYER_ID = "temperature-labels-symbol";
+const CELL_SOURCE_ID = "field-cells";
+const CELL_LAYER_ID = "field-cells-fill";
+const MARKER_SOURCE_ID = "field-markers";
+const MARKER_LAYER_ID = "field-markers-circle";
+const LABEL_SOURCE_ID = "field-labels";
+const LABEL_LAYER_ID = "field-labels-symbol";
 
 // Ring sizes for the point markers — smaller than the sensor map's, as they sit
 // atop the coloured field. Solid fill so they read as dots over the cells.
@@ -53,8 +57,8 @@ const MARKER_STYLE: InteractiveCircleStyle = {
 
 const EMPTY_FEATURES: Feature[] = [];
 
-/** Per-point accessors describing how to render one temperature field. */
-export interface TemperatureFieldRenderOptions<T extends TemperatureFieldPoint> {
+/** Per-point accessors describing how to render one field. */
+export interface FieldRenderOptions<T extends FieldPoint> {
   points: T[];
   /** Stable feature id shared by a point's cell and marker (the sensor's objectId). */
   getId: (point: T) => FeatureId;
@@ -71,18 +75,18 @@ export interface TemperatureFieldRenderOptions<T extends TemperatureFieldPoint> 
   getProperties?: (point: T) => Record<string, string | number | boolean>;
 }
 
-export interface TemperatureFieldController {
+export interface FieldController {
   /** Rebuild the field from a new set of points/accessors. */
-  render: <T extends TemperatureFieldPoint>(options: TemperatureFieldRenderOptions<T>) => void;
+  render: <T extends FieldPoint>(options: FieldRenderOptions<T>) => void;
   /** Empty every layer without removing them. */
   clear: () => void;
   /** Fit the map to a set of points (with the shared Karlsruhe fallback padding). */
-  fitToPoints: (points: TemperatureFieldPoint[]) => void;
+  fitToPoints: (points: readonly FieldPoint[]) => void;
   /** Remove all layers, sources and interaction listeners. */
   remove: () => void;
 }
 
-export interface TemperatureFieldControllerOptions {
+export interface FieldControllerOptions {
   popupClassName?: string;
   tooltipClassName?: string;
   /** Wire the popup's action button (e.g. "set as reference"). */
@@ -93,14 +97,14 @@ export interface TemperatureFieldControllerOptions {
  * Build the (initially empty) field layers on a ready map and wire their
  * interactions once. Call `render` to populate/update. Assumes the style is loaded.
  */
-export function createTemperatureFieldController(
+export function createFieldController(
   map: maplibregl.Map,
   {
     popupClassName,
     tooltipClassName,
     onPopupAction,
-  }: TemperatureFieldControllerOptions = {},
-): TemperatureFieldController {
+  }: FieldControllerOptions = {},
+): FieldController {
   upsertGeoJsonSource(map, CELL_SOURCE_ID, EMPTY_FEATURES);
   upsertGeoJsonSource(map, MARKER_SOURCE_ID, EMPTY_FEATURES);
   upsertGeoJsonSource(map, LABEL_SOURCE_ID, EMPTY_FEATURES);
@@ -156,9 +160,7 @@ export function createTemperatureFieldController(
     onPopupAction,
   });
 
-  function render<T extends TemperatureFieldPoint>(
-    options: TemperatureFieldRenderOptions<T>,
-  ): void {
+  function render<T extends FieldPoint>(options: FieldRenderOptions<T>): void {
     const cells: Feature[] = [];
     const labels: Feature[] = [];
 
@@ -201,8 +203,8 @@ export function createTemperatureFieldController(
     upsertGeoJsonSource(map, LABEL_SOURCE_ID, EMPTY_FEATURES);
   }
 
-  function fitToPoints(points: TemperatureFieldPoint[]): void {
-    const bounds = boundsFromTemperatureFieldPoints(points);
+  function fitToPoints(points: readonly FieldPoint[]): void {
+    const bounds = boundsFromFieldPoints(points);
     map.fitBounds(
       [
         [bounds.west, bounds.south],
@@ -227,8 +229,8 @@ export function createTemperatureFieldController(
 }
 
 /** Build the shared feature properties (colour, popup, tooltip, highlight, extras). */
-function buildFeatureProperties<T extends TemperatureFieldPoint>(
-  options: TemperatureFieldRenderOptions<T>,
+function buildFeatureProperties<T extends FieldPoint>(
+  options: FieldRenderOptions<T>,
   point: T,
 ): InteractiveFeatureProperties {
   return {

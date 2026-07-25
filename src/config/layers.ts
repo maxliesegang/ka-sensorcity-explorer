@@ -38,6 +38,13 @@ export const TEMPERATURE_CATEGORY_KEY = "Temperatur-Sensor";
 export const TEMPERATURE_FIELD_KEY = "temp";
 
 /**
+ * The soil-probe category key. Exported for the same reason as
+ * {@link TEMPERATURE_CATEGORY_KEY}: the soil field view filters on it, and an
+ * upstream rename of this `beschreibung` value fails silently.
+ */
+export const SOIL_CATEGORY_KEY = "Boden-Sensor";
+
+/**
  * Soil probe depth bands, shallow→deep, as used in the `*_at_depth_<band>1` fields.
  *
  * The feed defines 8 bands but only 0–5 carry readings: every one of the 97
@@ -47,8 +54,15 @@ export const TEMPERATURE_FIELD_KEY = "temp";
  */
 export const SOIL_DEPTH_BANDS = [0, 1, 2, 3, 4, 5] as const;
 
+// The soil field families, each doubling as its `DepthProfile.key`. Exported
+// because the soil field view names the quantity it leads with.
+export const SOIL_MOISTURE_PROFILE_KEY = "soil_moisture";
+export const SOIL_TEMPERATURE_PROFILE_KEY = "soil_temperature";
+
 /** A soil field family, i.e. one quantity sampled across {@link SOIL_DEPTH_BANDS}. */
-type SoilFamily = "soil_moisture" | "soil_temperature";
+type SoilFamily =
+  | typeof SOIL_MOISTURE_PROFILE_KEY
+  | typeof SOIL_TEMPERATURE_PROFILE_KEY;
 
 /**
  * The upstream attribute name for one band of a soil family. The suffix is the
@@ -121,21 +135,21 @@ export const CATEGORIES: Category[] = [
     measurements: [{ field: "clicks", unit: "" }],
   },
   {
-    key: "Boden-Sensor",
+    key: SOIL_CATEGORY_KEY,
     color: "#a9705a",
     archiveLayerId: 4,
     // Probes report stacked depth bands (shallow→deep). The older flat
     // `bodenfeuchte`/`bodentemperatur` fields still exist upstream but are now
     // empty for all but 2 of 99 sensors, so the bands are the real feed.
     measurements: [
-      ...soilBandMeasurements("soil_moisture", "%"),
-      ...soilBandMeasurements("soil_temperature", "°C"),
+      ...soilBandMeasurements(SOIL_MOISTURE_PROFILE_KEY, "%"),
+      ...soilBandMeasurements(SOIL_TEMPERATURE_PROFILE_KEY, "°C"),
     ],
     // The same band fields again, grouped per quantity: the measurement list
     // charts one band at a time, the profile draws all bands as depth vs. time.
     depthProfiles: [
-      soilDepthProfile("soil_moisture", "%", "moisture"),
-      soilDepthProfile("soil_temperature", "°C", "temperature"),
+      soilDepthProfile(SOIL_MOISTURE_PROFILE_KEY, "%", "moisture"),
+      soilDepthProfile(SOIL_TEMPERATURE_PROFILE_KEY, "°C", "temperature"),
     ],
   },
   {

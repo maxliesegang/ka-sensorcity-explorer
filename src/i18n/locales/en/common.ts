@@ -14,6 +14,7 @@ export default {
     overview: "Overview",
     map: "Map",
     temperature: "Temperature",
+    soil: "Soil",
     sensors: "Sensors",
     query: "Query",
     about: "About",

@@ -3,26 +3,22 @@ import {
   hasBaselineOption,
   type BaselineOption,
 } from "../config/temperatureBaselines";
-import type { TemperatureDisplayMode } from "../types";
+import type { FieldDisplayMode } from "../types";
 import { useEnumParam, useUrlState } from "./useUrlState";
 
-const DISPLAY_MODES: TemperatureDisplayMode[] = ["temperature", "deviation"];
+const DISPLAY_MODES: FieldDisplayMode[] = ["value", "deviation"];
 
 /**
- * Display mode + baseline for the temperature field, backed by the URL (`?mode=`,
+ * Display mode + baseline for a map field, backed by the URL (`?mode=`,
  * `?baseline=`) so a deviation view is shareable. The effective baseline is
  * derived, not stored: when deviation mode needs one and the URL doesn't name a
  * currently-valid option, we fall back to the default without writing it — that
  * keeps the default out of shared links and self-corrects once the baseline
  * options finish loading.
  */
-export function useTemperatureBaselineSelection(options: readonly BaselineOption[]) {
+export function useFieldBaselineSelection(options: readonly BaselineOption[]) {
   const [params, updateParams] = useUrlState();
-  const [displayMode, setDisplayMode] = useEnumParam(
-    "mode",
-    DISPLAY_MODES,
-    "temperature",
-  );
+  const [displayMode, setDisplayMode] = useEnumParam("mode", DISPLAY_MODES, "value");
 
   const requestedBaseline = params.get("baseline");
   const baselineId: string | null = hasBaselineOption(options, requestedBaseline)
@@ -35,10 +31,16 @@ export function useTemperatureBaselineSelection(options: readonly BaselineOption
     updateParams({ baseline: id });
   }
 
+  /** Select a baseline and enter deviation mode in one URL update. */
+  function selectBaseline(id: string) {
+    updateParams({ mode: "deviation", baseline: id });
+  }
+
   return {
     displayMode,
     setDisplayMode,
     baselineId,
     setBaselineId,
+    selectBaseline,
   };
 }

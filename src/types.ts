@@ -7,8 +7,12 @@
 export type AttributeValue = string | number | boolean | null;
 export type Attributes = Record<string, AttributeValue>;
 
-/** Values presented by a temperature field; colour scaling is configured separately. */
-export type TemperatureDisplayMode = "temperature" | "deviation";
+/**
+ * What a map field's colours mean: the reading itself, or its difference from a
+ * chosen baseline. Shared by the temperature and soil fields; `"value"` is the
+ * default, so only `"deviation"` ever reaches a URL.
+ */
+export type FieldDisplayMode = "value" | "deviation";
 
 /** A single ArcGIS feature: attribute bag plus optional point geometry. */
 export interface Feature {

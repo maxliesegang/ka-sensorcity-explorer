@@ -1,8 +1,15 @@
-import type { RasterBounds, TemperatureFieldPoint } from "./temperatureScale";
+import type { FieldPoint } from "./fieldPoint";
+
+export interface RasterBounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
 
 // Fallback bounds roughly covering the Karlsruhe city area, used when there are
-// no temperature points to derive an extent from.
-export const KARLSRUHE_TEMPERATURE_BOUNDS: RasterBounds = {
+// no field points to derive an extent from.
+export const KARLSRUHE_FIELD_BOUNDS: RasterBounds = {
   north: 49.07,
   south: 48.95,
   east: 8.49,
@@ -10,8 +17,8 @@ export const KARLSRUHE_TEMPERATURE_BOUNDS: RasterBounds = {
 };
 
 /** Derive padded raster bounds from a point extent (with a Karlsruhe fallback). */
-export function boundsFromTemperatureFieldPoints(points: TemperatureFieldPoint[]): RasterBounds {
-  if (points.length === 0) return KARLSRUHE_TEMPERATURE_BOUNDS;
+export function boundsFromFieldPoints(points: readonly FieldPoint[]): RasterBounds {
+  if (points.length === 0) return KARLSRUHE_FIELD_BOUNDS;
 
   let north = -Infinity;
   let south = Infinity;

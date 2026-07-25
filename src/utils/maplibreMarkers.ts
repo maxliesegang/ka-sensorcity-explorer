@@ -52,6 +52,22 @@ export interface SensorPopupOptions {
    * (and `data-popup-action`) so callers can wire its click via `onPopupAction`.
    */
   secondaryAction?: { label: string };
+  /**
+   * Optional swatch rows below the reading, for a sensor that reports one
+   * quantity several times over — the soil probe's depth bands. Passed as data
+   * rather than markup so escaping stays inside this builder.
+   */
+  detailRows?: readonly PopupDetailRow[];
+}
+
+/** One labelled, colour-swatched row of a popup's detail section. */
+export interface PopupDetailRow {
+  label: string;
+  value: string;
+  /** Swatch fill — the colour the map gives this row's value. */
+  color: string;
+  /** Marks the row the map is currently showing. */
+  isCurrent?: boolean;
 }
 
 /** Build the shared sensor popup markup: accent dot, label, name, reading, and link. */
@@ -65,6 +81,7 @@ export function buildSensorPopupHtml({
   href,
   linkLabel,
   secondaryAction,
+  detailRows,
 }: SensorPopupOptions): string {
   const popupNote =
     note ?? (readingTime != null ? formatReadingTime(readingTime) : undefined);
@@ -90,9 +107,28 @@ export function buildSensorPopupHtml({
     <strong class="sensor-popup__name">${escapeHtml(name)}</strong>
     <span class="sensor-popup__meta">${escapeHtml(readingSummary)}</span>
     ${noteLine}
+    ${buildDetailRowsHtml(detailRows)}
     ${link}
     ${secondaryActionButton}
   `;
+}
+
+/** Render the popup's swatch rows, or nothing when a caller has none. */
+function buildDetailRowsHtml(rows: readonly PopupDetailRow[] | undefined): string {
+  if (!rows || rows.length === 0) return "";
+  const items = rows
+    .map(
+      (row) =>
+        `<li class="sensor-popup__row${
+          row.isCurrent ? " sensor-popup__row--current" : ""
+        }">` +
+        `<span class="cat-dot" style="background:${escapeHtml(row.color)}"></span>` +
+        `<span class="sensor-popup__row-label">${escapeHtml(row.label)}</span>` +
+        `<span class="sensor-popup__row-value">${escapeHtml(row.value)}</span>` +
+        `</li>`,
+    )
+    .join("");
+  return `<ul class="sensor-popup__rows">${items}</ul>`;
 }
 
 /** Ring size (radius + stroke width) for one marker interaction state. */
@@ -164,7 +200,7 @@ export function bindCircleHoverState(
 ): () => void {
   let hoveredId: FeatureId | null = null;
   const setHoveredState = (id: FeatureId | null, isHovered: boolean) => {
-    if (id != null && isMapActive(map)) {
+    if (id != null && isMapActive(map) && map.getSource(sourceId)) {
       map.setFeatureState({ source: sourceId, id }, { hover: isHovered });
     }
   };
@@ -234,7 +270,7 @@ export function bindFeaturePopups(
   const popup = new maplibregl.Popup({ className: popupClassName, offset: 10 });
   let activeId: FeatureId | null = null;
   const setActiveState = (id: FeatureId | null, isActive: boolean) => {
-    if (id != null && isMapActive(map)) {
+    if (id != null && isMapActive(map) && map.getSource(activeSourceId)) {
       map.setFeatureState({ source: activeSourceId, id }, { active: isActive });
     }
   };

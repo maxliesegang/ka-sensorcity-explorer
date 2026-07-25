@@ -27,9 +27,9 @@ import {
 } from "../components/TemperatureInsights";
 import { useAsync } from "../hooks/useAsync";
 import { useMapLibreMap } from "../hooks/useMapLibreMap";
-import { useTemperatureFieldController } from "../hooks/useTemperatureFieldController";
+import { useFieldController } from "../hooks/useFieldController";
 import { buildSensorPopupHtml } from "../utils/maplibreMarkers";
-import { TemperatureBaselineControls } from "../components/TemperatureBaselineControls";
+import { FieldBaselineControls } from "../components/FieldBaselineControls";
 import { useTemperatureFieldModel } from "../hooks/useTemperatureFieldModel";
 import {
   summarizeLiveTemperatureReadings,
@@ -79,6 +79,7 @@ export function TemperatureFieldView() {
     setDisplayMode,
     baselineId,
     setBaselineId,
+    selectBaseline,
     showLabels,
     setShowLabels,
     baselineOptions,
@@ -96,14 +97,13 @@ export function TemperatureFieldView() {
 
   // The "set as reference" popup action only needs the clicked sensor's id
   // (carried in feature properties) plus the model's stable setters.
-  const fieldControllerRef = useTemperatureFieldController(
+  const fieldControllerRef = useFieldController(
     mapHandle,
     {
       popupClassName: "sensor-popup",
       tooltipClassName: "sensor-tooltip",
       onPopupAction: (properties, popup) => {
-        setDisplayMode("deviation");
-        setBaselineId(String(properties.objectId));
+        selectBaseline(String(properties.objectId));
         popup.remove();
       },
     },
@@ -205,7 +205,7 @@ export function TemperatureFieldView() {
       </div>
 
       <section className="map-shell" aria-label={t("canvasAria")}>
-        <TemperatureBaselineControls
+        <FieldBaselineControls
           baselineSelectId="city-temperature-baseline-controls-select"
           displayMode={displayMode}
           onDisplayModeChange={setDisplayMode}
@@ -213,7 +213,7 @@ export function TemperatureFieldView() {
           onBaselineIdChange={setBaselineId}
           baselineOptions={baselineOptions}
           displayModeLabel={t("baseline.displayModeLabel")}
-          temperatureModeLabel={t("baseline.temperatureMode")}
+          valueModeLabel={t("baseline.temperatureMode")}
           deviationModeLabel={t("baseline.deviationMode")}
           baselineSelectLabel={t("baseline.selectLabel")}
           showLabels={showLabels}

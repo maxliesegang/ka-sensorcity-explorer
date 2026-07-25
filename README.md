@@ -23,6 +23,13 @@ Built with **Vite + React + TypeScript**, styled with the
   ("deviation") display modes, a choice of baseline station (including the DWD
   Rheinstetten reference and the sensor average), cross-sensor insights, and an
   optional historical replay.
+- **Soil** — the same nearest-probe field for the soil probes, which measure at
+  six stacked depth levels. Pick the quantity (soil temperature or moisture) and
+  the depth level; one colour scale spans every level, so switching level
+  compares depths instead of re-normalising the map. A clicked probe's popup
+  lists its whole column, a summary table gives every level's city-wide spread,
+  and deviation mode compares against the city average or another probe *at the
+  same depth* (no DWD option here — Rheinstetten measures air).
 - **Sensor detail** — current readings plus an interactive time-series chart of
   the chosen measurement, pulled from the matching history archive (or an
   fallback FeatureServer where the main archive has no matching layer). Probes
@@ -111,16 +118,18 @@ src/
 │   ├── historySources.ts    Fallback history sources per sensor.
 │   └── temperatureBaselines Baseline-station options for deviation mode.
 ├── components/              Layout, Status (loading/error/empty), LineChart and
-│                            DepthProfileChart (SVG), temperature field/legend/
-│                            insights, and UI.
+│                            DepthProfileChart (SVG), shared field controls/
+│                            legend, temperature insights, soil controls, and UI.
 ├── hooks/                   useAsync (abortable async-state), useMapLibreMap
-│                            (create-once/teardown map lifecycle), + others.
+│                            (create-once/teardown map lifecycle), useFieldController
+│                            (the shared Voronoi field), + others.
 ├── i18n/                    react-i18next setup + per-namespace en/de dicts.
 ├── utils/                   format (locale-aware), voronoi (Thiessen cells),
-│                            colour ramps + temperature/depth-profile scales,
+│                            colour ramps + temperature/soil/depth-profile scales,
 │                            depthProfile (depth×time grid), stats, MapLibre.
 ├── views/                   One file per route: Overview, Sensors, Map,
-│                            TemperatureField, SensorDetail, Query, About.
+│                            TemperatureField, SoilField, SensorDetail, Query,
+│                            About.
 ├── types.ts                Shared domain types.
 └── App.tsx / main.tsx      Router + bootstrap (KERN + MapLibre CSS + i18n).
 ```

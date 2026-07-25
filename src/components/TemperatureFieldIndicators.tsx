@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import type { DwdHourlyPoint } from "../api/brightsky";
 import { formatSignedDelta, formatTime, formatValue } from "../utils/format";
 import type { TemperatureFieldLegendModel } from "../utils/temperatureFieldModel";
-import { TemperatureLegend } from "./TemperatureLegend";
+import { FieldLegend } from "./FieldLegend";
 
 const TEMPERATURE_UNIT = "°C";
 
@@ -20,7 +20,7 @@ interface TemperatureFieldLegendProps {
 }
 
 /**
- * Render a `TemperatureFieldLegendModel` as the shared `TemperatureLegend`, picking the
+ * Render a `TemperatureFieldLegendModel` as the shared `FieldLegend`, picking the
  * temperature vs. diverging-deviation presentation from the model's `kind`. Captions
  * differ per view, so they're supplied by the caller — `getTemperatureCaption` receives
  * the model's sensor count; `deviationCaption` is prebuilt (it names the baseline).
@@ -31,25 +31,32 @@ export function TemperatureFieldLegend({
   getTemperatureCaption,
   deviationCaption,
 }: TemperatureFieldLegendProps) {
+  const { t } = useTranslation("temperature");
+  const endLabels = {
+    minEndLabel: t("legend.cooler"),
+    maxEndLabel: t("legend.warmer"),
+  };
   if (!legend) return null;
   if (legend.kind === "deviation") {
     return (
-      <TemperatureLegend
-        gradient={legend.gradient}
-        minLabel={formatSignedDelta(legend.min, TEMPERATURE_UNIT)}
-        midLabel="0 °C"
-        midPos={legend.zeroPos}
-        maxLabel={formatSignedDelta(legend.max, TEMPERATURE_UNIT)}
+      <FieldLegend
+        scale={legend}
+        isDeviation
+        formatValue={(value) => formatValue(value, TEMPERATURE_UNIT)}
+        formatDelta={(value) => formatSignedDelta(value, TEMPERATURE_UNIT)}
         caption={deviationCaption}
+        {...endLabels}
       />
     );
   }
   return (
-    <TemperatureLegend
-      gradient={legend.gradient}
-      minLabel={formatValue(legend.min, TEMPERATURE_UNIT)}
-      maxLabel={formatValue(legend.max, TEMPERATURE_UNIT)}
+    <FieldLegend
+      scale={legend}
+      isDeviation={false}
+      formatValue={(value) => formatValue(value, TEMPERATURE_UNIT)}
+      formatDelta={(value) => formatSignedDelta(value, TEMPERATURE_UNIT)}
       caption={getTemperatureCaption(legend.count)}
+      {...endLabels}
     />
   );
 }

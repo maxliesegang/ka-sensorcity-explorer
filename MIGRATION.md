@@ -5,6 +5,11 @@ Tracking doc for moving the map layer from raster Leaflet to **MapLibre GL + Ope
 
 Status legend: ☐ todo · ◐ in progress · ☑ done
 
+> **Names below are as of the migration.** The field machinery was later generalised for the soil
+> field: `maplibreTemperatureField.ts` → `maplibreField.ts`, `createTemperatureFieldController` →
+> `createFieldController`, `useTemperatureFieldController` → `useFieldController`. This record is
+> left as written; see CLAUDE.md for the current layout.
+
 > **Status: complete.** All phases done — `npm run build` and `npm test` (148 tests, incl. new
 > `voronoi.test.ts`) are green, `leaflet`/`@types/leaflet` removed, OpenFreeMap endpoints and the
 > `Noto Sans Regular` glyphs / `building` source-layer verified reachable. Not yet visually QA'd in a

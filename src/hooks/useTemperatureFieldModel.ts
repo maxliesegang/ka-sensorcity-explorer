@@ -8,19 +8,23 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { fetchRheinstettenCurrent, latestObservation } from "../api/brightsky";
-import { DWD_BASELINE_ID, getBaselineLabel } from "../config/temperatureBaselines";
+import {
+  AVERAGE_BASELINE_ID,
+  buildBaselineOptions,
+  DWD_BASELINE_ID,
+  getBaselineLabel,
+} from "../config/temperatureBaselines";
 import { useAsync } from "./useAsync";
-import { useTemperatureBaselineSelection } from "./useTemperatureBaselineSelection";
+import { useFieldBaselineSelection } from "./useFieldBaselineSelection";
+import { useFieldLabelVisibility } from "./useFieldLabelVisibility";
 import {
   formatTemperatureDeviationLabel,
   formatTemperatureLabel,
-  useTemperatureFieldLabelVisibility,
 } from "./useTemperatureFieldLabels";
 import {
   buildTemperatureLegend,
   buildBaselineDeviationScale,
   buildTemperatureDeviationLegend,
-  buildTemperatureBaselineOptions,
   resolveBaselineTemperature,
   type TemperatureBaselineReading,
   type TemperatureFieldLegendModel,
@@ -46,16 +50,16 @@ export function useTemperatureFieldModel(
 
   const baselineOptions = useMemo(
     () =>
-      buildTemperatureBaselineOptions(baselineReadings, {
-        dwd: t("baseline.dwdOption"),
-        average: t("baseline.averageOption"),
+      buildBaselineOptions(baselineReadings, {
+        [DWD_BASELINE_ID]: t("baseline.dwdOption"),
+        [AVERAGE_BASELINE_ID]: t("baseline.averageOption"),
       }),
     [baselineReadings, t],
   );
 
-  const { displayMode, setDisplayMode, baselineId, setBaselineId } =
-    useTemperatureBaselineSelection(baselineOptions);
-  const [showLabels, setShowLabels] = useTemperatureFieldLabelVisibility();
+  const { displayMode, setDisplayMode, baselineId, setBaselineId, selectBaseline } =
+    useFieldBaselineSelection(baselineOptions);
+  const [showLabels, setShowLabels] = useFieldLabelVisibility();
 
   // The DWD Rheinstetten baseline is fetched lazily — only while it's selected.
   const isDwdBaselineSelected =
@@ -95,7 +99,10 @@ export function useTemperatureFieldModel(
     displayMode === "deviation" && baselineTemperature == null;
 
   const adaptiveTemperatureScale = useMemo(
-    () => (points.length > 0 ? buildAdaptiveTemperatureScale(points) : null),
+    () =>
+      points.length > 0
+        ? buildAdaptiveTemperatureScale(points.map((point) => point.temperature))
+        : null,
     [points],
   );
   const deviationScale = useMemo(
@@ -140,6 +147,7 @@ export function useTemperatureFieldModel(
     setDisplayMode,
     baselineId,
     setBaselineId,
+    selectBaseline,
     showLabels,
     setShowLabels,
     baselineOptions,

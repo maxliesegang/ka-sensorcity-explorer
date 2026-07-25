@@ -3,18 +3,24 @@ import { KernIcon, type KernIconType } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
-type NavItem = {
-  to: string;
-  labelKey: string;
-  icon: KernIconType | null;
-  end: boolean;
-};
+// An item shows either a KERN icon or, for the ones KERN ships no icon for, a
+// CSS-mask icon class defined in styles.css — never neither.
+type NavItem = { to: string; labelKey: string; end: boolean } & (
+  | { icon: KernIconType; iconClass?: never }
+  | { icon?: never; iconClass: string }
+);
 
 const PRIMARY_NAV = [
   { to: "/", labelKey: "nav.overview", icon: "home", end: true },
   { to: "/map", labelKey: "nav.map", icon: "visibility", end: false },
   { to: "/sensors", labelKey: "nav.sensors", icon: "checklist", end: false },
-  { to: "/temperature", labelKey: "nav.temperature", icon: null, end: false },
+  {
+    to: "/temperature",
+    labelKey: "nav.temperature",
+    iconClass: "kern-icon--device-thermostat",
+    end: false,
+  },
+  { to: "/soil", labelKey: "nav.soil", iconClass: "kern-icon--soil-layers", end: false },
 ] satisfies NavItem[];
 
 const SECONDARY_NAV = [
@@ -68,7 +74,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <KernIcon icon={item.icon} size="small" />
         ) : (
           <i
-            className="kern-icon kern-icon--device-thermostat kern-icon--small"
+            className={`kern-icon ${item.iconClass} kern-icon--small`}
             aria-hidden="true"
           />
         )}

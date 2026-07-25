@@ -10,13 +10,18 @@ import {
   nearestPoint,
   observedOnly,
 } from "../api/brightsky";
-import { DWD_BASELINE_ID, getBaselineLabel } from "../config/temperatureBaselines";
+import {
+  AVERAGE_BASELINE_ID,
+  buildBaselineOptions,
+  DWD_BASELINE_ID,
+  getBaselineLabel,
+} from "../config/temperatureBaselines";
 import { useAsync } from "../hooks/useAsync";
 import { useMapLibreMap } from "../hooks/useMapLibreMap";
-import { useTemperatureFieldController } from "../hooks/useTemperatureFieldController";
-import { useTemperatureBaselineSelection } from "../hooks/useTemperatureBaselineSelection";
+import { useFieldController } from "../hooks/useFieldController";
+import { useFieldBaselineSelection } from "../hooks/useFieldBaselineSelection";
+import { useFieldLabelVisibility } from "../hooks/useFieldLabelVisibility";
 import {
-  useTemperatureFieldLabelVisibility,
   formatTemperatureLabel,
   formatTemperatureDeviationLabel,
 } from "../hooks/useTemperatureFieldLabels";
@@ -32,7 +37,6 @@ import {
   buildTemperatureLegend,
   buildTemperatureDeviationLegend,
   buildBaselineDeviationScale,
-  buildTemperatureBaselineOptions,
   resolveBaselineTemperature,
   type TemperatureBaselineReading,
 } from "../utils/temperatureFieldModel";
@@ -40,7 +44,7 @@ import {
   TemperatureBaselineStatus,
   TemperatureFieldLegend,
 } from "./TemperatureFieldIndicators";
-import { TemperatureBaselineControls } from "./TemperatureBaselineControls";
+import { FieldBaselineControls } from "./FieldBaselineControls";
 import { HistoricalTemperatureTimelineControls } from "./HistoricalTemperatureTimelineControls";
 
 interface Props {
@@ -156,7 +160,9 @@ export function HistoricalTemperatureField({
   const absoluteTemperatureScale = useMemo(
     () =>
       selectedFrame && selectedFrame.points.length > 0
-        ? buildAbsoluteTemperatureScale(selectedFrame.points)
+        ? buildAbsoluteTemperatureScale(
+            selectedFrame.points.map((point) => point.temperature),
+          )
         : null,
     [selectedFrame],
   );
@@ -172,19 +178,19 @@ export function HistoricalTemperatureField({
   // All temperature sensors present across the replay, plus DWD.
   const baselineOptions = useMemo(
     () =>
-      buildTemperatureBaselineOptions(replayBaselineReadings, {
-        dwd: t("baseline.dwdOption"),
-        average: t("baseline.averageOption"),
+      buildBaselineOptions(replayBaselineReadings, {
+        [DWD_BASELINE_ID]: t("baseline.dwdOption"),
+        [AVERAGE_BASELINE_ID]: t("baseline.averageOption"),
       }),
     [replayBaselineReadings, t],
   );
 
   const { displayMode, setDisplayMode, baselineId, setBaselineId } =
-    useTemperatureBaselineSelection(baselineOptions);
+    useFieldBaselineSelection(baselineOptions);
 
   // Opt-in per-cell value labels, persisted (shared with the live map). Off by
   // default since they can crowd the map.
-  const [showLabels, setShowLabels] = useTemperatureFieldLabelVisibility();
+  const [showLabels, setShowLabels] = useFieldLabelVisibility();
 
   // DWD baseline for the full replay range — fetched once in DWD deviation mode.
   const isDwdBaselineSelected =
@@ -237,7 +243,7 @@ export function HistoricalTemperatureField({
 
   // The replay map has no per-marker action, so no options beyond the shared
   // hover/popup styling.
-  const fieldControllerRef = useTemperatureFieldController(
+  const fieldControllerRef = useFieldController(
     mapHandle,
     { popupClassName: "sensor-popup", tooltipClassName: "sensor-tooltip" },
     replaySensorPoints,
@@ -349,7 +355,7 @@ export function HistoricalTemperatureField({
       </div>
 
       <div className="map-shell historical-temperature-field__shell">
-        <TemperatureBaselineControls
+        <FieldBaselineControls
           baselineSelectId="historical-temperature-baseline-controls-select"
           displayMode={displayMode}
           onDisplayModeChange={setDisplayMode}
@@ -357,7 +363,7 @@ export function HistoricalTemperatureField({
           onBaselineIdChange={setBaselineId}
           baselineOptions={baselineOptions}
           displayModeLabel={t("baseline.displayModeLabel")}
-          temperatureModeLabel={t("baseline.temperatureMode")}
+          valueModeLabel={t("baseline.temperatureMode")}
           deviationModeLabel={t("baseline.deviationMode")}
           baselineSelectLabel={t("baseline.selectLabel")}
           showLabels={showLabels}

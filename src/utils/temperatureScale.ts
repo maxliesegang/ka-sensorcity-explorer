@@ -3,10 +3,9 @@
 // replay uses the fixed absolute scale so colours remain comparable over time.
 
 import { clamp01, hexToRgb, rgbToCss, sampleRamp, type Rgb } from "./colorRamp";
+import type { FieldPoint } from "./fieldPoint";
 
-export interface TemperatureFieldPoint {
-  lat: number;
-  lon: number;
+export interface TemperatureFieldPoint extends FieldPoint {
   temperature: number;
 }
 
@@ -22,13 +21,6 @@ export interface TemperatureScale {
   rgb(temperature: number): [number, number, number]; // 0..255 each
   css(temperature: number): string; // "rgb(r, g, b)"
   stops(n: number): LegendStop[]; // n legend samples from min..max, evenly spaced
-}
-
-export interface RasterBounds {
-  north: number;
-  south: number;
-  east: number;
-  west: number;
 }
 
 // Master spectrum: a carefully-ordered cold -> hot ramp sampled at evenly spaced
@@ -90,13 +82,13 @@ export function getAbsoluteTemperatureColorRgb(temperature: number): Rgb {
 }
 
 function getTemperatureRange(
-  points: readonly TemperatureFieldPoint[],
+  temperatures: readonly number[],
 ): TemperatureRange {
   let min = Infinity;
   let max = -Infinity;
-  for (const point of points) {
-    if (point.temperature < min) min = point.temperature;
-    if (point.temperature > max) max = point.temperature;
+  for (const temperature of temperatures) {
+    if (temperature < min) min = temperature;
+    if (temperature > max) max = temperature;
   }
   return Number.isFinite(min) && Number.isFinite(max)
     ? [min, max]
@@ -154,11 +146,15 @@ function adaptiveRampWindow(
  * absolute temperatures, then expanded to a minimum width and stretched over
  * the current min..max. This preserves the meaning of warm/cold hues while
  * making small differences at one point in time visible.
+ *
+ * Takes the temperatures rather than the points that carry them: the soil field
+ * scales one shared window over every depth band at once, which is a set of
+ * values and not a set of map points.
  */
 export function buildAdaptiveTemperatureScale(
-  points: readonly TemperatureFieldPoint[],
+  temperatures: readonly number[],
 ): TemperatureScale {
-  const temperatureRange = getTemperatureRange(points);
+  const temperatureRange = getTemperatureRange(temperatures);
   const [min, max] = temperatureRange;
   const [rampMin, rampMax] = adaptiveRampWindow(min, max);
   const span = max - min;
@@ -171,10 +167,10 @@ export function buildAdaptiveTemperatureScale(
 
 /** Build the fixed scale used when colours must be comparable across time. */
 export function buildAbsoluteTemperatureScale(
-  points: readonly TemperatureFieldPoint[],
+  temperatures: readonly number[],
 ): TemperatureScale {
   return buildScaleForRange(
-    getTemperatureRange(points),
+    getTemperatureRange(temperatures),
     getAbsoluteTemperatureColorRgb,
   );
 }

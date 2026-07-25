@@ -21,9 +21,9 @@ import {
 } from "../components/TemperatureFieldIndicators";
 import { useAsync } from "../hooks/useAsync";
 import { useMapLibreMap } from "../hooks/useMapLibreMap";
-import { useTemperatureFieldController } from "../hooks/useTemperatureFieldController";
+import { useFieldController } from "../hooks/useFieldController";
 import { buildSensorPopupHtml } from "../utils/maplibreMarkers";
-import { TemperatureBaselineControls } from "../components/TemperatureBaselineControls";
+import { FieldBaselineControls } from "../components/FieldBaselineControls";
 import { useTemperatureFieldModel } from "../hooks/useTemperatureFieldModel";
 import { getLiveTemperatureFieldPoints } from "../utils/liveTemperatureReadings";
 import {
@@ -90,6 +90,7 @@ export function CombinedTemperatureFieldView() {
     setDisplayMode,
     baselineId,
     setBaselineId,
+    selectBaseline,
     showLabels,
     setShowLabels,
     baselineOptions,
@@ -107,14 +108,13 @@ export function CombinedTemperatureFieldView() {
 
   // The "set as reference" popup action only needs the clicked point's id (carried
   // in feature properties) plus the model's stable setters.
-  const fieldControllerRef = useTemperatureFieldController(
+  const fieldControllerRef = useFieldController(
     mapHandle,
     {
       popupClassName: "sensor-popup",
       tooltipClassName: "sensor-tooltip",
       onPopupAction: (properties, popup) => {
-        setDisplayMode("deviation");
-        setBaselineId(String(properties.pointId));
+        selectBaseline(String(properties.pointId));
         popup.remove();
       },
     },
@@ -217,7 +217,7 @@ export function CombinedTemperatureFieldView() {
       </div>
 
       <section className="map-shell" aria-label={t("canvasAria")}>
-        <TemperatureBaselineControls
+        <FieldBaselineControls
           baselineSelectId="combined-temperature-baseline-controls-select"
           displayMode={displayMode}
           onDisplayModeChange={setDisplayMode}
@@ -225,7 +225,7 @@ export function CombinedTemperatureFieldView() {
           onBaselineIdChange={setBaselineId}
           baselineOptions={baselineOptions}
           displayModeLabel={t("baseline.displayModeLabel")}
-          temperatureModeLabel={t("baseline.temperatureMode")}
+          valueModeLabel={t("baseline.temperatureMode")}
           deviationModeLabel={t("baseline.deviationMode")}
           baselineSelectLabel={t("baseline.selectLabel")}
           showLabels={showLabels}
