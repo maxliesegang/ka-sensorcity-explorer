@@ -19,6 +19,7 @@ interface Props {
   selectedBandIndex: number;
   /** Colour for an absolute reading on the value scale (never the deviation one). */
   getColorForValue: (value: number) => string;
+  onBandChange?: (band: number) => void;
 }
 
 export function SoilBandSummary({
@@ -26,6 +27,7 @@ export function SoilBandSummary({
   profile,
   selectedBandIndex,
   getColorForValue,
+  onBandChange,
 }: Props) {
   const { t } = useTranslation("soil");
   const { t: tc } = useTranslation("common");
@@ -33,7 +35,7 @@ export function SoilBandSummary({
   const format = (value: number) => formatSoilValue(profile, value);
 
   return (
-    <div className="kern-table-responsive table-scroll">
+    <div className="kern-table-responsive table-scroll soil-band-summary">
       <table className="kern-table kern-table--striped kern-table--small">
         <caption className="kern-body kern-body--small kern-body--muted">
           {t("bands.caption")}
@@ -64,6 +66,18 @@ export function SoilBandSummary({
                 (band.bandIndex === selectedBandIndex ? " soil-band-row--current" : "")
               }
               key={band.band}
+              onClick={() => onBandChange?.(band.band)}
+              tabIndex={onBandChange ? 0 : undefined}
+              onKeyDown={
+                onBandChange
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onBandChange(band.band);
+                      }
+                    }
+                  : undefined
+              }
             >
               <th className="kern-table__header" scope="row">
                 <span

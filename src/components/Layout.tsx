@@ -20,7 +20,7 @@ const PRIMARY_NAV = [
     iconClass: "kern-icon--device-thermostat",
     end: false,
   },
-
+  { to: "/soil", labelKey: "nav.soil", iconClass: "kern-icon--soil-layers", end: false },
 ] satisfies NavItem[];
 
 const SECONDARY_NAV = [

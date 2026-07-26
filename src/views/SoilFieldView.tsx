@@ -34,7 +34,7 @@ import { useMapLibreMap } from "../hooks/useMapLibreMap";
 import { useSoilFieldModel } from "../hooks/useSoilFieldModel";
 import { useSoilFieldSelection } from "../hooks/useSoilFieldSelection";
 import type { DepthProfile } from "../types";
-import { buildSensorPopupHtml, type PopupDetailRow } from "../utils/maplibreMarkers";
+import { buildSensorPopupHtml, type InteractiveCircleStyle, type PopupDetailRow } from "../utils/maplibreMarkers";
 import { formatSoilDelta, formatSoilValue } from "../utils/soilFieldFormat";
 import {
   getSoilBandStats,
@@ -43,6 +43,14 @@ import {
   getSoilProbeReadings,
   type SoilFieldPoint,
 } from "../utils/soilFieldReadings";
+
+const SOIL_MARKER_STYLE: InteractiveCircleStyle = {
+  default: { radius: 8, strokeWidth: 2 },
+  hovered: { radius: 12, strokeWidth: 3 },
+  active: { radius: 14, strokeWidth: 3 },
+  highlighted: { radius: 11, strokeWidth: 3 },
+  opacity: 0.95,
+};
 
 export function SoilFieldView() {
   const { t } = useTranslation("soil");
@@ -105,6 +113,8 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     {
       popupClassName: "sensor-popup",
       tooltipClassName: "sensor-tooltip",
+      hideCells: true,
+      markerStyle: SOIL_MARKER_STYLE,
       onPopupAction: (properties, popup) => {
         selectBaseline(String(properties.objectId));
         popup.remove();
@@ -336,6 +346,7 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
               profile={profile}
               selectedBandIndex={bandIndex}
               getColorForValue={(value) => (valueScale ? valueScale.css(value) : "")}
+              onBandChange={setBand}
             />
           )}
         </AsyncBoundary>

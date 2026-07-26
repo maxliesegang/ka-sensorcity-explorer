@@ -91,6 +91,10 @@ export interface FieldControllerOptions {
   tooltipClassName?: string;
   /** Wire the popup's action button (e.g. "set as reference"). */
   onPopupAction?: (properties: InteractiveFeatureProperties, popup: maplibregl.Popup) => void;
+  /** Hide Voronoi cells, showing only point markers. */
+  hideCells?: boolean;
+  /** Per-controller marker size override (defaults to the compact field-marker style). */
+  markerStyle?: InteractiveCircleStyle;
 }
 
 /**
@@ -103,49 +107,60 @@ export function createFieldController(
     popupClassName,
     tooltipClassName,
     onPopupAction,
+    hideCells = false,
+    markerStyle,
   }: FieldControllerOptions = {},
 ): FieldController {
-  upsertGeoJsonSource(map, CELL_SOURCE_ID, EMPTY_FEATURES);
-  upsertGeoJsonSource(map, MARKER_SOURCE_ID, EMPTY_FEATURES);
-  upsertGeoJsonSource(map, LABEL_SOURCE_ID, EMPTY_FEATURES);
+  const hasCells = !hideCells;
 
-  // Cells sit beneath the basemap's place labels so streets/POIs stay readable;
-  // markers and value labels sit on top so they're legible and clickable.
-  addLayerIfMissing(
-    map,
-    {
-      id: CELL_LAYER_ID,
-      type: "fill",
-      source: CELL_SOURCE_ID,
-      paint: {
-        "fill-color": ["get", "color"],
-        "fill-opacity": 0.6,
-        "fill-outline-color": "rgba(255, 255, 255, 0.5)",
+  const allLayerIds = hasCells
+    ? [CELL_LAYER_ID, MARKER_LAYER_ID, LABEL_LAYER_ID]
+    : [MARKER_LAYER_ID];
+  const allSourceIds = hasCells
+    ? [CELL_SOURCE_ID, MARKER_SOURCE_ID, LABEL_SOURCE_ID]
+    : [MARKER_SOURCE_ID];
+
+  for (const id of allSourceIds) {
+    upsertGeoJsonSource(map, id, EMPTY_FEATURES);
+  }
+
+  if (hasCells) {
+    addLayerIfMissing(
+      map,
+      {
+        id: CELL_LAYER_ID,
+        type: "fill",
+        source: CELL_SOURCE_ID,
+        paint: {
+          "fill-color": ["get", "color"],
+          "fill-opacity": 0.6,
+          "fill-outline-color": "rgba(255, 255, 255, 0.5)",
+        },
       },
-    },
-    getFirstSymbolLayerId(map),
-  );
+      getFirstSymbolLayerId(map),
+    );
+    addLayerIfMissing(map, {
+      id: LABEL_LAYER_ID,
+      type: "symbol",
+      source: LABEL_SOURCE_ID,
+      layout: {
+        "text-field": ["get", "label"],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 10, 10, 14, 13],
+        "text-allow-overlap": false,
+      },
+      paint: {
+        "text-color": "#131525",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1.6,
+      },
+    });
+  }
   addLayerIfMissing(map, {
     id: MARKER_LAYER_ID,
     type: "circle",
     source: MARKER_SOURCE_ID,
-    paint: createInteractiveCirclePaint(MARKER_STYLE),
-  });
-  addLayerIfMissing(map, {
-    id: LABEL_LAYER_ID,
-    type: "symbol",
-    source: LABEL_SOURCE_ID,
-    layout: {
-      "text-field": ["get", "label"],
-      "text-font": ["Noto Sans Regular"],
-      "text-size": ["interpolate", ["linear"], ["zoom"], 10, 10, 14, 13],
-      "text-allow-overlap": false,
-    },
-    paint: {
-      "text-color": "#131525",
-      "text-halo-color": "#ffffff",
-      "text-halo-width": 1.6,
-    },
+    paint: createInteractiveCirclePaint(markerStyle ?? MARKER_STYLE),
   });
 
   const unbindHoverState = bindCircleHoverState(map, {
@@ -153,7 +168,7 @@ export function createFieldController(
     layerId: MARKER_LAYER_ID,
   });
   const unbindPopups = bindFeaturePopups(map, {
-    layerIds: [CELL_LAYER_ID, MARKER_LAYER_ID],
+    layerIds: hasCells ? [CELL_LAYER_ID, MARKER_LAYER_ID] : [MARKER_LAYER_ID],
     activeSourceId: MARKER_SOURCE_ID,
     popupClassName,
     tooltipClassName,
@@ -161,26 +176,29 @@ export function createFieldController(
   });
 
   function render<T extends FieldPoint>(options: FieldRenderOptions<T>): void {
-    const cells: Feature[] = [];
-    const labels: Feature[] = [];
-
-    for (const cell of voronoiCells(options.points)) {
-      const point = cell.point;
-      cells.push(
-        createPolygonFeature(
-          cell.polygon,
-          options.getId(point),
-          buildFeatureProperties(options, point),
-        ),
-      );
-      if (options.getLabel) {
-        const [lon, lat] = ringCentroid(cell.polygon);
-        labels.push(
-          createPointFeature(lon, lat, options.getId(point), {
-            label: options.getLabel(point),
-          }),
+    if (hasCells) {
+      const cells: Feature[] = [];
+      const labels: Feature[] = [];
+      for (const cell of voronoiCells(options.points)) {
+        const point = cell.point;
+        cells.push(
+          createPolygonFeature(
+            cell.polygon,
+            options.getId(point),
+            buildFeatureProperties(options, point),
+          ),
         );
+        if (options.getLabel) {
+          const [lon, lat] = ringCentroid(cell.polygon);
+          labels.push(
+            createPointFeature(lon, lat, options.getId(point), {
+              label: options.getLabel(point),
+            }),
+          );
+        }
       }
+      upsertGeoJsonSource(map, CELL_SOURCE_ID, cells);
+      upsertGeoJsonSource(map, LABEL_SOURCE_ID, labels);
     }
 
     const markers = options.points.map((point) =>
@@ -192,15 +210,13 @@ export function createFieldController(
       ),
     );
 
-    upsertGeoJsonSource(map, CELL_SOURCE_ID, cells);
     upsertGeoJsonSource(map, MARKER_SOURCE_ID, markers);
-    upsertGeoJsonSource(map, LABEL_SOURCE_ID, labels);
   }
 
   function clear(): void {
-    upsertGeoJsonSource(map, CELL_SOURCE_ID, EMPTY_FEATURES);
-    upsertGeoJsonSource(map, MARKER_SOURCE_ID, EMPTY_FEATURES);
-    upsertGeoJsonSource(map, LABEL_SOURCE_ID, EMPTY_FEATURES);
+    for (const id of allSourceIds) {
+      upsertGeoJsonSource(map, id, EMPTY_FEATURES);
+    }
   }
 
   function fitToPoints(points: readonly FieldPoint[]): void {
@@ -217,10 +233,10 @@ export function createFieldController(
   function remove(): void {
     unbindHoverState();
     unbindPopups();
-    for (const id of [CELL_LAYER_ID, MARKER_LAYER_ID, LABEL_LAYER_ID]) {
+    for (const id of allLayerIds) {
       removeLayerIfPresent(map, id);
     }
-    for (const id of [CELL_SOURCE_ID, MARKER_SOURCE_ID, LABEL_SOURCE_ID]) {
+    for (const id of allSourceIds) {
       removeSourceIfPresent(map, id);
     }
   }

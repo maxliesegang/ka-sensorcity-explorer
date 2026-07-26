@@ -2,9 +2,9 @@ export default {
   badge: "Boden",
   heading: "Was macht der Boden gerade?",
   intro:
-    "Die Bodensensoren der Stadt, dargestellt als Flächen, die jeweils ihren nächstgelegenen Sensor übernehmen. Jeder Sensor misst in sechs übereinanderliegenden Tiefenstufen; die Stufe wählen Sie unten.",
+    "Die Bodensensoren der Stadt an ihren Standorten. Jeder misst in sechs Tiefenstufen; die Stufe wählen Sie unten.",
   introCaveat:
-    "Boden unterscheidet sich schon auf wenigen Metern deutlich — Schatten, Rasen, Asphalt. Eine Fläche zeigt also den Messwert ihres Sensors und nicht den Zustand des ganzen Blocks.",
+    "Boden unterscheidet sich schon auf wenigen Metern deutlich — Schatten, Rasen, Asphalt. Ein Sensor zeigt also seinen Standort, nicht den Zustand des ganzen Blocks.",
   introLinkPrefix: "Lieber ein Sensor im Zeitverlauf? ",
   introLink: "Zur Sensorliste",
   notConfigured: "Es sind keine Bodengrößen mit Tiefenstufen konfiguriert.",
@@ -52,9 +52,9 @@ export default {
       high: "Feuchter",
     },
     caption_one:
-      "Jede Fläche übernimmt ihren nächstgelegenen Sensor bei {{band}} ({{count}} insgesamt). Eine Farbskala umfasst alle Tiefenstufen, sodass die Stufen direkt vergleichbar sind.",
+      "Jeder Sensor bei {{band}} ({{count}} insgesamt). Eine Farbskala umfasst alle Tiefenstufen, sodass die Stufen direkt vergleichbar sind.",
     caption_other:
-      "Jede Fläche übernimmt ihren nächstgelegenen Sensor bei {{band}} ({{count}} insgesamt). Eine Farbskala umfasst alle Tiefenstufen, sodass die Stufen direkt vergleichbar sind.",
+      "Jeder Sensor bei {{band}} ({{count}} insgesamt). Eine Farbskala umfasst alle Tiefenstufen, sodass die Stufen direkt vergleichbar sind.",
     deviationCaption:
       "Abweichung von {{name}}, verglichen bei {{band}} — auf beiden Seiten dieselbe Tiefe.",
   },

@@ -40,6 +40,5 @@ export default {
     heading: "Experiment",
     body: "Städtische Sensoren mit öffentlichen Stationen von openSenseMap und sensor.community kombinieren und eine dichtere Live-Temperaturkarte erkunden.",
     link: "Kombinierte Live-Temperaturkarte ausprobieren",
-    soilLink: "Bodensensor-Feld",
   },
 } as const;

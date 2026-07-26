@@ -3638,15 +3638,21 @@ code,
 }
 
 /* The band the map is currently drawing, in the all-bands summary table. */
+.soil-band-row--current > .kern-table__header:first-child {
+  box-shadow: inset 3px 0 0 var(--kern-color-primary, #4466cc);
+}
 .soil-band-row--current > .kern-table__header,
 .soil-band-row--current > .kern-table__cell {
-  background: var(--kern-color-layout-background-hued-contextual, #eef1fb);
   font-weight: var(--kern-typography-font-weight-semi-bold, 600);
 }
 
 .soil-band-row--current .cat-dot,
 .soil-band-summary .cat-dot {
   margin-right: 0.4rem;
+}
+
+.soil-band-summary .kern-table__row {
+  cursor: pointer;
 }
 
 @media (max-width: 600px) {

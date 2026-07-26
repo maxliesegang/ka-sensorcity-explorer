@@ -2,9 +2,9 @@ export default {
   badge: "Soil",
   heading: "What is the soil doing right now?",
   intro:
-    "The city's soil probes, drawn as areas that each take their nearest probe. Every probe measures at six stacked depth levels; pick a level with the strip below.",
+    "The city's soil probes at their locations. Each measures at six depth levels; pick a level with the strip below.",
   introCaveat:
-    "Soil differs sharply over a few metres — shade, grass, asphalt — so treat an area as its probe's reading, not as ground truth for the whole block.",
+    "Soil differs sharply over a few metres — shade, grass, asphalt — so a probe reflects its spot, not the whole block.",
   introLinkPrefix: "Want one probe over time instead? ",
   introLink: "Open the sensor list",
   notConfigured: "No banded soil quantities are configured.",
@@ -51,9 +51,9 @@ export default {
       high: "Wetter",
     },
     caption_one:
-      "Each area takes its nearest probe at {{band}} ({{count}} total). One colour scale spans every depth level, so levels compare directly.",
+      "Each probe at {{band}} ({{count}} total). One colour scale spans every depth level, so levels compare directly.",
     caption_other:
-      "Each area takes its nearest probe at {{band}} ({{count}} total). One colour scale spans every depth level, so levels compare directly.",
+      "Each probe at {{band}} ({{count}} total). One colour scale spans every depth level, so levels compare directly.",
     deviationCaption:
       "Difference from {{name}}, compared at {{band}} — the same depth on both sides.",
   },
