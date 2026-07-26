@@ -2633,7 +2633,7 @@ code,
   }
 
   .app__brand .app__title,
-  .app__nav-link > span {
+  .app__nav-link > span:not(.kern-icon) {
     display: none;
   }
 
