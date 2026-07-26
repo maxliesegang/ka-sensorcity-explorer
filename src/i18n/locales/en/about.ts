@@ -40,5 +40,6 @@ export default {
     heading: "Experiment",
     body: "Combine city sensors with public stations from openSenseMap and sensor.community to explore a denser live temperature map.",
     link: "Try the combined live temperature map",
+    soilLink: "Soil probe field",
   },
 } as const;

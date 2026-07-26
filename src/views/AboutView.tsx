@@ -210,6 +210,10 @@ export function AboutView({
           <Link className="kern-link" to="/combined-temperature">
             {t("experiment.link")}
           </Link>
+          {" · "}
+          <Link className="kern-link" to="/soil">
+            {t("experiment.soilLink")}
+          </Link>
         </p>
       </section>
     </section>
