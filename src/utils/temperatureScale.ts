@@ -55,7 +55,7 @@ const ABSOLUTE_MIN_C = -5;
 const ABSOLUTE_MAX_C = 40;
 // Minimum width of the live colour window on the master ramp. This gives
 // bunched readings enough contrast without making warm places look cold.
-const MIN_ADAPTIVE_RAMP_SPAN = 0.34;
+const MIN_ADAPTIVE_RAMP_SPAN = 0.19 ;
 
 type TemperatureRange = readonly [min: number, max: number];
 type RampWindow = readonly [start: number, end: number];
