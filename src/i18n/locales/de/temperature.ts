@@ -134,6 +134,7 @@ export default {
       mapAria: "Historische Temperatur-Voronoi-Karte von Karlsruhe",
       sliderLabel: "Archivzeitleiste",
       selectedTime: "Ausgewählter Zeitpunkt",
+      jumpToTime: "Zu Zeitpunkt springen",
       timelineSettingsLabel: "Zeitleiste",
       playbackSettingsLabel: "Wiedergabe",
       navigationStepLabel: "Schrittweite",

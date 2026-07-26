@@ -2,6 +2,34 @@ interface TimestampedItem {
   timestamp: number;
 }
 
+/** Find the index of the frame closest to a target timestamp via binary search. */
+export function findClosestFrameIndex(
+  items: readonly TimestampedItem[],
+  targetTimestamp: number,
+): number {
+  if (items.length === 0) return 0;
+  let low = 0;
+  let high = items.length - 1;
+
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (items[middle].timestamp < targetTimestamp) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+
+  if (
+    low > 0 &&
+    Math.abs(items[low - 1].timestamp - targetTimestamp) <
+      Math.abs(items[low].timestamp - targetTimestamp)
+  ) {
+    return low - 1;
+  }
+  return low;
+}
+
 /** Find the nearest timeline item at least one requested step earlier or later. */
 export function findTimelineStepIndex(
   items: readonly TimestampedItem[],

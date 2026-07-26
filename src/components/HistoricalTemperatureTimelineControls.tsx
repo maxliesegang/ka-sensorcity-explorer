@@ -3,11 +3,21 @@ import { useTranslation } from "react-i18next";
 
 import type { HistoricalTemperatureFieldFrame } from "../api/temperatureInsights";
 import { formatTimestamp } from "../utils/format";
-import { findTimelineStepIndex } from "../utils/timelineNavigation";
+import { findClosestFrameIndex, findTimelineStepIndex } from "../utils/timelineNavigation";
 
 const NAVIGATION_STEP_OPTIONS_MINUTES = [1, 5, 15, 60, 360, 1_440] as const;
 const MAX_READING_AGE_OPTIONS_MINUTES = [5, 10, 15, 30, 60] as const;
 const PLAYBACK_INTERVAL_OPTIONS_SECONDS = [0.25, 0.5, 1, 2, 5, 10] as const;
+
+function toDatetimeLocalInput(epochMs: number): string {
+  const d = new Date(epochMs);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fromDatetimeLocalInput(value: string): number {
+  return new Date(value).getTime();
+}
 
 interface Props {
   frames: HistoricalTemperatureFieldFrame[];
@@ -47,6 +57,12 @@ export function HistoricalTemperatureTimelineControls({
     minutes < 60
       ? t("insights.historyMap.minutes", { count: minutes })
       : t("insights.historyMap.hours", { count: minutes / 60 });
+
+  const firstTimestamp = frames[0].timestamp;
+  const lastTimestamp = frames[latestFrameIndex].timestamp;
+  const datetimeValue = toDatetimeLocalInput(selectedFrame.timestamp);
+  const datetimeMin = toDatetimeLocalInput(firstTimestamp);
+  const datetimeMax = toDatetimeLocalInput(lastTimestamp);
 
   return (
     <div className="historical-temperature-field__controls">
@@ -114,6 +130,23 @@ export function HistoricalTemperatureTimelineControls({
               total: frames.length,
             })}
           </span>
+        </div>
+        <div className="historical-temperature-field__datetime-picker">
+          <label className="kern-label" htmlFor="historical-temperature-field-datetime">
+            {t("insights.historyMap.jumpToTime")}
+          </label>
+          <input
+            id="historical-temperature-field-datetime"
+            type="datetime-local"
+            min={datetimeMin}
+            max={datetimeMax}
+            step={60}
+            value={datetimeValue}
+            onChange={(event) => {
+              const targetMs = fromDatetimeLocalInput(event.target.value);
+              onSelectedFrameIndexChange(findClosestFrameIndex(frames, targetMs));
+            }}
+          />
         </div>
         <input
           id="historical-temperature-field-slider"
