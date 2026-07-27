@@ -93,6 +93,8 @@ export function CombinedTemperatureFieldView() {
     selectBaseline,
     showLabels,
     setShowLabels,
+    showCells,
+    setShowCells,
     baselineOptions,
     baselineLabel,
     isDwdBaselineSelected,
@@ -167,6 +169,7 @@ export function CombinedTemperatureFieldView() {
       getLabel: showLabels
         ? (point) => formatLabelForTemperature(point.temperature)
         : undefined,
+      showCells,
       isHighlighted: (point) =>
         displayMode === "deviation" && point.id === baselineId,
       getProperties: (point) => ({ pointId: point.id }),
@@ -182,6 +185,7 @@ export function CombinedTemperatureFieldView() {
     baselineId,
     displayMode,
     showLabels,
+    showCells,
     getColorForTemperature,
     formatLabelForTemperature,
   ]);
@@ -231,6 +235,9 @@ export function CombinedTemperatureFieldView() {
           showLabels={showLabels}
           onShowLabelsChange={setShowLabels}
           showLabelsLabel={t("baseline.showLabels")}
+          showCells={showCells}
+          onShowCellsChange={setShowCells}
+          showCellsLabel={t("baseline.showCells")}
         />
 
         <div className="result-bar result-bar--compact" role="status" aria-live="polite">

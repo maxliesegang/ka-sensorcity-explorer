@@ -2,7 +2,12 @@
 // MapLibre layers over the basemap:
 //   • cells   — Voronoi/Thiessen polygons filled with each sensor's colour (the field)
 //   • markers — a circle per sensor at its exact location
-//   • labels  — an optional per-cell value label (symbol layer, native collision + zoom sizing)
+//   • labels  — an optional per-point value label (symbol layer, native collision + zoom sizing)
+//
+// Cells are a per-render option (`showCells`), not a property of the controller:
+// a viewer can turn the Voronoi regions off and keep the markers, and the labels
+// follow either way — centred in the cell when there are cells, beside the
+// marker when there aren't.
 //
 // A controller owns the sources/layers and their interactions for the life of a
 // map/style: `create` builds them empty and wires hover + popups once, then
@@ -57,6 +62,22 @@ const MARKER_STYLE: InteractiveCircleStyle = {
 
 const EMPTY_FEATURES: Feature[] = [];
 
+// Label placement follows what the label is anchored to: a cell's centroid takes
+// the text centred on it, a bare marker takes it just below, clear of the circle.
+const CENTRED_LABEL_LAYOUT: LabelPlacement = {
+  "text-anchor": "center",
+  "text-offset": [0, 0],
+};
+const BELOW_MARKER_LABEL_LAYOUT: LabelPlacement = {
+  "text-anchor": "top",
+  "text-offset": [0, 0.9],
+};
+
+interface LabelPlacement {
+  "text-anchor": "center" | "top";
+  "text-offset": [number, number];
+}
+
 /** Per-point accessors describing how to render one field. */
 export interface FieldRenderOptions<T extends FieldPoint> {
   points: T[];
@@ -67,8 +88,10 @@ export interface FieldRenderOptions<T extends FieldPoint> {
   getPopupHtml: (point: T) => string;
   /** Plain hover-tooltip text. */
   getTooltipText: (point: T) => string;
-  /** Per-cell value label; omit to hide labels. */
+  /** Per-point value label; omit to hide labels. */
   getLabel?: (point: T) => string;
+  /** Draw the Voronoi cells (default). When false only markers and labels remain. */
+  showCells?: boolean;
   /** Flags a point's marker with a contrasting ring (e.g. the baseline station). */
   isHighlighted?: (point: T) => boolean;
   /** Extra flat properties merged into each feature (e.g. an id the action needs). */
@@ -91,8 +114,6 @@ export interface FieldControllerOptions {
   tooltipClassName?: string;
   /** Wire the popup's action button (e.g. "set as reference"). */
   onPopupAction?: (properties: InteractiveFeatureProperties, popup: maplibregl.Popup) => void;
-  /** Hide Voronoi cells, showing only point markers. */
-  hideCells?: boolean;
   /** Per-controller marker size override (defaults to the compact field-marker style). */
   markerStyle?: InteractiveCircleStyle;
 }
@@ -107,55 +128,47 @@ export function createFieldController(
     popupClassName,
     tooltipClassName,
     onPopupAction,
-    hideCells = false,
     markerStyle,
   }: FieldControllerOptions = {},
 ): FieldController {
-  const hasCells = !hideCells;
-
-  const allLayerIds = hasCells
-    ? [CELL_LAYER_ID, MARKER_LAYER_ID, LABEL_LAYER_ID]
-    : [MARKER_LAYER_ID];
-  const allSourceIds = hasCells
-    ? [CELL_SOURCE_ID, MARKER_SOURCE_ID, LABEL_SOURCE_ID]
-    : [MARKER_SOURCE_ID];
+  const allLayerIds = [CELL_LAYER_ID, MARKER_LAYER_ID, LABEL_LAYER_ID];
+  const allSourceIds = [CELL_SOURCE_ID, MARKER_SOURCE_ID, LABEL_SOURCE_ID];
 
   for (const id of allSourceIds) {
     upsertGeoJsonSource(map, id, EMPTY_FEATURES);
   }
 
-  if (hasCells) {
-    addLayerIfMissing(
-      map,
-      {
-        id: CELL_LAYER_ID,
-        type: "fill",
-        source: CELL_SOURCE_ID,
-        paint: {
-          "fill-color": ["get", "color"],
-          "fill-opacity": 0.6,
-          "fill-outline-color": "rgba(255, 255, 255, 0.5)",
-        },
-      },
-      getFirstSymbolLayerId(map),
-    );
-    addLayerIfMissing(map, {
-      id: LABEL_LAYER_ID,
-      type: "symbol",
-      source: LABEL_SOURCE_ID,
-      layout: {
-        "text-field": ["get", "label"],
-        "text-font": ["Noto Sans Regular"],
-        "text-size": ["interpolate", ["linear"], ["zoom"], 10, 10, 14, 13],
-        "text-allow-overlap": false,
-      },
+  addLayerIfMissing(
+    map,
+    {
+      id: CELL_LAYER_ID,
+      type: "fill",
+      source: CELL_SOURCE_ID,
       paint: {
-        "text-color": "#131525",
-        "text-halo-color": "#ffffff",
-        "text-halo-width": 1.6,
+        "fill-color": ["get", "color"],
+        "fill-opacity": 0.6,
+        "fill-outline-color": "rgba(255, 255, 255, 0.5)",
       },
-    });
-  }
+    },
+    getFirstSymbolLayerId(map),
+  );
+  addLayerIfMissing(map, {
+    id: LABEL_LAYER_ID,
+    type: "symbol",
+    source: LABEL_SOURCE_ID,
+    layout: {
+      "text-field": ["get", "label"],
+      "text-font": ["Noto Sans Regular"],
+      "text-size": ["interpolate", ["linear"], ["zoom"], 10, 10, 14, 13],
+      "text-allow-overlap": false,
+      ...CENTRED_LABEL_LAYOUT,
+    },
+    paint: {
+      "text-color": "#131525",
+      "text-halo-color": "#ffffff",
+      "text-halo-width": 1.6,
+    },
+  });
   addLayerIfMissing(map, {
     id: MARKER_LAYER_ID,
     type: "circle",
@@ -167,8 +180,10 @@ export function createFieldController(
     sourceId: MARKER_SOURCE_ID,
     layerId: MARKER_LAYER_ID,
   });
+  // The cell layer stays bound even when cells are off — its source is then
+  // empty, so it simply never reports a hit.
   const unbindPopups = bindFeaturePopups(map, {
-    layerIds: hasCells ? [CELL_LAYER_ID, MARKER_LAYER_ID] : [MARKER_LAYER_ID],
+    layerIds: [CELL_LAYER_ID, MARKER_LAYER_ID],
     activeSourceId: MARKER_SOURCE_ID,
     popupClassName,
     tooltipClassName,
@@ -176,9 +191,11 @@ export function createFieldController(
   });
 
   function render<T extends FieldPoint>(options: FieldRenderOptions<T>): void {
-    if (hasCells) {
-      const cells: Feature[] = [];
-      const labels: Feature[] = [];
+    const { getLabel, showCells = true } = options;
+    const cells: Feature[] = [];
+    const labels: Feature[] = [];
+
+    if (showCells) {
       for (const cell of voronoiCells(options.points)) {
         const point = cell.point;
         cells.push(
@@ -188,18 +205,29 @@ export function createFieldController(
             buildFeatureProperties(options, point),
           ),
         );
-        if (options.getLabel) {
+        if (getLabel) {
           const [lon, lat] = ringCentroid(cell.polygon);
           labels.push(
             createPointFeature(lon, lat, options.getId(point), {
-              label: options.getLabel(point),
+              label: getLabel(point),
             }),
           );
         }
       }
-      upsertGeoJsonSource(map, CELL_SOURCE_ID, cells);
-      upsertGeoJsonSource(map, LABEL_SOURCE_ID, labels);
+    } else if (getLabel) {
+      // No cell to centre in, so the label sits under its own marker.
+      for (const point of options.points) {
+        labels.push(
+          createPointFeature(point.lon, point.lat, options.getId(point), {
+            label: getLabel(point),
+          }),
+        );
+      }
     }
+
+    setLabelPlacement(showCells);
+    upsertGeoJsonSource(map, CELL_SOURCE_ID, cells);
+    upsertGeoJsonSource(map, LABEL_SOURCE_ID, labels);
 
     const markers = options.points.map((point) =>
       createPointFeature(
@@ -211,6 +239,12 @@ export function createFieldController(
     );
 
     upsertGeoJsonSource(map, MARKER_SOURCE_ID, markers);
+  }
+
+  function setLabelPlacement(hasCells: boolean): void {
+    const layout = hasCells ? CENTRED_LABEL_LAYOUT : BELOW_MARKER_LABEL_LAYOUT;
+    map.setLayoutProperty(LABEL_LAYER_ID, "text-anchor", layout["text-anchor"]);
+    map.setLayoutProperty(LABEL_LAYER_ID, "text-offset", layout["text-offset"]);
   }
 
   function clear(): void {

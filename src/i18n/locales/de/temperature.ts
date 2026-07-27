@@ -57,6 +57,7 @@ export default {
     displayModeLabel: "Kartenwerte",
     selectLabel: "Basislinie",
     showLabels: "Werte auf Karte anzeigen",
+    showCells: "Flächen einfärben",
     dwdOption: "Rheinstetten (DWD-Wetterstation)",
     averageOption: "Durchschnitt aller Sensoren",
     legendCaption:

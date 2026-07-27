@@ -56,6 +56,7 @@ export default {
     displayModeLabel: "Map values",
     selectLabel: "Baseline",
     showLabels: "Show values on map",
+    showCells: "Show area shading",
     dwdOption: "Rheinstetten (DWD weather station)",
     averageOption: "Average of all sensors",
     legendCaption:

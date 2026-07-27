@@ -36,6 +36,7 @@ export default {
     deviationMode: "Difference from baseline",
     selectLabel: "Baseline probe",
     showLabels: "Show values on map",
+    showCells: "Show area shading",
     averageOption: "Average of all probes",
     reading: "{{name}} at {{band}}: {{value}}.",
     unavailable:

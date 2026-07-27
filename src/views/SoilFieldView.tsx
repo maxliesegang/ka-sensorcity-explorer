@@ -1,5 +1,7 @@
-// Soil-probe field: the city's soil probes drawn as nearest-probe (Thiessen /
-// Voronoi) regions, for one quantity at one depth band.
+// Soil-probe field: the city's soil probes for one quantity at one depth band,
+// drawn as points and — when the viewer asks for it — as nearest-probe
+// (Thiessen / Voronoi) regions. Points are the default here: the probes are
+// sparse enough that shading the whole city from them overstates what they know.
 //
 // A sibling of TemperatureFieldView — same MapLibre field controller, baseline
 // controls and legend — with the depth dimension the soil probes actually have.
@@ -97,6 +99,8 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     baselineValue,
     showLabels,
     setShowLabels,
+    showCells,
+    setShowCells,
     isDeviationModeActive,
     isBaselineValueUnavailable,
     valueScale,
@@ -113,7 +117,6 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     {
       popupClassName: "sensor-popup",
       tooltipClassName: "sensor-tooltip",
-      hideCells: true,
       markerStyle: SOIL_MARKER_STYLE,
       onPopupAction: (properties, popup) => {
         selectBaseline(String(properties.objectId));
@@ -188,6 +191,7 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
         });
       },
       getLabel: showLabels ? (point) => formatLabelForValue(point.value) : undefined,
+      showCells,
       isHighlighted: (point) =>
         displayMode === "deviation" && String(point.sensor.objectId) === baselineId,
       getProperties: (point) => ({ objectId: point.sensor.objectId }),
@@ -205,6 +209,7 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     baselineId,
     displayMode,
     showLabels,
+    showCells,
     getColorForValue,
     formatLabelForValue,
     t,
@@ -286,6 +291,9 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
           showLabels={showLabels}
           onShowLabelsChange={setShowLabels}
           showLabelsLabel={t("baseline.showLabels")}
+          showCells={showCells}
+          onShowCellsChange={setShowCells}
+          showCellsLabel={t("baseline.showCells")}
         />
 
         <div className="result-bar result-bar--compact" role="status" aria-live="polite">

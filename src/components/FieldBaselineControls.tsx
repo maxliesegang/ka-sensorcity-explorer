@@ -23,6 +23,13 @@ export interface FieldBaselineControlsProps {
   showLabels: boolean;
   onShowLabelsChange: (value: boolean) => void;
   showLabelsLabel: string;
+  /**
+   * Whether the Voronoi/Thiessen cells are drawn. Optional: fields that always
+   * draw them (the historical replay) omit the three props and get no toggle.
+   */
+  showCells?: boolean;
+  onShowCellsChange?: (value: boolean) => void;
+  showCellsLabel?: string;
 }
 
 export function FieldBaselineControls({
@@ -39,6 +46,9 @@ export function FieldBaselineControls({
   showLabels,
   onShowLabelsChange,
   showLabelsLabel,
+  showCells,
+  onShowCellsChange,
+  showCellsLabel,
 }: FieldBaselineControlsProps) {
   const baselineSelectDisabled = displayMode !== "deviation";
 
@@ -107,6 +117,17 @@ export function FieldBaselineControls({
         />
         <span className="kern-label">{showLabelsLabel}</span>
       </label>
+
+      {onShowCellsChange && (
+        <label className="temperature-baseline-controls__toggle">
+          <input
+            type="checkbox"
+            checked={showCells ?? true}
+            onChange={(e) => onShowCellsChange(e.target.checked)}
+          />
+          <span className="kern-label">{showCellsLabel}</span>
+        </label>
+      )}
     </div>
   );
 }

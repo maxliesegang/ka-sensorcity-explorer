@@ -37,6 +37,7 @@ export default {
     deviationMode: "Abweichung von Referenz",
     selectLabel: "Referenzsensor",
     showLabels: "Werte auf der Karte anzeigen",
+    showCells: "Flächen einfärben",
     averageOption: "Mittelwert aller Sensoren",
     reading: "{{name}} bei {{band}}: {{value}}.",
     unavailable:

@@ -16,6 +16,7 @@ import {
 } from "../config/temperatureBaselines";
 import { useAsync } from "./useAsync";
 import { useFieldBaselineSelection } from "./useFieldBaselineSelection";
+import { useFieldToggle } from "./useFieldToggle";
 import { useFieldLabelVisibility } from "./useFieldLabelVisibility";
 import {
   formatTemperatureDeviationLabel,
@@ -33,6 +34,8 @@ import {
   buildAdaptiveTemperatureScale,
   type TemperatureFieldPoint,
 } from "../utils/temperatureScale";
+
+const TEMPERATURE_CELLS_STORAGE_KEY = "temperatureField.showCells";
 
 /**
  * Derive the full temperature-field model from the points to draw and the
@@ -60,6 +63,11 @@ export function useTemperatureFieldModel(
   const { displayMode, setDisplayMode, baselineId, setBaselineId, selectBaseline } =
     useFieldBaselineSelection(baselineOptions);
   const [showLabels, setShowLabels] = useFieldLabelVisibility();
+  const [showCells, setShowCells] = useFieldToggle(
+    TEMPERATURE_CELLS_STORAGE_KEY,
+    true,
+    "cells",
+  );
 
   // The DWD Rheinstetten baseline is fetched lazily — only while it's selected.
   const isDwdBaselineSelected =
@@ -150,6 +158,8 @@ export function useTemperatureFieldModel(
     selectBaseline,
     showLabels,
     setShowLabels,
+    showCells,
+    setShowCells,
     baselineOptions,
     baselineLabel,
     isDwdBaselineSelected,

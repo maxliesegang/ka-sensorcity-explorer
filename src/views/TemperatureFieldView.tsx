@@ -82,6 +82,8 @@ export function TemperatureFieldView() {
     selectBaseline,
     showLabels,
     setShowLabels,
+    showCells,
+    setShowCells,
     baselineOptions,
     baselineLabel,
     isDwdBaselineSelected,
@@ -151,6 +153,7 @@ export function TemperatureFieldView() {
       getLabel: showLabels
         ? (point) => formatLabelForTemperature(point.temperature)
         : undefined,
+      showCells,
       isHighlighted: (point) =>
         displayMode === "deviation" && String(point.sensor.objectId) === baselineId,
       getProperties: (point) => ({ objectId: point.sensor.objectId }),
@@ -167,6 +170,7 @@ export function TemperatureFieldView() {
     baselineId,
     displayMode,
     showLabels,
+    showCells,
     getColorForTemperature,
     formatLabelForTemperature,
   ]);
@@ -219,6 +223,9 @@ export function TemperatureFieldView() {
           showLabels={showLabels}
           onShowLabelsChange={setShowLabels}
           showLabelsLabel={t("baseline.showLabels")}
+          showCells={showCells}
+          onShowCellsChange={setShowCells}
+          showCellsLabel={t("baseline.showCells")}
         />
 
         <div className="result-bar result-bar--compact" role="status" aria-live="polite">

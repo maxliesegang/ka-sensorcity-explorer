@@ -33,7 +33,10 @@ import {
   buildSoilValueScale,
 } from "../utils/soilFieldScale";
 import { useFieldBaselineSelection } from "./useFieldBaselineSelection";
+import { useFieldToggle } from "./useFieldToggle";
 import { useFieldLabelVisibility } from "./useFieldLabelVisibility";
+
+const SOIL_CELLS_STORAGE_KEY = "soilField.showCells";
 
 /**
  * Derive the soil field's model from the probes on screen, the quantity they
@@ -65,6 +68,11 @@ export function useSoilFieldModel(
   const { displayMode, setDisplayMode, baselineId, setBaselineId, selectBaseline } =
     useFieldBaselineSelection(baselineOptions);
   const [showLabels, setShowLabels] = useFieldLabelVisibility();
+  const [showCells, setShowCells] = useFieldToggle(
+    SOIL_CELLS_STORAGE_KEY,
+    false,
+    "cells",
+  );
 
   const baselineLabel = useMemo(
     () => getBaselineLabel(baselineOptions, baselineId),
@@ -127,6 +135,8 @@ export function useSoilFieldModel(
     baselineValue,
     showLabels,
     setShowLabels,
+    showCells,
+    setShowCells,
     isDeviationModeActive,
     isBaselineValueUnavailable,
     valueScale,
