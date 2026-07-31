@@ -123,7 +123,11 @@ export async function queryCount(
 export async function queryStatistics(
   layerId: number,
   outStatistics: OutStatistic[],
-  options: { where?: string; groupByFieldsForStatistics?: string } = {},
+  options: {
+    where?: string;
+    groupByFieldsForStatistics?: string;
+    orderByFields?: string;
+  } = {},
   signal?: AbortSignal,
 ): Promise<Feature[]> {
   const res = await query(

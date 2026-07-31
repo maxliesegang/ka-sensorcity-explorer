@@ -4,6 +4,11 @@
 // sensor with a device id and derives how those sensors compare — right now (for
 // fresh live readings only) and over time (per-bucket spread series, per-sensor
 // volatility).
+//
+// `fetchCityTemperatureSeries` is the cheap counterpart: where the above pulls
+// every sensor's archive to derive city-wide numbers on the client, it asks the
+// service for the same hourly aggregate in one request. It carries no per-sensor
+// detail, so the two are complements, not alternatives.
 
 import {
   getCategory,
@@ -14,7 +19,13 @@ import type { Sensor } from "../types";
 import { mapWithConcurrency } from "../utils/concurrency";
 import { isRecentlyMeasured } from "../utils/sensorFreshness";
 import { mean } from "../utils/stats";
-import { fetchHistory, fetchSensors, type TimeSeriesPoint } from "./sensorcity";
+import {
+  fetchHistory,
+  fetchHourlyBuckets,
+  fetchSensors,
+  type HourlyBucket,
+  type TimeSeriesPoint,
+} from "./sensorcity";
 
 export interface TemperatureSensorStats {
   objectId: number;
@@ -306,6 +317,39 @@ export function buildHistoricalTemperatureFieldFrames(
   }
 
   return frames;
+}
+
+/**
+ * One hour of the city as a whole: the mean across every reporting temperature
+ * sensor, the coldest and warmest reading behind it, and how many readings that
+ * average rests on.
+ */
+export type CityTemperaturePoint = HourlyBucket;
+
+/** Window the city-average series covers, in days. */
+export const CITY_TEMPERATURE_SERIES_DAYS = 10;
+
+/**
+ * Fetch the city-wide hourly temperature series, oldest→newest.
+ *
+ * Aggregated by the service across all devices, so this stays one request no
+ * matter how many sensors the network grows to. Hours where the archive has
+ * nothing are absent rather than zero-filled — the series is not evenly spaced.
+ */
+export async function fetchCityTemperatureSeries(
+  signal?: AbortSignal,
+): Promise<CityTemperaturePoint[]> {
+  const archiveLayerId = getCategory(TEMPERATURE_CATEGORY_KEY)?.archiveLayerId;
+  if (archiveLayerId == null) return [];
+  const since = new Date(
+    Date.now() - CITY_TEMPERATURE_SERIES_DAYS * 24 * 3_600_000,
+  );
+  return fetchHourlyBuckets(
+    archiveLayerId,
+    TEMPERATURE_FIELD_KEY,
+    { since },
+    signal,
+  );
 }
 
 /**

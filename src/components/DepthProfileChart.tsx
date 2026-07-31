@@ -4,7 +4,11 @@ import { useTranslation } from "react-i18next";
 
 import { useChartCursor } from "../hooks/useChartCursor";
 import type { DepthProfile } from "../types";
-import type { DepthProfileCell, DepthProfileGrid } from "../utils/depthProfile";
+import type {
+  DepthProfileCell,
+  DepthProfileColumn,
+  DepthProfileGrid,
+} from "../utils/depthProfile";
 import {
   buildDepthProfileChangeScale,
   buildDepthProfileScale,
@@ -18,6 +22,11 @@ import {
   type DepthProfileMode,
 } from "../utils/depthProfileView";
 import { formatSignedDelta, formatTimestamp, formatValue } from "../utils/format";
+import {
+  ChartDataTable,
+  indexRowKey,
+  type ChartDataColumn,
+} from "./chart/ChartDataTable";
 
 interface Props {
   grid: DepthProfileGrid;
@@ -114,6 +123,23 @@ export function DepthProfileChart({ grid, profile, label, height = 260 }: Props)
   const model = useMemo(
     () => buildChartModel(displayGrid, profile.ramp, mode, height),
     [displayGrid, profile.ramp, height, mode],
+  );
+
+  // The grid is stored band-major, so each band becomes a table column that
+  // reads its own cell at the row's index.
+  const unitSuffix = profile.unit ? ` (${profile.unit})` : "";
+  const tableColumns = useMemo<ChartDataColumn<DepthProfileColumn>[]>(
+    () => [
+      { key: "time", header: t("chart.time"), render: (column) => formatTimestamp(column.from) },
+      ...displayGrid.bands.map((band) => ({
+        key: band.field,
+        header: `${t("depth.band", { band: band.band })}${unitSuffix}`,
+        numeric: true,
+        render: (_column: DepthProfileColumn, index: number) =>
+          formatCell(band.cells[index], profile.unit, mode, t),
+      })),
+    ],
+    [displayGrid.bands, profile.unit, unitSuffix, mode, t],
   );
 
   const summary = t("chart.profile.summary", {
@@ -275,11 +301,11 @@ export function DepthProfileChart({ grid, profile, label, height = 260 }: Props)
       <p id={descriptionId} className="visually-hidden">
         {description}
       </p>
-      <ProfileDataTable
-        grid={displayGrid}
-        unit={profile.unit}
-        seriesLabel={label}
-        mode={mode}
+      <ChartDataTable
+        caption={`${label} — ${t(`chart.profile.mode.${mode}`)}${unitSuffix}`}
+        columns={tableColumns}
+        rows={displayGrid.columns}
+        rowKey={indexRowKey}
       />
     </figure>
   );
@@ -423,75 +449,3 @@ function ColumnReadout({
 
   return <>{`${formatTimestamp(grid.columns[column].from)} — ${readings}`}</>;
 }
-
-/**
- * Visually-hidden / collapsible table mirroring the grid: a row per time column,
- * a column per band. Memoized and rendered only once expanded, for the same
- * reason as the line chart's — hovering must not re-format every cell.
- */
-const ProfileDataTable = memo(function ProfileDataTable({
-  grid,
-  unit,
-  seriesLabel,
-  mode,
-}: {
-  grid: DepthProfileGrid;
-  unit?: string;
-  seriesLabel: string;
-  mode: DepthProfileMode;
-}) {
-  const { t } = useTranslation("common");
-  const [open, setOpen] = useState(false);
-  const unitText = unit ? ` (${unit})` : "";
-
-  return (
-    <details
-      className="chart__data"
-      onToggle={(e) => setOpen(e.currentTarget.open)}
-    >
-      <summary className="kern-body">{t("chart.data")}</summary>
-      <div className="kern-table-responsive table-scroll">
-        <table className="kern-table kern-table--striped kern-table--small">
-          <caption className="visually-hidden">
-            {`${seriesLabel} — ${t(`chart.profile.mode.${mode}`)}${unitText}`}
-          </caption>
-          <thead>
-            <tr className="kern-table__row">
-              <th className="kern-table__header" scope="col">
-                {t("chart.time")}
-              </th>
-              {grid.bands.map((band) => (
-                <th
-                  className="kern-table__header kern-table__header--numeric"
-                  scope="col"
-                  key={band.field}
-                >
-                  {t("depth.band", { band: band.band })}
-                  {unitText}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="kern-table__body">
-            {open &&
-              grid.columns.map((column, index) => (
-                <tr className="kern-table__row" key={index}>
-                  <td className="kern-table__cell">
-                    {formatTimestamp(column.from)}
-                  </td>
-                  {grid.bands.map((band) => (
-                    <td
-                      className="kern-table__cell kern-table__cell--numeric"
-                      key={band.field}
-                    >
-                      {formatCell(band.cells[index], unit, mode, t)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-    </details>
-  );
-});

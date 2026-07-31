@@ -12,7 +12,7 @@
 import type { DwdHourlyPoint } from "../api/brightsky";
 import type { OutStatistic, QueryParams } from "../api/arcgis";
 import { LIVE_LAYER_ID } from "../config/layers";
-import type { HistoryRow, TimeSeriesPoint } from "../api/sensorcity";
+import type { HistoryRow, HourlyBucket, TimeSeriesPoint } from "../api/sensorcity";
 import type { Attributes, Feature, FieldInfo, QueryResponse } from "../types";
 import { loadSnapshot } from "./snapshot";
 
@@ -220,6 +220,48 @@ export async function historyRows(
   return [...byTimestamp]
     .sort(([a], [b]) => a - b)
     .map(([timestamp, values]) => ({ timestamp, values }));
+}
+
+/**
+ * Hourly cross-device aggregates, rebuilt by pouring every device's captured
+ * series for the field into hour buckets.
+ *
+ * Two departures from the other readers. It bypasses the `/query` interpreter
+ * above, because the live reader has the *service* group by two SQL date
+ * expressions the interpreter deliberately doesn't understand. And it reads the
+ * per-device history rather than `rawArchiveFeatures`, which holds only a recent
+ * head of the layer — too short a window to plot.
+ */
+export async function hourlyBuckets(
+  archiveLayerId: number,
+  field: string,
+  sinceMs: number,
+): Promise<HourlyBucket[]> {
+  const snapshot = await loadSnapshot();
+  const prefix = `${archiveLayerId}:`;
+  const suffix = `:${field}`;
+  const buckets = new Map<number, number[]>();
+
+  for (const [key, series] of Object.entries(snapshot.history)) {
+    if (!key.startsWith(prefix) || !key.endsWith(suffix)) continue;
+    for (const point of series) {
+      if (point.timestamp < sinceMs) continue;
+      const hour = Math.floor(point.timestamp / 3_600_000) * 3_600_000;
+      const bucket = buckets.get(hour);
+      if (bucket) bucket.push(point.value);
+      else buckets.set(hour, [point.value]);
+    }
+  }
+
+  return [...buckets]
+    .sort(([a], [b]) => a - b)
+    .map(([timestamp, values]) => ({
+      timestamp,
+      mean: values.reduce((a, b) => a + b, 0) / values.length,
+      min: Math.min(...values),
+      max: Math.max(...values),
+      sampleCount: values.length,
+    }));
 }
 
 // --- Fallback history providers --------------------------------------------

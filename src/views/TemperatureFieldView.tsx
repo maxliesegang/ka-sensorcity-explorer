@@ -14,9 +14,14 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useBoolParam } from "../hooks/useUrlState";
 import { fetchSensors } from "../api/sensorcity";
-import { fetchTemperatureInsights } from "../api/temperatureInsights";
+import {
+  CITY_TEMPERATURE_SERIES_DAYS,
+  fetchCityTemperatureSeries,
+  fetchTemperatureInsights,
+} from "../api/temperatureInsights";
 import { categoryLabelKey, TEMPERATURE_CATEGORY_KEY } from "../config/layers";
 import { AsyncBoundary } from "../components/Status";
+import { CityTemperatureChart } from "../components/CityTemperatureChart";
 import {
   TemperatureBaselineStatus,
   TemperatureFieldLegend,
@@ -45,6 +50,8 @@ export function TemperatureFieldView() {
   // shared link can land straight on the expanded analytics.
   const [showInsights, setShowInsights] = useBoolParam("insights", false);
   const insights = useAsync(fetchTemperatureInsights, [], { enabled: showInsights });
+  // One aggregated request, so unlike `insights` it needs no opt-in.
+  const cityAverage = useAsync(fetchCityTemperatureSeries, []);
   const { t } = useTranslation("temperature");
   const { t: tc } = useTranslation("common");
 
@@ -275,6 +282,20 @@ export function TemperatureFieldView() {
               sensorCount={liveTemperatureReadings.length}
             />
           )}
+        </AsyncBoundary>
+      </section>
+
+      <section className="temp-insights-shell" aria-label={t("cityAverage.heading")}>
+        <h2 className="kern-heading-large">{t("cityAverage.heading")}</h2>
+        <p className="kern-body kern-body--muted">
+          {t("cityAverage.intro", { days: CITY_TEMPERATURE_SERIES_DAYS })}
+        </p>
+        <AsyncBoundary
+          state={cityAverage}
+          isEmpty={(data) => data.length === 0}
+          emptyLabel={t("cityAverage.empty")}
+        >
+          {(data) => <CityTemperatureChart points={data} />}
         </AsyncBoundary>
       </section>
 

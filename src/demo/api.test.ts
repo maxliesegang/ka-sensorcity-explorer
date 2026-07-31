@@ -20,13 +20,29 @@ const liveFeatures: Feature[] = [
   },
 ];
 
+const HOUR = 3_600_000;
+
 const snapshot: DemoSnapshot = {
   capturedAt: "2026-01-01T00:00:00.000Z",
   historyMaxRows: 1500,
   liveFeatures,
   counts: { 1: 3, 2: 99 },
   fields: { 1: [{ name: "objectid", type: "esriFieldTypeOID" }] },
-  history: { "2:dev-1:temp": [{ timestamp: 10, value: 1 }] },
+  history: {
+    "2:dev-1:temp": [{ timestamp: 10, value: 1 }],
+    // Layer 5 stands in for a whole network: two devices reporting the same
+    // field across two hours, plus a second field that must not be mixed in.
+    "5:dev-a:temp": [
+      { timestamp: HOUR + 60_000, value: 10 },
+      { timestamp: HOUR + 120_000, value: 20 },
+      { timestamp: 2 * HOUR, value: 30 },
+    ],
+    "5:dev-b:temp": [
+      { timestamp: HOUR + 90_000, value: 14 },
+      { timestamp: 2 * HOUR + 60_000, value: 40 },
+    ],
+    "5:dev-a:pressure": [{ timestamp: HOUR, value: 1000 }],
+  },
   rawArchiveFeatures: {
     2: [
       { attributes: { objectid: 1, device_id: "dev-1", temp: 12 } },
@@ -125,6 +141,21 @@ describe("history and fallback providers", () => {
   it("looks up history by composite key", async () => {
     expect(await api.history(2, "dev-1", "temp")).toEqual([{ timestamp: 10, value: 1 }]);
     expect(await api.history(2, "missing", "temp")).toEqual([]);
+  });
+
+  it("pools every device's series into hourly aggregates for one field", async () => {
+    expect(await api.hourlyBuckets(5, "temp", 0)).toEqual([
+      { timestamp: HOUR, mean: (10 + 20 + 14) / 3, min: 10, max: 20, sampleCount: 3 },
+      { timestamp: 2 * HOUR, mean: 35, min: 30, max: 40, sampleCount: 2 },
+    ]);
+  });
+
+  it("drops hours before the cutoff and layers or fields that were not asked for", async () => {
+    expect(await api.hourlyBuckets(5, "temp", 2 * HOUR)).toEqual([
+      { timestamp: 2 * HOUR, mean: 35, min: 30, max: 40, sampleCount: 2 },
+    ]);
+    expect(await api.hourlyBuckets(5, "pressure", 0)).toHaveLength(1);
+    expect(await api.hourlyBuckets(9, "temp", 0)).toEqual([]);
   });
 
   it("returns HVZ water-level history by station id", async () => {

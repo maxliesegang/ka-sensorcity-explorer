@@ -139,6 +139,89 @@ export async function fetchHistoryRows(
   return rows;
 }
 
+/** One hour of an archive layer, aggregated across every device that reported. */
+export interface HourlyBucket {
+  /** Hour start, epoch ms. */
+  timestamp: number;
+  mean: number;
+  min: number;
+  max: number;
+  /** Archive rows behind this hour, across all devices. */
+  sampleCount: number;
+}
+
+/** Render a Date as the `TIMESTAMP '…'` literal the service expects (UTC). */
+function toSqlTimestamp(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ` +
+    `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`
+  );
+}
+
+/**
+ * Aggregate one archive field into hourly buckets **server-side**, across every
+ * device on the layer — the whole-network counterpart of {@link fetchHistory},
+ * at one request instead of one per device.
+ *
+ * The grouping is done by the service through two SQL expressions, which come
+ * back positionally as `EXPR_1` (the day, as an epoch) and `EXPR_2` (the hour),
+ * so the bucket start is their sum. Both the day and the hour are cut in UTC,
+ * hence the UTC `since` literal.
+ *
+ * `field` is an upstream column name from `config/layers.ts`, never user input.
+ */
+export async function fetchHourlyBuckets(
+  archiveLayerId: number,
+  field: string,
+  options: { since: Date },
+  signal?: AbortSignal,
+): Promise<HourlyBucket[]> {
+  if (isDemoMode()) {
+    return (await loadDemoApi()).hourlyBuckets(
+      archiveLayerId,
+      field,
+      options.since.getTime(),
+    );
+  }
+  const hourlyGroupBy = "CAST(measured_at AS DATE),EXTRACT(HOUR FROM measured_at)";
+  const features = await queryStatistics(
+    archiveLayerId,
+    [
+      { statisticType: "avg", onStatisticField: field, outStatisticFieldName: "mean_value" },
+      { statisticType: "min", onStatisticField: field, outStatisticFieldName: "min_value" },
+      { statisticType: "max", onStatisticField: field, outStatisticFieldName: "max_value" },
+      { statisticType: "count", onStatisticField: field, outStatisticFieldName: "sample_count" },
+    ],
+    {
+      where: `${field} IS NOT NULL AND measured_at >= TIMESTAMP '${toSqlTimestamp(options.since)}'`,
+      groupByFieldsForStatistics: hourlyGroupBy,
+      orderByFields: hourlyGroupBy,
+    },
+    signal,
+  );
+
+  const buckets: HourlyBucket[] = [];
+  for (const feature of features) {
+    const day = toFiniteNumber(feature.attributes.EXPR_1);
+    const hour = toFiniteNumber(feature.attributes.EXPR_2);
+    const mean = toFiniteNumber(feature.attributes.mean_value);
+    const min = toFiniteNumber(feature.attributes.min_value);
+    const max = toFiniteNumber(feature.attributes.max_value);
+    if (day == null || hour == null || mean == null || min == null || max == null) {
+      continue;
+    }
+    buckets.push({
+      timestamp: day + hour * 3_600_000,
+      mean,
+      min,
+      max,
+      sampleCount: toFiniteNumber(feature.attributes.sample_count) ?? 0,
+    });
+  }
+  return buckets.sort((a, b) => a.timestamp - b.timestamp);
+}
+
 /** Row count of a layer. */
 export const fetchLayerCount = queryCount;
 

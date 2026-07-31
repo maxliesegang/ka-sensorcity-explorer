@@ -72,6 +72,30 @@ export default {
     unavailable:
       "The chosen baseline has no reading here; showing temperatures.",
   },
+  cityAverage: {
+    heading: "City average over time",
+    intro:
+      "The hourly mean across every reporting temperature sensor, over the last {{days}} days. The shaded band spans the coldest and warmest reading in each hour.",
+    empty: "No city-wide temperature history available.",
+    chart: {
+      label: "City-wide average temperature",
+      summary_one: "{{hours}} hour from {{readings}} readings",
+      summary_other: "{{hours}} hours from {{readings}} readings",
+      legend: "Line: city average. Band: coldest to warmest sensor.",
+      desc: "City-wide average temperature over {{count}} hourly points from {{from}} to {{to}}, ranging {{min}} to {{max}}.",
+      pointAt_one:
+        "{{time}}: average {{mean}}, {{min}} to {{max}} across {{count}} reading.",
+      pointAt_other:
+        "{{time}}: average {{mean}}, {{min}} to {{max}} across {{count}} readings.",
+    },
+    table: {
+      caption: "Hourly city-wide temperature average, minimum and maximum, in degrees Celsius",
+      mean: "Average",
+      min: "Min",
+      max: "Max",
+      readings: "Readings",
+    },
+  },
   insights: {
     heading: "Temperature history analysis",
     intro:

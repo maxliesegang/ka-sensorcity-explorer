@@ -73,6 +73,31 @@ export default {
     unavailable:
       "Die gewählte Basislinie hat hier keinen Messwert; Temperaturen werden angezeigt.",
   },
+  cityAverage: {
+    heading: "Stadtdurchschnitt im Zeitverlauf",
+    intro:
+      "Der stündliche Mittelwert über alle meldenden Temperatursensoren der letzten {{days}} Tage. Das schattierte Band reicht vom kältesten bis zum wärmsten Messwert der jeweiligen Stunde.",
+    empty: "Kein stadtweiter Temperaturverlauf verfügbar.",
+    chart: {
+      label: "Stadtweite Durchschnittstemperatur",
+      summary_one: "{{hours}} Stunde aus {{readings}} Messwerten",
+      summary_other: "{{hours}} Stunden aus {{readings}} Messwerten",
+      legend: "Linie: Stadtdurchschnitt. Band: kältester bis wärmster Sensor.",
+      desc: "Stadtweite Durchschnittstemperatur über {{count}} Stundenwerte von {{from}} bis {{to}}, Spanne {{min}} bis {{max}}.",
+      pointAt_one:
+        "{{time}}: Durchschnitt {{mean}}, {{min}} bis {{max}} aus {{count}} Messwert.",
+      pointAt_other:
+        "{{time}}: Durchschnitt {{mean}}, {{min}} bis {{max}} aus {{count}} Messwerten.",
+    },
+    table: {
+      caption:
+        "Stündlicher stadtweiter Temperaturdurchschnitt, Minimum und Maximum, in Grad Celsius",
+      mean: "Durchschnitt",
+      min: "Min",
+      max: "Max",
+      readings: "Messwerte",
+    },
+  },
   insights: {
     heading: "Temperatur-Verlaufsanalyse",
     intro:

@@ -867,6 +867,13 @@ body {
   stroke-dasharray: 3 3;
 }
 
+/* The hovered hour's min–max, drawn as a thin whisker inside the band. */
+.temp-city-chart__range {
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
 .chart__caption {
   font-size: 0.875rem;
   color: var(--kern-color-layout-text-muted-contextual, #404565);

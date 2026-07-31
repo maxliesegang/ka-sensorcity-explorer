@@ -6,7 +6,9 @@
 // lands in both charts at once rather than in whichever one it was noticed on.
 
 import { useCallback, useMemo, useState } from "react";
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, MouseEvent } from "react";
+
+import { nearestIndexAtX, CHART_WIDTH } from "../utils/chartGeometry";
 
 export interface ChartCursor {
   /** Highlighted index, or null when nothing is highlighted. */
@@ -63,4 +65,23 @@ export function useChartCursor(count: number): ChartCursor {
   );
 
   return { index, setIndex, svgProps };
+}
+
+/**
+ * The pointer half of the same cursor: the index of the mark nearest the mouse.
+ *
+ * `markXs` are mark positions in the chart's own viewBox space (ascending), not
+ * data values — the SVG scales to fit its container, so the client x is mapped
+ * back through the rendered width first. Charts that hit-test differently (the
+ * depth grid takes the column *under* the pointer, not the nearest mark) keep
+ * doing their own thing and call `setIndex` directly.
+ */
+export function nearestIndexFromPointer(
+  event: MouseEvent<SVGSVGElement>,
+  markXs: readonly number[],
+  width: number = CHART_WIDTH,
+): number | null {
+  const rect = event.currentTarget.getBoundingClientRect();
+  if (rect.width === 0) return null;
+  return nearestIndexAtX(markXs, ((event.clientX - rect.left) / rect.width) * width);
 }
