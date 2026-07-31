@@ -24,6 +24,7 @@ import { useMapLibreMap } from "../hooks/useMapLibreMap";
 import { useFieldController } from "../hooks/useFieldController";
 import { buildSensorPopupHtml } from "../utils/maplibreMarkers";
 import { FieldBaselineControls } from "../components/FieldBaselineControls";
+import { MapResetViewButton } from "../components/MapResetViewButton";
 import { useTemperatureFieldModel } from "../hooks/useTemperatureFieldModel";
 import { getLiveTemperatureFieldPoints } from "../utils/liveTemperatureReadings";
 import {
@@ -110,7 +111,7 @@ export function CombinedTemperatureFieldView() {
 
   // The "set as reference" popup action only needs the clicked point's id (carried
   // in feature properties) plus the model's stable setters.
-  const fieldControllerRef = useFieldController(
+  const { controllerRef: fieldControllerRef, resetView } = useFieldController(
     mapHandle,
     {
       popupClassName: "sensor-popup",
@@ -261,6 +262,7 @@ export function CombinedTemperatureFieldView() {
             isDwdBaselineSelected={isDwdBaselineSelected}
             dwdBaselineError={dwdBaselineError}
           />
+          <MapResetViewButton onReset={resetView} />
         </div>
 
         <div

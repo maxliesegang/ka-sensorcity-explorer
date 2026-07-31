@@ -38,6 +38,12 @@ export default {
     en: "English",
     de: "Deutsch",
   },
+  // Shared map chrome: every map sets its view once and then leaves the viewport
+  // to the viewer, so each offers the same way back.
+  mapControls: {
+    resetView: "Reset view",
+    resetViewTitle: "Show all sensors again",
+  },
   status: {
     loading: "Loading…",
     errorTitle: "Could not load data",

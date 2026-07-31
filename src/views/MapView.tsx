@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { fetchSensors } from "../api/sensorcity";
 import { AsyncBoundary } from "../components/Status";
 import { CollapsibleFilters } from "../components/CollapsibleFilters";
+import { MapResetViewButton } from "../components/MapResetViewButton";
 import {
   CATEGORIES,
   getCategoryColor,
@@ -23,6 +24,7 @@ import {
   KARLSRUHE_CENTER,
 } from "../config/basemap";
 import { useAsync } from "../hooks/useAsync";
+import { useInitialMapView } from "../hooks/useInitialMapView";
 import { useMapLibreMap } from "../hooks/useMapLibreMap";
 import {
   addLayerIfMissing,
@@ -40,6 +42,8 @@ import {
 import { formatPrimaryReadingLine } from "../utils/sensorMeasurements";
 
 const SENSOR_SOURCE_ID = "sensors";
+/** The sensor map has one view to establish, at mount; it has no second context. */
+const SENSOR_MAP_CONTEXT = "sensor-map";
 const SENSOR_LAYER_ID = "sensors-circle";
 
 const CATEGORY_KEYS = CATEGORIES.map((category) => category.key);
@@ -97,7 +101,6 @@ export function MapView() {
 
   const { containerRef, mapRef, isStyleReady } = useMapLibreMap();
   const visibleSensorBoundsRef = useRef<LngLatBounds | null>(null);
-  const hasFittedInitialViewRef = useRef(false);
   const [visibleSensorCount, setVisibleSensorCount] = useState(0);
 
   // Create the circle layer + interactions once the style is ready (and again
@@ -155,12 +158,19 @@ export function MapView() {
 
     upsertGeoJsonSource(map, SENSOR_SOURCE_ID, features);
     visibleSensorBoundsRef.current = bounds;
-    if (bounds && !hasFittedInitialViewRef.current) {
-      map.fitBounds(bounds, { padding: 24, maxZoom: 14, animate: false });
-      hasFittedInitialViewRef.current = true;
-    }
     setVisibleSensorCount(features.length);
   }, [isStyleReady, mapRef, sensors.data, visibleCategories, t, tc]);
+
+  // Set once, when the first sensors land. Filtering afterwards recomputes the
+  // bounds for "reset view" but doesn't apply them: narrowing to one category
+  // shouldn't zoom the map out from under the viewer.
+  useInitialMapView(SENSOR_MAP_CONTEXT, () => {
+    const map = mapRef.current;
+    const bounds = visibleSensorBoundsRef.current;
+    if (!map || !isStyleReady || !bounds) return false;
+    map.fitBounds(bounds, { padding: 24, maxZoom: 14, animate: false });
+    return true;
+  });
 
   function toggleCategoryVisibility(categoryKey: string) {
     const next = new Set(visibleSet);
@@ -234,14 +244,7 @@ export function MapView() {
             )}
           </div>
           <div className="map-actions">
-            <KernButton
-              type="button"
-              variant="secondary"
-              className="kern-btn--small"
-              onClick={resetView}
-              icon="home"
-              label={t("fitSensors")}
-            />
+            <MapResetViewButton onReset={resetView} />
             <KernButton
               type="button"
               variant="tertiary"

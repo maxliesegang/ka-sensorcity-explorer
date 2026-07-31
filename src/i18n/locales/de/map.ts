@@ -9,7 +9,6 @@ export default {
   visibleSensors: "sichtbare Sensoren",
   categoriesActive: "{{enabled}} von {{total}} Kategorien aktiv",
   liveSensorsLoaded: "{{count}} Live-Sensoren geladen",
-  fitSensors: "Sensoren einpassen",
   clearAll: "Alle abwählen",
   selectAll: "Alle auswählen",
   emptyToMap: "Keine Sensoren anzuzeigen.",

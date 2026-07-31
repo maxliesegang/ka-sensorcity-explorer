@@ -22,7 +22,7 @@
 import type { Feature } from "geojson";
 import type * as maplibregl from "maplibre-gl";
 
-import { boundsFromFieldPoints } from "./fieldBounds";
+import type { RasterBounds } from "./fieldBounds";
 import type { FieldPoint } from "./fieldPoint";
 import {
   addLayerIfMissing,
@@ -103,8 +103,8 @@ export interface FieldController {
   render: <T extends FieldPoint>(options: FieldRenderOptions<T>) => void;
   /** Empty every layer without removing them. */
   clear: () => void;
-  /** Fit the map to a set of points (with the shared Karlsruhe fallback padding). */
-  fitToPoints: (points: readonly FieldPoint[]) => void;
+  /** Fit the map to an extent (see `boundsFromFieldPoints`). */
+  fitToBounds: (bounds: RasterBounds) => void;
   /** Remove all layers, sources and interaction listeners. */
   remove: () => void;
 }
@@ -253,8 +253,7 @@ export function createFieldController(
     }
   }
 
-  function fitToPoints(points: readonly FieldPoint[]): void {
-    const bounds = boundsFromFieldPoints(points);
+  function fitToBounds(bounds: RasterBounds): void {
     map.fitBounds(
       [
         [bounds.west, bounds.south],
@@ -275,7 +274,7 @@ export function createFieldController(
     }
   }
 
-  return { render, clear, fitToPoints, remove };
+  return { render, clear, fitToBounds, remove };
 }
 
 /** Build the shared feature properties (colour, popup, tooltip, highlight, extras). */

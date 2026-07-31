@@ -37,6 +37,12 @@ export default {
     en: "English",
     de: "Deutsch",
   },
+  // Shared map chrome: every map sets its view once and then leaves the viewport
+  // to the viewer, so each offers the same way back.
+  mapControls: {
+    resetView: "Ansicht zurücksetzen",
+    resetViewTitle: "Alle Sensoren wieder einpassen",
+  },
   status: {
     loading: "Wird geladen…",
     errorTitle: "Daten konnten nicht geladen werden",

@@ -372,6 +372,14 @@ body {
   min-height: 3rem;
 }
 
+/* Reset rides at the end of the status row, past however many status phrases the
+   view put in front of it. Scoped to .result-bar so the same button stays put
+   inside a toolbar. */
+.result-bar > .map-reset-view {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .about-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

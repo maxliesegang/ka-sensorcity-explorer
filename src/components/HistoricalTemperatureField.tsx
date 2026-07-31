@@ -18,6 +18,7 @@ import {
 } from "../config/temperatureBaselines";
 import { useAsync } from "../hooks/useAsync";
 import { useMapLibreMap } from "../hooks/useMapLibreMap";
+import { MapResetViewButton } from "./MapResetViewButton";
 import { useFieldController } from "../hooks/useFieldController";
 import { useFieldBaselineSelection } from "../hooks/useFieldBaselineSelection";
 import { useFieldLabelVisibility } from "../hooks/useFieldLabelVisibility";
@@ -243,7 +244,7 @@ export function HistoricalTemperatureField({
 
   // The replay map has no per-marker action, so no options beyond the shared
   // hover/popup styling.
-  const fieldControllerRef = useFieldController(
+  const { controllerRef: fieldControllerRef, resetView } = useFieldController(
     mapHandle,
     { popupClassName: "sensor-popup", tooltipClassName: "sensor-tooltip" },
     replaySensorPoints,
@@ -403,6 +404,7 @@ export function HistoricalTemperatureField({
             isDwdBaselineSelected={isDwdBaselineSelected}
             dwdBaselineError={dwdBaseline.error}
           />
+          <MapResetViewButton onReset={resetView} />
         </div>
         {hasLowCoverage && (
           <div className="historical-temperature-field__coverage-warning" role="note">

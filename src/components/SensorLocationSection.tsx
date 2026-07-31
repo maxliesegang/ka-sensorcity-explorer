@@ -1,5 +1,4 @@
 import type { Feature } from "geojson";
-import type * as maplibregl from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { KernButton } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
@@ -12,6 +11,7 @@ import {
   KARLSRUHE_CENTER,
 } from "../config/basemap";
 import { useAsync } from "../hooks/useAsync";
+import { useInitialMapView } from "../hooks/useInitialMapView";
 import { useMapLibreMap } from "../hooks/useMapLibreMap";
 import type { Sensor } from "../types";
 import { formatReadingTime } from "../utils/format";
@@ -93,7 +93,9 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
     });
   }, [isStyleReady, mapRef]);
 
-  // Populate markers and centre the view whenever the data changes.
+  // Populate markers whenever the data or its labels change. Deliberately does
+  // not touch the viewport: this effect also re-runs on a language or theme
+  // switch, and neither is a reason to undo the viewer's pan/zoom.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isStyleReady) return;
@@ -125,8 +127,25 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
     upsertGeoJsonSource(map, SENSOR_SOURCE_ID, features);
     sensorBoundsRef.current = bounds;
     setMappedSensorCount(features.length);
-    resetMapView(map, selectedSensorCoordinates, bounds);
-  }, [isStyleReady, mapRef, mapSensors, selectedSensorCoordinates, sensor.objectId, t, tc]);
+  }, [isStyleReady, mapRef, mapSensors, sensor.objectId, t, tc]);
+
+  // The sensor is this map's context, so navigating to a different one re-centres
+  // — but nothing else does. "Focus sensor" is the way back afterwards.
+  useInitialMapView(sensor.objectId, () => {
+    const map = mapRef.current;
+    if (!map || !isStyleReady) return false;
+
+    if (selectedSensorCoordinates) {
+      map.jumpTo({ center: selectedSensorCoordinates, zoom: SENSOR_ZOOM });
+      return true;
+    }
+    // A sensor the feed gives no position for: show its neighbours instead, once
+    // they load. Until then the map keeps its Karlsruhe starting view.
+    const bounds = sensorBoundsRef.current;
+    if (!bounds) return false;
+    map.fitBounds(bounds, { padding: 24, maxZoom: 14, animate: false });
+    return true;
+  });
 
   function focusSensor() {
     const map = mapRef.current;
@@ -190,20 +209,6 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
       />
     </section>
   );
-}
-
-function resetMapView(
-  map: maplibregl.Map,
-  selectedSensorCoordinates: LngLatTuple | null,
-  bounds: LngLatBounds | null,
-) {
-  if (selectedSensorCoordinates) {
-    map.jumpTo({ center: selectedSensorCoordinates, zoom: SENSOR_ZOOM });
-  } else if (bounds) {
-    map.fitBounds(bounds, { padding: 24, maxZoom: 14, animate: false });
-  } else {
-    map.jumpTo({ center: KARLSRUHE_CENTER, zoom: DEFAULT_MAP_ZOOM });
-  }
 }
 
 function buildLocationPopupHtml(

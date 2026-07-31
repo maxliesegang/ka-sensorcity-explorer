@@ -21,6 +21,7 @@ import { Link } from "react-router-dom";
 import { fetchSensors } from "../api/sensorcity";
 import { FieldBaselineControls } from "../components/FieldBaselineControls";
 import { FieldLegend } from "../components/FieldLegend";
+import { MapResetViewButton } from "../components/MapResetViewButton";
 import { SoilBandSummary } from "../components/SoilBandSummary";
 import { SoilFieldControls } from "../components/SoilFieldControls";
 import { AsyncBoundary, Empty } from "../components/Status";
@@ -112,7 +113,7 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
   const mapHandle = useMapLibreMap();
   const { containerRef, isStyleReady } = mapHandle;
 
-  const fieldControllerRef = useFieldController(
+  const { controllerRef: fieldControllerRef, resetView } = useFieldController(
     mapHandle,
     {
       popupClassName: "sensor-popup",
@@ -123,7 +124,10 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
         popup.remove();
       },
     },
-    points,
+    // Extent from every probe, not the band on screen: a probe that can't read
+    // the selected band drops out of `points`, and fitting to those would move
+    // the map each time the depth changes.
+    probes,
   );
 
   const selectedBand = profile.bands[bandIndex].band;
@@ -312,6 +316,7 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
               {t("baseline.unavailable", { band: bandLabel })}
             </span>
           )}
+          <MapResetViewButton onReset={resetView} />
         </div>
 
         <div className="map" ref={containerRef} role="region" aria-label={t("mapAria")} />
