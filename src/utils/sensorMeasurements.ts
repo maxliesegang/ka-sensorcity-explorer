@@ -34,6 +34,22 @@ export function getUnbandedMeasurements(category: Category | undefined): Measure
 }
 
 /**
+ * Resolve a requested field within a category, falling back to its primary
+ * measurement when the field is absent or stale. URL-backed selectors use this
+ * boundary so a category change can never display a field from another group.
+ */
+export function getMeasurementForField(
+  category: Category | undefined,
+  field?: string,
+): Measurement | undefined {
+  const measurements = category?.measurements ?? [];
+  return (
+    measurements.find((measurement) => measurement.field === field) ??
+    measurements[0]
+  );
+}
+
+/**
  * The band numbers any of `profiles` reports, shallow→deep, de-duplicated —
  * i.e. the rows of a depth axis spanning several quantities at once.
  */
@@ -58,13 +74,37 @@ export function getPrimaryMeasurement(sensor: Sensor): Measurement | undefined {
 }
 
 export function getPrimaryReading(sensor: Sensor): number | null {
-  const primary = getPrimaryMeasurement(sensor);
-  return primary ? getReading(sensor, primary.field) : null;
+  return getReadingForMeasurement(sensor);
+}
+
+function resolveMeasurement(
+  sensor: Sensor,
+  measurement: Measurement | undefined,
+): Measurement | undefined {
+  return measurement ?? getPrimaryMeasurement(sensor);
+}
+
+/**
+ * Read the selected measurement, or the sensor's primary measurement when no
+ * override is supplied. This keeps callers safe when the view is showing more
+ * than one category, where there is no shared selected measurement.
+ */
+export function getReadingForMeasurement(
+  sensor: Sensor,
+  measurement?: Measurement,
+): number | null {
+  const selected = resolveMeasurement(sensor, measurement);
+  return selected ? getReading(sensor, selected.field) : null;
+}
+
+/** Format a resolved measurement, falling back to the sensor's primary value. */
+export function formatReading(sensor: Sensor, measurement?: Measurement): string {
+  const selected = resolveMeasurement(sensor, measurement);
+  return selected ? formatValue(sensor.attributes[selected.field], selected.unit) : "—";
 }
 
 export function formatPrimaryReading(sensor: Sensor): string {
-  const primary = getPrimaryMeasurement(sensor);
-  return primary ? formatValue(sensor.attributes[primary.field], primary.unit) : "—";
+  return formatReading(sensor);
 }
 
 /** The primary reading prefixed with its measurement's label, for map popups. */

@@ -1,12 +1,27 @@
 import { describe, expect, it } from "vitest";
 
 import { CATEGORIES, TEMPERATURE_CATEGORY_KEY, getCategory } from "../config/layers";
-import type { Category } from "../types";
+import type { Category, Sensor } from "../types";
 import {
+  formatReading,
   getBandNumbers,
   getDepthProfiles,
+  getMeasurementForField,
+  getReadingForMeasurement,
   getUnbandedMeasurements,
 } from "./sensorMeasurements";
+
+const weather = getCategory(TEMPERATURE_CATEGORY_KEY) as Category;
+const weatherSensor: Sensor = {
+  objectId: 1,
+  deviceId: "weather-1",
+  name: "Weather sensor",
+  category: TEMPERATURE_CATEGORY_KEY,
+  lat: null,
+  lon: null,
+  measuredAt: null,
+  attributes: { temp: 21.25, luftfeuchte: 63.5 },
+};
 
 describe("getDepthProfiles", () => {
   it("returns a category's banded families", () => {
@@ -19,10 +34,42 @@ describe("getDepthProfiles", () => {
   });
 
   it("defaults to none for a category without profiles, and for none at all", () => {
-    const weather = getCategory(TEMPERATURE_CATEGORY_KEY) as Category;
-
     expect(getDepthProfiles(weather)).toEqual([]);
     expect(getDepthProfiles(undefined)).toEqual([]);
+  });
+});
+
+describe("getMeasurementForField", () => {
+  it("resolves a configured field", () => {
+    expect(getMeasurementForField(weather, "luftfeuchte")).toEqual({
+      field: "luftfeuchte",
+      unit: "%",
+    });
+  });
+
+  it("falls back to the category's primary field when a selection is stale", () => {
+    expect(getMeasurementForField(weather, "removed-field")).toEqual(
+      weather.measurements[0],
+    );
+    expect(getMeasurementForField(weather)).toEqual(weather.measurements[0]);
+  });
+
+  it("returns no field when the category has no configuration", () => {
+    expect(getMeasurementForField(undefined, "temp")).toBeUndefined();
+  });
+});
+
+describe("selected sensor readings", () => {
+  it("reads and formats a non-primary measurement", () => {
+    const measurement = getMeasurementForField(weather, "luftfeuchte");
+
+    expect(getReadingForMeasurement(weatherSensor, measurement)).toBe(63.5);
+    expect(formatReading(weatherSensor, measurement)).toBe("63.5 %");
+  });
+
+  it("keeps the primary reading as the default", () => {
+    expect(getReadingForMeasurement(weatherSensor, undefined)).toBe(21.25);
+    expect(formatReading(weatherSensor)).toBe("21.25 °C");
   });
 });
 

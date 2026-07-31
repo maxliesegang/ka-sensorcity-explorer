@@ -22,6 +22,7 @@ export default {
     label: "Kategorie",
     all: "Alle Kategorien",
   },
+  measurement: "Messgröße",
   sort: {
     label: "Sortieren nach",
     name: "Name",

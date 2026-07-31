@@ -22,6 +22,7 @@ export default {
     label: "Category",
     all: "All categories",
   },
+  measurement: "Measurement",
   sort: {
     label: "Sort by",
     name: "Name",
