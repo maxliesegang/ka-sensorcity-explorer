@@ -29,7 +29,7 @@ import {
   categoryLabelKey,
   depthProfileLabelKey,
   SOIL_CATEGORY_KEY,
-  SOIL_TEMPERATURE_PROFILE_KEY,
+  SOIL_MOISTURE_PROFILE_KEY,
 } from "../config/layers";
 import { useAsync } from "../hooks/useAsync";
 import { useFieldController } from "../hooks/useFieldController";
@@ -72,11 +72,11 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
   const { t: tc } = useTranslation("common");
   const sensors = useAsync(fetchSensors, []);
 
-  // Soil temperature leads: it is the quantity this page was built for, and the
-  // config's own order is a data-model concern rather than a UI one.
+  // Soil moisture leads; the config's own order is a data-model concern rather
+  // than a UI one.
   const { profile, bandIndex, setProfileKey, setBand } = useSoilFieldSelection(
     profiles,
-    SOIL_TEMPERATURE_PROFILE_KEY,
+    SOIL_MOISTURE_PROFILE_KEY,
   );
 
   const probes = useMemo(
