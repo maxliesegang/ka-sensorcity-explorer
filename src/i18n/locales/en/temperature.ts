@@ -1,5 +1,4 @@
 export default {
-  badge: "City climate",
   heading: "How warm is Karlsruhe right now?",
   intro:
     "Warm and cool areas at a glance. Each area takes its nearest recent sensor; red is warmer, blue cooler than the rest.",
@@ -26,12 +25,22 @@ export default {
     caption_other:
       "Each area takes its nearest recent sensor ({{count}} total).",
   },
+  // The city-vs-countryside comparison, promoted out of the baseline select:
+  // before it runs there are no numbers to quote, because the DWD reading is
+  // only fetched once that baseline is selected.
+  heatIsland: {
+    heading: "City versus countryside",
+    hint: "Built-up areas hold heat. Compare the city's sensors with the DWD weather station at Rheinstetten, outside the city.",
+    button: "Compare with the countryside",
+    active:
+      "City sensors are {{mean}} against Rheinstetten, which reads {{baseline}}.",
+    warmest: "Biggest difference: {{delta}} at",
+  },
   popup: {
     viewDetails: "View details",
     setReference: "Set as reference",
   },
   combined: {
-    badge: "City + community",
     heading: "Live temperatures across Karlsruhe",
     intro:
       "Compare live readings from the city's SensorCity network with nearby openSenseMap and sensor.community stations.",

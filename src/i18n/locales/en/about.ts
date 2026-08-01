@@ -24,7 +24,6 @@ export default {
     liveLayer_other: "{{count}} live layers",
     archiveLayer_one: "{{count}} archive layer",
     archiveLayer_other: "{{count}} archive layers",
-    readOnly: "Read-only",
     colId: "ID",
     colLayer: "Layer",
     colPurpose: "Purpose",

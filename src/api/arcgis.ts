@@ -209,7 +209,8 @@ export function queryAllFromLayer(
  * Fetch a layer's field metadata. Hits `/{layerId}?f=json` rather than `/query`,
  * hence `fetch*` rather than this module's `query*` verb.
  *
- * Part of the generic client's surface; nothing in the app calls it today.
+ * Backs the query builder's field picker, which is how a layer's column names
+ * become discoverable without knowing them in advance.
  */
 export async function fetchLayerFields(
   layerId: number,

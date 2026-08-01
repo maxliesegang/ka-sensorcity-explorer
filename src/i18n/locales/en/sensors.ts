@@ -1,5 +1,4 @@
 export default {
-  badge: "Find sensors",
   heading: "Sensors",
   intro:
     "Find a sensor, compare its latest reading and open it for history, location and raw data.",
@@ -15,7 +14,7 @@ export default {
     freshest: "latest reading",
   },
   search: {
-    label: "Search by name",
+    label: "Search name or device ID",
     placeholder: "e.g. Marktplatz",
   },
   category: {
@@ -58,9 +57,24 @@ export default {
     value: "Current value",
     lastReading: "Last reading",
   },
-  badges: {
-    mapped: "Mapped",
-    noMap: "No location",
+  // Freshness as a filter: "which sensors stopped reporting?" is asked as often
+  // as "where is this one?".
+  status: {
+    label: "Reporting status",
+    all: "All",
+    reporting: "Reporting",
+    stale: "Not reporting",
+    hint_one: "{{count}} sensor has no reading from the last hour.",
+    hint_other: "{{count}} sensors have no reading from the last hour.",
+  },
+  export: {
+    button: "Download CSV",
+    columns: {
+      deviceId: "Device ID",
+      measuredAt: "Measured at (ISO 8601)",
+      latitude: "Latitude",
+      longitude: "Longitude",
+    },
   },
   currentValue: "Current value",
   openDetails: "Open details",

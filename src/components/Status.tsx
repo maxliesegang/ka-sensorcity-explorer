@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { KernAlert, KernLoader } from "@kern-ux-annex/kern-react-kit";
+import { KernAlert, KernButton, KernLoader } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 
 import type { AsyncState } from "../hooks/useAsync";
@@ -15,12 +15,34 @@ export function Loading({ label }: { label?: string }) {
   );
 }
 
-/** KERN danger alert; announced assertively via role="alert". */
-export function ErrorMessage({ error }: { error: string }) {
+/**
+ * KERN danger alert; announced assertively via role="alert". The upstream
+ * service is unreliable enough that an error is an ordinary state rather than an
+ * exceptional one, so it leads with plain language, keeps the technical message
+ * as a secondary detail, and — where the caller can retry — offers the way out.
+ */
+export function ErrorMessage({
+  error,
+  onRetry,
+}: {
+  error: string;
+  onRetry?: () => void;
+}) {
   const { t } = useTranslation();
   return (
     <KernAlert title={t("status.errorTitle")} variant="danger" className="alert-stack">
-      {error}
+      <p className="kern-body kern-body--small">{t("status.errorHint")}</p>
+      <p className="status-error__detail kern-body kern-body--small mono">{error}</p>
+      {onRetry && (
+        <KernButton
+          type="button"
+          variant="secondary"
+          className="kern-btn--x-small status-error__retry"
+          onClick={onRetry}
+          icon="autorenew"
+          label={t("status.retry")}
+        />
+      )}
     </KernAlert>
   );
 }
@@ -40,6 +62,10 @@ export function Empty({ label }: { label?: string }) {
 /**
  * Render the common loading/error/empty branches of an async load; calls
  * `children` only when data is present and (optionally) non-empty.
+ *
+ * A *refresh* — loading while data is already held — keeps rendering that data
+ * rather than falling back to the spinner, so pressing refresh doesn't blank the
+ * page out from under the reader.
  */
 export function AsyncBoundary<T>({
   state,
@@ -52,8 +78,8 @@ export function AsyncBoundary<T>({
   emptyLabel?: string;
   children: (data: T) => ReactNode;
 }) {
-  if (state.loading) return <Loading />;
-  if (state.error) return <ErrorMessage error={state.error} />;
+  if (state.loading && state.data == null) return <Loading />;
+  if (state.error) return <ErrorMessage error={state.error} onRetry={state.reload} />;
   if (state.data == null || (isEmpty && isEmpty(state.data)))
     return <Empty label={emptyLabel} />;
   return <>{children(state.data)}</>;

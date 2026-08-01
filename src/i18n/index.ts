@@ -42,4 +42,18 @@ void i18n
     },
   });
 
+// Keep <html lang> in step with the active language: index.html ships `en`, and
+// without this a screen reader announces the German UI in an English voice
+// (WCAG 3.1.1). Bound to the i18n singleton rather than to a React effect —
+// the document language follows the language, not a route or a mounted view.
+function syncDocumentLanguage(language: string | undefined) {
+  const resolved = language ?? i18n.resolvedLanguage ?? i18n.language;
+  if (resolved && typeof document !== "undefined") {
+    document.documentElement.lang = resolved;
+  }
+}
+
+i18n.on("languageChanged", syncDocumentLanguage);
+syncDocumentLanguage(undefined);
+
 export default i18n;

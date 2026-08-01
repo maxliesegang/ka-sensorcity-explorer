@@ -47,7 +47,23 @@ export default {
   status: {
     loading: "Loading…",
     errorTitle: "Could not load data",
+    errorHint:
+      "The city's sensor service didn't answer. It is often briefly unavailable — trying again usually helps.",
+    retry: "Try again",
     empty: "No data available.",
+  },
+  // Shown by the views that draw live readings: when the data on screen was
+  // fetched, and the way to fetch it again.
+  freshness: {
+    pending: "Loading live readings…",
+    loadedAt: "Data from {{time}} · {{ago}}",
+    refresh: "Refresh",
+    refreshing: "Refreshing…",
+    badge: {
+      live: "Reporting",
+      stale: "Last reading {{ago}}",
+      unknown: "No reading time",
+    },
   },
   footer: {
     builtWith: "Built with KERN UX. Data:",
@@ -134,7 +150,9 @@ export default {
     press: { label: "Pressure" },
     sonnenstrahlung: { label: "Solar radiation" },
     niederschlag: { label: "Precipitation" },
-    clicks: { label: "Clicks" },
+    // The rain gauge's raw tipping-bucket count. "Clicks" named the wire field;
+    // this names what was counted, since the feed publishes no mm conversion.
+    clicks: { label: "Bucket tips" },
     soil_moisture_at_depth_01: { label: "Soil moisture (depth 0)" },
     soil_moisture_at_depth_11: { label: "Soil moisture (depth 1)" },
     soil_moisture_at_depth_21: { label: "Soil moisture (depth 2)" },

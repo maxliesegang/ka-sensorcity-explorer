@@ -24,7 +24,6 @@ export default {
     liveLayer_other: "{{count}} Live-Ebenen",
     archiveLayer_one: "{{count}} Archiv-Ebene",
     archiveLayer_other: "{{count}} Archiv-Ebenen",
-    readOnly: "Schreibgeschützt",
     colId: "ID",
     colLayer: "Ebene",
     colPurpose: "Zweck",

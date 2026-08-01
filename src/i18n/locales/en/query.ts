@@ -4,7 +4,6 @@ export default {
     weatherStations: "Weather stations",
   },
   presetsAria: "Ready-made queries",
-  badge: "For advanced users",
   heading: "Query explorer",
   intro:
     "Run read-only ArcGIS queries for custom filters, fields and exports. Start with a preset or configure the request yourself.",
@@ -12,6 +11,15 @@ export default {
   runQuery: "Run query",
   advancedSettings: "Configure ArcGIS parameters",
   advancedHint: "Set the filter, returned fields, sort order and maximum number of rows.",
+  // The selected layer's real columns, read from the service, so the attribute
+  // names don't have to be known in advance.
+  fields: {
+    summary_one: "Show the layer's {{count}} field",
+    summary_other: "Show the layer's {{count}} fields",
+    summaryPending: "Show the layer's fields",
+    hint: "Select fields to build outFields. Hover a name for its type.",
+    empty: "This layer publishes no field list.",
+  },
   resolvedUrl: "Resolved request URL",
   copy: "Copy",
   copied: "Copied",

@@ -1,5 +1,4 @@
 export default {
-  badge: "Spatial explorer",
   heading: "Sensor map",
   intro:
     "Find live sensors across Karlsruhe by category. Select a marker for its readings and charts.",

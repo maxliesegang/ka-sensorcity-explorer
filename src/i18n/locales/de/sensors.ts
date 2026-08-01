@@ -1,5 +1,4 @@
 export default {
-  badge: "Sensoren finden",
   heading: "Sensoren",
   intro:
     "Finden Sie einen Sensor, vergleichen Sie den letzten Messwert und öffnen Sie Verlauf, Standort und Rohdaten.",
@@ -15,7 +14,7 @@ export default {
     freshest: "neuester Messwert",
   },
   search: {
-    label: "Nach Name suchen",
+    label: "Name oder Geräte-ID suchen",
     placeholder: "z. B. Marktplatz",
   },
   category: {
@@ -58,9 +57,24 @@ export default {
     value: "Aktueller Wert",
     lastReading: "Letzter Messwert",
   },
-  badges: {
-    mapped: "Auf Karte",
-    noMap: "Kein Standort",
+  // Freshness as a filter: "which sensors stopped reporting?" is asked as often
+  // as "where is this one?".
+  status: {
+    label: "Meldestatus",
+    all: "Alle",
+    reporting: "Sendet",
+    stale: "Sendet nicht",
+    hint_one: "{{count}} Sensor hat keinen Messwert aus der letzten Stunde.",
+    hint_other: "{{count}} Sensoren haben keinen Messwert aus der letzten Stunde.",
+  },
+  export: {
+    button: "CSV herunterladen",
+    columns: {
+      deviceId: "Geräte-ID",
+      measuredAt: "Messzeitpunkt (ISO 8601)",
+      latitude: "Breitengrad",
+      longitude: "Längengrad",
+    },
   },
   currentValue: "Aktueller Wert",
   openDetails: "Details öffnen",

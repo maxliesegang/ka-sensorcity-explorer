@@ -1,9 +1,18 @@
 // SensorCity-specific data access, built on the generic ArcGIS client.
 
-import { LIVE_LAYER_ID } from "../config/layers";
+import {
+  getCategory,
+  LIVE_LAYER_ID,
+  PRECIPITATION_FIELD_KEY,
+  TEMPERATURE_CATEGORY_KEY,
+} from "../config/layers";
 import { isDemoMode, loadDemoApi } from "../demo/mode";
 import type { Attributes, Feature, Sensor } from "../types";
 import { toFiniteNumber } from "../utils/number";
+import {
+  summarizePrecipitation,
+  type PrecipitationStatus,
+} from "../utils/precipitation";
 import { query, queryAll, queryCount, queryStatistics } from "./arcgis";
 
 /** Normalize a live-layer feature into a UI-friendly Sensor. */
@@ -150,6 +159,11 @@ export interface HourlyBucket {
   sampleCount: number;
 }
 
+// The rain answer's shape and its counter arithmetic live in
+// `utils/precipitation.ts` — pure, and shared with the demo mirror — but callers
+// keep reaching for it here alongside the reader that produces it.
+export type { PrecipitationStatus };
+
 /** Render a Date as the `TIMESTAMP '…'` literal the service expects (UTC). */
 function toSqlTimestamp(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -220,6 +234,89 @@ export async function fetchHourlyBuckets(
     });
   }
   return buckets.sort((a, b) => a.timestamp - b.timestamp);
+}
+
+/** How far back "is it raining right now" looks. */
+export const PRECIPITATION_WINDOW_MS = 60 * 60 * 1000;
+
+/**
+ * Whether anything in the city has *actually* rained in the last hour, and at
+ * how many of the stations that can currently answer the question.
+ *
+ * Precipitation lives on the weather *archive* only — the live layer has no
+ * `niederschlag` column — so this is a second request rather than a read of the
+ * sensors already loaded.
+ *
+ * The published value is a **cumulative tip counter, not an amount**: it holds
+ * the same number for weeks and steps up only while rain falls, then wraps back
+ * to a small number on a device reset. A station's reading being non-zero
+ * therefore says nothing about today — this asks each station's rows in the
+ * window how much the counter *rose* ({@link sumIncrements}), which is why the
+ * rows are read individually rather than aggregated to one `max` per station.
+ * At a ten-minute cadence that is a few hundred rows for the whole network.
+ *
+ * Only the wet/dry split and the station name are returned: the increments do
+ * not behave like the millimetres the field is declared in, so quoting one as a
+ * rainfall amount would assert more than the feed supports.
+ */
+async function fetchPrecipitationStatus(
+  archiveLayerId: number,
+  field: string,
+  signal?: AbortSignal,
+): Promise<PrecipitationStatus | null> {
+  const since = new Date(Date.now() - PRECIPITATION_WINDOW_MS);
+  if (isDemoMode()) {
+    return (await loadDemoApi()).precipitationStatus(
+      archiveLayerId,
+      field,
+      PRECIPITATION_WINDOW_MS,
+    );
+  }
+  const features = await queryAll(
+    archiveLayerId,
+    {
+      where: `${field} IS NOT NULL AND measured_at >= TIMESTAMP '${toSqlTimestamp(since)}'`,
+      outFields: `device_id,name,measured_at,${field}`,
+      orderByFields: "device_id ASC,measured_at ASC,objectid ASC",
+    },
+    { maxRows: 5000 },
+    signal,
+  );
+
+  // Rows arrive grouped by station and in time order, so one pass builds each
+  // station's series. Keyed by device id — the one id the archive and the live
+  // layer share, so the station named below can be linked to its sensor page.
+  const byStation = new Map<string, { name: string; values: number[] }>();
+  for (const feature of features) {
+    const value = toFiniteNumber(feature.attributes[field]);
+    if (value == null) continue;
+    const deviceId = String(feature.attributes.device_id ?? "");
+    const series = byStation.get(deviceId);
+    if (series) series.values.push(value);
+    else {
+      byStation.set(deviceId, {
+        name: String(feature.attributes.name ?? ""),
+        values: [value],
+      });
+    }
+  }
+
+  return summarizePrecipitation(byStation, since.getTime());
+}
+
+/**
+ * The city's rain answer, with the layer and field resolved from the data model
+ * rather than by the caller. Null when the weather category declares no archive
+ * — the same silent-empty this layer already absorbs for a renamed upstream key,
+ * kept here rather than in a view so there is one place that knows where
+ * precipitation lives.
+ */
+export function fetchCityPrecipitationStatus(
+  signal?: AbortSignal,
+): Promise<PrecipitationStatus | null> {
+  const archiveLayerId = getCategory(TEMPERATURE_CATEGORY_KEY)?.archiveLayerId;
+  if (archiveLayerId == null) return Promise.resolve(null);
+  return fetchPrecipitationStatus(archiveLayerId, PRECIPITATION_FIELD_KEY, signal);
 }
 
 /** Row count of a layer. */

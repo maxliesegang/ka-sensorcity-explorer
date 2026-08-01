@@ -2,6 +2,10 @@
 // that sensor's history when the main SensorCity service has no archive layer.
 
 import type { Sensor } from "../types";
+import {
+  WATER_CATEGORY_KEY,
+  WATER_LEVEL_FIELD_KEY,
+} from "./layers";
 // This config is also imported directly by the Node-run snapshot capture;
 // retain the extension so Node's native TypeScript loader can resolve it.
 import { HVZ_WATER_LEVEL_LAYER_URL } from "./endpoints.ts";
@@ -30,8 +34,8 @@ export type FallbackHistoryProvider = FallbackHistorySource["provider"];
 export const FALLBACK_HISTORY_SOURCES = [
   {
     provider: "hvz",
-    categoryKey: "Wasserpegel-Sensor",
-    field: "pegel",
+    categoryKey: WATER_CATEGORY_KEY,
+    field: WATER_LEVEL_FIELD_KEY,
     deviceId: "109",
     label: "LUBW/HVZ",
     url: HVZ_WATER_LEVEL_LAYER_URL,
@@ -39,8 +43,8 @@ export const FALLBACK_HISTORY_SOURCES = [
   },
   {
     provider: "hvz",
-    categoryKey: "Wasserpegel-Sensor",
-    field: "pegel",
+    categoryKey: WATER_CATEGORY_KEY,
+    field: WATER_LEVEL_FIELD_KEY,
     deviceId: "110",
     label: "LUBW/HVZ",
     url: HVZ_WATER_LEVEL_LAYER_URL,
@@ -48,8 +52,8 @@ export const FALLBACK_HISTORY_SOURCES = [
   },
   {
     provider: "hvz",
-    categoryKey: "Wasserpegel-Sensor",
-    field: "pegel",
+    categoryKey: WATER_CATEGORY_KEY,
+    field: WATER_LEVEL_FIELD_KEY,
     deviceId: "9016",
     label: "LUBW/HVZ",
     url: HVZ_WATER_LEVEL_LAYER_URL,

@@ -1,5 +1,4 @@
 import { useId, useMemo } from "react";
-import { KernBadge } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 
 import type { TimeSeriesPoint } from "../api/sensorcity";
@@ -122,11 +121,6 @@ export function LineChart({
             {translate("chart.pointsOver", { count: points.length, span })}
           </p>
         </div>
-        <KernBadge
-          label={unit || translate("chart.value")}
-          variant="info"
-          className="kern-badge--small"
-        />
       </div>
       <svg
         viewBox={`0 0 ${CHART_WIDTH} ${height}`}

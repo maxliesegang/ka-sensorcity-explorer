@@ -2,15 +2,17 @@ import { useId, useMemo } from "react";
 import type { CSSProperties } from "react";
 import { KernButton, KernRadioGroup } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { useEnumParam } from "../hooks/useUrlState";
 
 import { resolveHistorySource } from "../api/history";
 import { fetchHistoryRows, fetchSensor } from "../api/sensorcity";
 import type { HistoryRow } from "../api/sensorcity";
+import { DataFreshness } from "../components/DataFreshness";
 import { DepthProfileChart } from "../components/DepthProfileChart";
 import { DetailTabs } from "../components/DetailTabs";
+import { SensorFreshnessBadge } from "../components/SensorFreshnessBadge";
 import type { DetailTabItem } from "../components/DetailTabs";
 import { SensorHistoryExplorer } from "../components/SensorHistoryExplorer";
 import { SensorLocationSection } from "../components/SensorLocationSection";
@@ -23,7 +25,7 @@ import {
   getCategory,
   measurementLabelKey,
 } from "../config/layers";
-import { useAsync } from "../hooks/useAsync";
+import { useAsync, type AsyncState } from "../hooks/useAsync";
 import type { Category, DepthProfile, Sensor } from "../types";
 import { buildDepthProfileGrid } from "../utils/depthProfile";
 import { formatTimestamp, formatValue, timeAgo } from "../utils/format";
@@ -41,8 +43,16 @@ export function SensorDetailView() {
   const { objectId: objectIdParam } = useParams<{ objectId: string }>();
   const objectId = Number(objectIdParam);
   const navigate = useNavigate();
-  const state = useAsync((s) => fetchSensor(objectId, s), [objectId]);
+  const location = useLocation();
+  const state = useAsync((s) => fetchSensor(objectId, s), [objectId], {
+    reloadOnFocus: true,
+  });
   const { t } = useTranslation("detail");
+
+  // A shared or bookmarked link is the first entry in this tab's history, so
+  // there is nothing to go back *to*: react-router marks that entry "default".
+  // Send those arrivals to the sensor list rather than off the site (or nowhere).
+  const hasHistoryToGoBack = location.key !== "default";
 
   return (
     <section>
@@ -50,23 +60,31 @@ export function SensorDetailView() {
         type="button"
         variant="tertiary"
         className="kern-btn--x-small back-link"
-        onClick={() => navigate(-1)}
+        onClick={() => (hasHistoryToGoBack ? navigate(-1) : navigate("/sensors"))}
         icon="arrow-back"
-        label={t("back")}
+        label={hasHistoryToGoBack ? t("back") : t("backToSensors")}
       />
       <AsyncBoundary
         state={state}
         isEmpty={(sensor) => sensor == null}
         emptyLabel={t("notFound")}
       >
-        {(sensor) => <SensorDetail sensor={sensor as Sensor} />}
+        {(sensor) => (
+          <SensorDetail sensor={sensor as Sensor} state={state} />
+        )}
       </AsyncBoundary>
     </section>
   );
 }
 
 /** Inner view that receives the loaded sensor so its hooks stay top-level. */
-function SensorDetail({ sensor }: { sensor: Sensor }) {
+function SensorDetail({
+  sensor,
+  state,
+}: {
+  sensor: Sensor;
+  state: AsyncState<Sensor | null>;
+}) {
   const { t } = useTranslation("detail");
   const { t: tc } = useTranslation("common");
   const category = getCategory(sensor.category);
@@ -147,16 +165,22 @@ function SensorDetail({ sensor }: { sensor: Sensor }) {
     >
       <header className="detail-hero">
         <div className="detail-hero__main">
-          <span className="legend-item">
-            <span
-              className="cat-dot"
-              style={{ background: getCategoryColor(sensor.category) }}
-              aria-hidden="true"
-            />
-            {label}
+          <span className="detail-hero__tags">
+            <span className="legend-item">
+              <span
+                className="cat-dot"
+                style={{ background: getCategoryColor(sensor.category) }}
+                aria-hidden="true"
+              />
+              {label}
+            </span>
+            {/* The headline value below carries no age of its own, so say here
+                whether it is a current reading or the last one before silence. */}
+            <SensorFreshnessBadge sensor={sensor} />
           </span>
           <h1 className="kern-heading-large">{sensor.name}</h1>
           <p className="kern-body kern-body--muted">{t("heroSubtitle")}</p>
+          <DataFreshness state={state} className="data-freshness--inline" />
         </div>
         <div className="detail-hero__reading">
           <span className="pulse-stat__label">

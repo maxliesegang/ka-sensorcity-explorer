@@ -8,7 +8,6 @@
 // intentionally hidden from the nav while the community-data blend is evaluated.
 
 import { useEffect, useMemo, useState } from "react";
-import { KernBadge } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { fetchSensors } from "../api/sensorcity";
@@ -33,9 +32,13 @@ import {
 } from "../utils/combinedTemperatureField";
 
 export function CombinedTemperatureFieldView() {
-  const sensors = useAsync(fetchSensors, []);
-  const openSenseMap = useAsync(fetchOpenSenseMapTemperatures, []);
-  const sensorCommunity = useAsync(fetchSensorCommunityTemperatures, []);
+  const sensors = useAsync(fetchSensors, [], { reloadOnFocus: true });
+  const openSenseMap = useAsync(fetchOpenSenseMapTemperatures, [], {
+    reloadOnFocus: true,
+  });
+  const sensorCommunity = useAsync(fetchSensorCommunityTemperatures, [], {
+    reloadOnFocus: true,
+  });
   const { t } = useTranslation("temperature");
 
   const mapHandle = useMapLibreMap();
@@ -209,7 +212,6 @@ export function CombinedTemperatureFieldView() {
     <div>
       <div className="view-header view-header--compact">
         <div className="view-header__lead">
-          <KernBadge label={t("combined.badge")} variant="info" />
           <h1 className="kern-heading-medium">{t("combined.heading")}</h1>
         </div>
         <p className="kern-body kern-body--muted view-header__intro">

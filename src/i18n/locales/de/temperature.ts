@@ -1,5 +1,4 @@
 export default {
-  badge: "Stadtklima",
   heading: "Wie warm ist es gerade in Karlsruhe?",
   intro:
     "Warme und kühle Orte auf einen Blick. Jede Fläche übernimmt den nächstgelegenen aktuellen Sensor; Rot ist wärmer, Blau kühler als die übrigen.",
@@ -27,12 +26,22 @@ export default {
     caption_other:
       "Jede Fläche übernimmt den nächstgelegenen aktuellen Sensor ({{count}} insgesamt).",
   },
+  // The city-vs-countryside comparison, promoted out of the baseline select:
+  // before it runs there are no numbers to quote, because the DWD reading is
+  // only fetched once that baseline is selected.
+  heatIsland: {
+    heading: "Stadt gegen Umland",
+    hint: "Bebaute Flächen speichern Wärme. Vergleichen Sie die Sensoren der Stadt mit der DWD-Wetterstation Rheinstetten außerhalb der Stadt.",
+    button: "Mit dem Umland vergleichen",
+    active:
+      "Die Stadtsensoren liegen bei {{mean}} gegenüber Rheinstetten mit {{baseline}}.",
+    warmest: "Größter Unterschied: {{delta}} an",
+  },
   popup: {
     viewDetails: "Details anzeigen",
     setReference: "Als Referenz festlegen",
   },
   combined: {
-    badge: "Stadt + Community",
     heading: "Live-Temperaturen in ganz Karlsruhe",
     intro:
       "Live-Messwerte des städtischen SensorCity-Netzes mit nahen Stationen von openSenseMap und sensor.community vergleichen.",

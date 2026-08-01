@@ -3,13 +3,15 @@
 // reachable by name without spatial interaction.
 
 import { useCallback, useEffect, useMemo, type CSSProperties } from "react";
-import { KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
+import { KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { fetchSensors } from "../api/sensorcity";
 import { AsyncBoundary, Empty } from "../components/Status";
 import { CollapsibleFilters } from "../components/CollapsibleFilters";
+import { DataFreshness } from "../components/DataFreshness";
+import { SensorFreshnessBadge } from "../components/SensorFreshnessBadge";
 import {
   CATEGORIES,
   categoryLabelKey,
@@ -18,10 +20,14 @@ import {
   measurementLabelKey,
 } from "../config/layers";
 import { useAsync } from "../hooks/useAsync";
+import { useTicker } from "../hooks/useTicker";
 import { useUrlState, type ParamUpdates } from "../hooks/useUrlState";
 import { toEnum, toPositiveInt } from "../utils/urlParams";
 import type { Measurement, Sensor } from "../types";
+import { rowsToCsv } from "../utils/csv";
+import { downloadTextFile } from "../utils/download";
 import { formatTimestamp, timeAgo } from "../utils/format";
+import { isRecentlyMeasured } from "../utils/sensorFreshness";
 import {
   formatReading,
   getMeasurementForField,
@@ -37,6 +43,17 @@ type SortDir = (typeof SORT_DIRECTIONS)[number];
 
 const VIEW_MODES = ["cards", "table"] as const;
 type ViewMode = (typeof VIEW_MODES)[number];
+
+// "Which sensors have stopped reporting?" is a first-class question here, so
+// freshness is a filter rather than something to infer from the age column.
+const STATUS_FILTERS = ["all", "reporting", "stale"] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
+function matchesStatus(sensor: Sensor, status: StatusFilter, now: number): boolean {
+  if (status === "all") return true;
+  const isFresh = isRecentlyMeasured(sensor, now);
+  return status === "reporting" ? isFresh : !isFresh;
+}
 
 const PAGE_SIZE_PARAMS = ["12", "24", "48"] as const;
 const PAGE_SIZES = [12, 24, 48] as const;
@@ -96,7 +113,7 @@ function compareSensors(
 }
 
 export function SensorsView() {
-  const sensors = useAsync(fetchSensors, []);
+  const sensors = useAsync(fetchSensors, [], { reloadOnFocus: true });
   const [params, updateParams] = useUrlState();
   const { t } = useTranslation("sensors");
 
@@ -112,6 +129,7 @@ export function SensorsView() {
   );
   const selectedField = selectedMeasurement?.field ?? "";
   const search = params.get("search") ?? "";
+  const status = toEnum(params.get("status"), STATUS_FILTERS, "all");
   const sortKey = toEnum(params.get("sort"), SORT_KEYS, "name");
   const sortDir = toEnum(params.get("direction"), SORT_DIRECTIONS, defaultSortDir(sortKey));
   const viewMode = toEnum(params.get("view"), VIEW_MODES, "cards");
@@ -155,9 +173,12 @@ export function SensorsView() {
   return (
     <div>
       <div className="view-header view-header--wide">
-        <KernBadge label={t("badge")} variant="info" />
         <h1 className="kern-heading-medium">{t("heading")}</h1>
         <p className="kern-body kern-body--muted">{t("intro")}</p>
+        <DataFreshness
+          state={sensors}
+          className="data-freshness--inline"
+        />
       </div>
 
       <AsyncBoundary
@@ -176,6 +197,10 @@ export function SensorsView() {
             onMeasurementChange={setMeasurementField}
             search={search}
             onSearchChange={(value) => updateFilters({ search: value || null })}
+            status={status}
+            onStatusChange={(value) =>
+              updateFilters({ status: value === "all" ? null : value })
+            }
             sortKey={sortKey}
             sortDir={sortDir}
             onSort={toggleSort}
@@ -187,7 +212,14 @@ export function SensorsView() {
             pageSize={pageSize}
             onPageChange={handlePageChange}
             onPageSizeChange={(value) => updateFilters({ pageSize: String(value) })}
-            onReset={() => updateFilters({ search: null, category: null, field: null })}
+            onReset={() =>
+              updateFilters({
+                search: null,
+                category: null,
+                field: null,
+                status: null,
+              })
+            }
           />
         )}
       </AsyncBoundary>
@@ -244,6 +276,8 @@ function SensorExplorer({
   onMeasurementChange,
   search,
   onSearchChange,
+  status,
+  onStatusChange,
   sortKey,
   sortDir,
   onSort,
@@ -266,6 +300,8 @@ function SensorExplorer({
   onMeasurementChange: (field: string) => void;
   search: string;
   onSearchChange: (search: string) => void;
+  status: StatusFilter;
+  onStatusChange: (status: StatusFilter) => void;
   sortKey: SortKey;
   sortDir: SortDir;
   onSort: (k: SortKey) => void;
@@ -281,6 +317,7 @@ function SensorExplorer({
 }) {
   const { t } = useTranslation("sensors");
   const { t: tc } = useTranslation("common");
+  const now = useTicker();
 
   const categoryLabels = useMemo(() => {
     const categoryKeys = new Set(sensors.map((sensor) => sensor.category));
@@ -289,14 +326,25 @@ function SensorExplorer({
     );
   }, [sensors, tc]);
 
-  const { rows, categoryCounts } = useMemo(() => {
+  const { rows, categoryCounts, staleCount } = useMemo(() => {
     const q = search.trim().toLowerCase();
     const counts = new Map<string, number>();
     const filtered: Sensor[] = [];
     let total = 0;
+    let stale = 0;
 
     for (const sensor of sensors) {
-      if (q && !sensor.name.toLowerCase().includes(q)) continue;
+      // Device ids are what a power user has in hand when chasing one sensor
+      // through the raw feed, so they match the same box as the name.
+      if (
+        q &&
+        !sensor.name.toLowerCase().includes(q) &&
+        !sensor.deviceId.toLowerCase().includes(q)
+      ) {
+        continue;
+      }
+      if (!isRecentlyMeasured(sensor, now)) stale += 1;
+      if (!matchesStatus(sensor, status, now)) continue;
 
       total += 1;
       counts.set(sensor.category, (counts.get(sensor.category) ?? 0) + 1);
@@ -314,8 +362,18 @@ function SensorExplorer({
       ),
     );
 
-    return { rows: filtered, categoryCounts: { counts, total } };
-  }, [sensors, category, search, sortKey, sortDir, selectedMeasurement, categoryLabels]);
+    return { rows: filtered, categoryCounts: { counts, total }, staleCount: stale };
+  }, [
+    sensors,
+    category,
+    search,
+    status,
+    sortKey,
+    sortDir,
+    selectedMeasurement,
+    categoryLabels,
+    now,
+  ]);
 
   const selectedLabel = category ? tc(categoryLabelKey(category)) : t("allCategories");
   const valueLabel = selectedMeasurement
@@ -340,7 +398,44 @@ function SensorExplorer({
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const visibleRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const activeFilterCount = Number(Boolean(category)) + Number(Boolean(search.trim()));
+  const activeFilterCount =
+    Number(Boolean(category)) +
+    Number(Boolean(search.trim())) +
+    Number(status !== "all");
+
+  // Exports what the filters currently select — every matching sensor, not just
+  // the visible page — so a shared filter and its data stay the same set.
+  function downloadCsv() {
+    const valueColumn = selectedMeasurement
+      ? `${valueLabel}${selectedMeasurement.unit ? ` (${selectedMeasurement.unit})` : ""}`
+      : t("columns.value");
+    downloadTextFile(
+      "sensorcity-sensors.csv",
+      rowsToCsv([
+        [
+          t("columns.name"),
+          t("columns.category"),
+          t("export.columns.deviceId"),
+          valueColumn,
+          t("export.columns.measuredAt"),
+          t("export.columns.latitude"),
+          t("export.columns.longitude"),
+        ],
+        ...rows.map((sensor) => [
+          sensor.name,
+          categoryLabels.get(sensor.category) ?? sensor.category,
+          sensor.deviceId,
+          getReadingForMeasurement(sensor, selectedMeasurement),
+          sensor.measuredAt == null
+            ? ""
+            : new Date(sensor.measuredAt).toISOString(),
+          sensor.lat,
+          sensor.lon,
+        ]),
+      ]),
+      "text/csv",
+    );
+  }
 
   useEffect(() => {
     if (page !== currentPage) onPageChange(currentPage);
@@ -418,6 +513,32 @@ function SensorExplorer({
                   );
                 })}
               </div>
+            </fieldset>
+
+            <fieldset className="status-filter" aria-label={t("status.label")}>
+              <legend className="kern-label category-picker__legend">
+                {t("status.label")}
+              </legend>
+              <div className="segmented-control">
+                {STATUS_FILTERS.map((option) => (
+                  <button
+                    type="button"
+                    key={option}
+                    className={
+                      status === option
+                        ? "segmented-control__option segmented-control__option--active"
+                        : "segmented-control__option"
+                    }
+                    aria-pressed={status === option}
+                    onClick={() => onStatusChange(option)}
+                  >
+                    <span className="kern-label">{t(`status.${option}`)}</span>
+                  </button>
+                ))}
+              </div>
+              <span className="kern-body kern-body--small kern-body--muted">
+                {t("status.hint", { count: staleCount })}
+              </span>
             </fieldset>
 
             <div className="toolbar filter-panel--inline">
@@ -501,6 +622,16 @@ function SensorExplorer({
           {t("result", { count: rows.length })}
           {category ? t("inCategory", { category: selectedLabel }) : ""}
         </span>
+        <div className="result-actions">
+          <KernButton
+            type="button"
+            variant="secondary"
+            className="kern-btn--x-small"
+            onClick={downloadCsv}
+            disabled={rows.length === 0}
+            icon="download"
+            label={t("export.button")}
+          />
         <div className="segmented-control" role="group" aria-label={t("view.label")}>
           <button
             type="button"
@@ -520,6 +651,7 @@ function SensorExplorer({
             <KernIcon icon="checklist" size="small" />
             <span className="kern-label">{t("view.table")}</span>
           </button>
+        </div>
         </div>
       </div>
 
@@ -683,13 +815,9 @@ function SensorCard({
           />
           {tc(categoryLabelKey(sensor.category))}
         </span>
-        {/* Neutral status badge: KernBadge requires a color variant, so this
-            stays raw to preserve the original variant-less appearance. */}
-        <span className="kern-badge kern-badge--small">
-          <span className="kern-label">
-            {sensor.lat != null ? t("badges.mapped") : t("badges.noMap")}
-          </span>
-        </span>
+        {/* Whether the sensor is still reporting, which decides how much the
+            reading below is worth. Whether it is mapped is in the stats bar. */}
+        <SensorFreshnessBadge sensor={sensor} />
       </span>
       <span className="sensor-card__name">{sensor.name}</span>
       <span className="sensor-card__reading">

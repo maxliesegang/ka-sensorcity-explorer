@@ -42,6 +42,19 @@ const snapshot: DemoSnapshot = {
       { timestamp: 2 * HOUR + 60_000, value: 40 },
     ],
     "5:dev-a:pressure": [{ timestamp: HOUR, value: 1000 }],
+    // Rain is a cumulative tip counter, so only a *rise* inside the window is
+    // wet: dev-a's climbs, dev-b's stands still at a high number from an older
+    // downpour, and dev-c reports once, which answers nothing either way.
+    "5:dev-a:rain": [
+      { timestamp: 0, value: 200 },
+      { timestamp: HOUR + 60_000, value: 240 },
+      { timestamp: 2 * HOUR, value: 244 },
+    ],
+    "5:dev-b:rain": [
+      { timestamp: HOUR + 90_000, value: 71 },
+      { timestamp: 2 * HOUR, value: 71 },
+    ],
+    "5:dev-c:rain": [{ timestamp: 2 * HOUR, value: 5 }],
   },
   rawArchiveFeatures: {
     2: [
@@ -156,6 +169,25 @@ describe("history and fallback providers", () => {
     ]);
     expect(await api.hourlyBuckets(5, "pressure", 0)).toHaveLength(1);
     expect(await api.hourlyBuckets(9, "temp", 0)).toEqual([]);
+  });
+
+  it("answers rain against the snapshot's own last hour, not the wall clock", async () => {
+    // Three stations on layer 5: dev-a's counter rises inside the window,
+    // dev-b's stands still (high but dry), dev-c reports once and so cannot be
+    // judged. The window is one hour back from the newest captured point.
+    const status = await api.precipitationStatus(5, "rain", 60 * 60 * 1000);
+
+    expect(status).toEqual({
+      wet: 1,
+      reporting: 2,
+      // The snapshot holds no station names, so the device id stands in.
+      wettest: { deviceId: "dev-a", name: "dev-a" },
+      since: 2 * HOUR - 60 * 60 * 1000,
+    });
+  });
+
+  it("has no rain answer for a field the snapshot never captured", async () => {
+    expect(await api.precipitationStatus(5, "unknown", 60 * 60 * 1000)).toBeNull();
   });
 
   it("returns HVZ water-level history by station id", async () => {

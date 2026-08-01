@@ -1,5 +1,4 @@
 export default {
-  badge: "Boden",
   heading: "Was macht der Boden gerade?",
   intro:
     "Die Bodensensoren der Stadt an ihren Standorten. Jeder misst in sechs Tiefenstufen; die Stufe wählen Sie unten.",

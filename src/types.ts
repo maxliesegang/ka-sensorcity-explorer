@@ -101,6 +101,16 @@ export interface Category {
    * archive history.
    */
   depthProfiles?: DepthProfile[];
+  /**
+   * Whether this category reports on a cycle slower than the hourly freshness
+   * window. Summaries of a slow category take its latest reading whatever its
+   * age (and the UI shows that age) rather than suppressing the answer, because
+   * a card showing nothing is worse than one showing a known age.
+   *
+   * Declared here rather than tested for by key at each call site, so a new
+   * slow-cadence category says so once instead of silently rendering empty.
+   */
+  reportsSlowly?: boolean;
 }
 
 /**

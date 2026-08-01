@@ -37,6 +37,17 @@ export const TEMPERATURE_CATEGORY_KEY = "Temperatur-Sensor";
 /** The air-temperature measurement field, on both the live and archive layers. */
 export const TEMPERATURE_FIELD_KEY = "temp";
 
+/** The precipitation field on the weather/air sensors, in mm. */
+export const PRECIPITATION_FIELD_KEY = "niederschlag";
+
+/**
+ * The water-gauge category key and its level field. Exported for the same reason
+ * as {@link TEMPERATURE_CATEGORY_KEY}: an upstream rename fails silently, so
+ * each upstream string has exactly one home.
+ */
+export const WATER_CATEGORY_KEY = "Wasserpegel-Sensor";
+export const WATER_LEVEL_FIELD_KEY = "pegel";
+
 /**
  * The soil-probe category key. Exported for the same reason as
  * {@link TEMPERATURE_CATEGORY_KEY}: the soil field view filters on it, and an
@@ -121,11 +132,11 @@ export const CATEGORIES: Category[] = [
     // the live layer does not expose them — listing them only renders empty charts.
     // Add them back here if the city starts publishing them.
     measurements: [
-      { field: "temp", unit: "°C" },
+      { field: TEMPERATURE_FIELD_KEY, unit: "°C" },
       { field: "luftfeuchte", unit: "%" },
       { field: "press", unit: "Pa" },
       { field: "sonnenstrahlung", unit: "W/m²" },
-      { field: "niederschlag", unit: "mm" },
+      { field: PRECIPITATION_FIELD_KEY, unit: "mm" },
     ],
   },
   {
@@ -138,6 +149,7 @@ export const CATEGORIES: Category[] = [
     key: SOIL_CATEGORY_KEY,
     color: "#a9705a",
     archiveLayerId: 4,
+    reportsSlowly: true,
     // Probes report stacked depth bands (shallow→deep). The older flat
     // `bodenfeuchte`/`bodentemperatur` fields still exist upstream but are now
     // empty for all but 2 of 99 sensors, so the bands are the real feed.
@@ -153,10 +165,11 @@ export const CATEGORIES: Category[] = [
     ],
   },
   {
-    key: "Wasserpegel-Sensor",
+    key: WATER_CATEGORY_KEY,
     color: "#0f7d8c",
+    reportsSlowly: true,
     // The current FeatureServer publishes these gauges only on the live layer.
-    measurements: [{ field: "pegel", unit: "cm" }],
+    measurements: [{ field: WATER_LEVEL_FIELD_KEY, unit: "cm" }],
   },
 ];
 

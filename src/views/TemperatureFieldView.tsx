@@ -9,7 +9,7 @@
 // community view via useTemperatureFieldModel.
 
 import { useEffect, useMemo, useState } from "react";
-import { KernBadge, KernButton } from "@kern-ux-annex/kern-react-kit";
+import { KernButton } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useBoolParam } from "../hooks/useUrlState";
@@ -22,6 +22,9 @@ import {
 import { categoryLabelKey, TEMPERATURE_CATEGORY_KEY } from "../config/layers";
 import { AsyncBoundary } from "../components/Status";
 import { CityTemperatureChart } from "../components/CityTemperatureChart";
+import { DataFreshness } from "../components/DataFreshness";
+import { HeatIslandCallout } from "../components/HeatIslandCallout";
+import { DWD_BASELINE_ID } from "../config/temperatureBaselines";
 import {
   TemperatureBaselineStatus,
   TemperatureFieldLegend,
@@ -45,7 +48,7 @@ import {
 } from "../utils/liveTemperatureReadings";
 
 export function TemperatureFieldView() {
-  const sensors = useAsync(fetchSensors, []);
+  const sensors = useAsync(fetchSensors, [], { reloadOnFocus: true });
   // The heavier insights section is opt-in and deep-linked (`?insights=1`), so a
   // shared link can land straight on the expanded analytics.
   const [showInsights, setShowInsights] = useBoolParam("insights", false);
@@ -99,6 +102,7 @@ export function TemperatureFieldView() {
     isBaselineTemperatureUnavailable,
     dwdBaselineError,
     dwdBaselineObservation,
+    baselineTemperature,
     adaptiveTemperatureScale,
     legendModel,
     getColorForTemperature,
@@ -204,7 +208,6 @@ export function TemperatureFieldView() {
     <div>
       <div className="view-header view-header--compact">
         <div className="view-header__lead">
-          <KernBadge label={t("badge")} variant="info" />
           <h1 className="kern-heading-medium">{t("heading")}</h1>
         </div>
         <p className="kern-body kern-body--muted view-header__intro">
@@ -215,6 +218,15 @@ export function TemperatureFieldView() {
           .
         </p>
       </div>
+
+      {/* The city-vs-countryside comparison, one button away rather than three
+          controls deep. Selecting the DWD baseline is what recolours the map. */}
+      <HeatIslandCallout
+        summary={liveTemperatureSummary}
+        baselineTemperature={isDwdBaselineSelected ? baselineTemperature : null}
+        isActive={isDwdBaselineSelected}
+        onActivate={() => selectBaseline(DWD_BASELINE_ID)}
+      />
 
       <section className="map-shell" aria-label={t("canvasAria")}>
         <FieldBaselineControls
@@ -245,6 +257,7 @@ export function TemperatureFieldView() {
             isDwdBaselineSelected={isDwdBaselineSelected}
             dwdBaselineError={dwdBaselineError}
           />
+          <DataFreshness state={sensors} />
           <MapResetViewButton onReset={resetView} />
         </div>
 

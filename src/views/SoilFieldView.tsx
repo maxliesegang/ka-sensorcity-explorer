@@ -14,11 +14,11 @@
 // own.
 
 import { useEffect, useMemo } from "react";
-import { KernBadge } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { fetchSensors } from "../api/sensorcity";
+import { DataFreshness } from "../components/DataFreshness";
 import { FieldBaselineControls } from "../components/FieldBaselineControls";
 import { FieldLegend } from "../components/FieldLegend";
 import { MapResetViewButton } from "../components/MapResetViewButton";
@@ -70,7 +70,7 @@ export function SoilFieldView() {
 function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }) {
   const { t } = useTranslation("soil");
   const { t: tc } = useTranslation("common");
-  const sensors = useAsync(fetchSensors, []);
+  const sensors = useAsync(fetchSensors, [], { reloadOnFocus: true });
 
   // Soil moisture leads; the config's own order is a data-model concern rather
   // than a UI one.
@@ -249,7 +249,6 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     <div>
       <div className="view-header view-header--compact">
         <div className="view-header__lead">
-          <KernBadge label={t("badge")} variant="info" />
           <h1 className="kern-heading-medium">{t("heading")}</h1>
         </div>
         <p className="kern-body kern-body--muted view-header__intro">
@@ -316,6 +315,7 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
               {t("baseline.unavailable", { band: bandLabel })}
             </span>
           )}
+          <DataFreshness state={sensors} />
           <MapResetViewButton onReset={resetView} />
         </div>
 

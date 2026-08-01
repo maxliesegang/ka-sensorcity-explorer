@@ -14,6 +14,7 @@ import { useAsync } from "../hooks/useAsync";
 import { useInitialMapView } from "../hooks/useInitialMapView";
 import { useMapLibreMap } from "../hooks/useMapLibreMap";
 import type { Sensor } from "../types";
+import { DataFreshness } from "./DataFreshness";
 import { formatReadingTime } from "../utils/format";
 import { escapeHtml } from "../utils/html";
 import {
@@ -58,7 +59,7 @@ function mergeSelectedSensor(sensor: Sensor, sensors: Sensor[] | null | undefine
 export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
   const { t } = useTranslation("detail");
   const { t: tc } = useTranslation("common");
-  const sensors = useAsync(fetchSensors, []);
+  const sensors = useAsync(fetchSensors, [], { reloadOnFocus: true });
   const { containerRef, mapRef, isStyleReady } = useMapLibreMap();
   const sensorBoundsRef = useRef<LngLatBounds | null>(null);
   const [mappedSensorCount, setMappedSensorCount] = useState(0);
@@ -200,6 +201,7 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
       </div>
       <div className="result-bar result-bar--compact" role="status" aria-live="polite">
         <span className="kern-body kern-body--small">{status}</span>
+        <DataFreshness state={sensors} />
       </div>
       <div
         className="map sensor-location__map"

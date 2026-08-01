@@ -45,6 +45,18 @@ export function formatSignedDelta(value: number, unit?: string): string {
   return unit ? `${formatted} ${unit}` : formatted;
 }
 
+/**
+ * Shorten a water gauge's upstream name to the place and river it is about.
+ *
+ * The feed names gauges "Messstelle Maxau / Rhein (HVZ/WSA Oberrhein)" — the
+ * operator in brackets and the word "Messstelle" carry nothing at a glance, so
+ * a compact list shows "Maxau / Rhein" and leaves the full string to the sensor
+ * page. Any name not in that shape is returned untouched.
+ */
+export function formatGaugeName(name: string): string {
+  return name.replace(/^Messstelle\s+/i, "").replace(/\s*\([^)]*\)\s*$/, "").trim() || name;
+}
+
 /** Relative age, e.g. "5 min ago", for freshness cues. */
 export function timeAgo(epochMs: number | null): string {
   if (epochMs == null) return NOT_AVAILABLE;

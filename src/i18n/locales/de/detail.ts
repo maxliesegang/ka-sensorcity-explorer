@@ -1,5 +1,8 @@
 export default {
   back: "Zurück",
+  // Shown instead of "Back" when the page was opened directly from a shared
+  // link, where there is no previous page in this tab.
+  backToSensors: "Alle Sensoren",
   notFound: "Sensor nicht gefunden.",
   heroSubtitle: "Neuester von SensorCity veröffentlichter Messwert.",
   primaryValue: "Primärwert",

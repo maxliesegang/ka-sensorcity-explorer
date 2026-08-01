@@ -1,5 +1,4 @@
 export default {
-  badge: "Räumlicher Explorer",
   heading: "Sensorkarte",
   intro:
     "Finden Sie Live-Sensoren in Karlsruhe nach Kategorie. Wählen Sie einen Marker für Messwerte und Diagramme.",

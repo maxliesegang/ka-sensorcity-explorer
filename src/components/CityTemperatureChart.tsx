@@ -8,7 +8,6 @@
 // this chart's own marks and wording.
 
 import { useId, useMemo } from "react";
-import { KernBadge } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 
 import type { CityTemperaturePoint } from "../api/temperatureInsights";
@@ -145,7 +144,6 @@ export function CityTemperatureChart({ points, height = 260 }: Props) {
             })}
           </p>
         </div>
-        <KernBadge label={UNIT} variant="info" className="kern-badge--small" />
       </div>
 
       <svg

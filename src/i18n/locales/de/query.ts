@@ -4,7 +4,6 @@ export default {
     weatherStations: "Wetterstationen",
   },
   presetsAria: "Vorgefertigte Abfragen",
-  badge: "Für Fortgeschrittene",
   heading: "Abfrage-Explorer",
   intro:
     "Schreibgeschützte ArcGIS-Abfragen für eigene Filter, Felder und Exporte ausführen. Mit einer Vorlage starten oder die Anfrage selbst konfigurieren.",
@@ -12,6 +11,15 @@ export default {
   runQuery: "Abfrage ausführen",
   advancedSettings: "ArcGIS-Parameter konfigurieren",
   advancedHint: "Filter, ausgegebene Felder, Sortierung und maximale Zeilenzahl festlegen.",
+  // The selected layer's real columns, read from the service, so the attribute
+  // names don't have to be known in advance.
+  fields: {
+    summary_one: "{{count}} Feld dieses Layers anzeigen",
+    summary_other: "{{count}} Felder dieses Layers anzeigen",
+    summaryPending: "Felder dieses Layers anzeigen",
+    hint: "Felder auswählen, um outFields zu bauen. Für den Typ auf einen Namen zeigen.",
+    empty: "Dieser Layer veröffentlicht keine Feldliste.",
+  },
   resolvedUrl: "Aufgelöste Anfrage-URL",
   copy: "Kopieren",
   copied: "Kopiert",

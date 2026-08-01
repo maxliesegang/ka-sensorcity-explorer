@@ -1,5 +1,4 @@
 export default {
-  badge: "Soil",
   heading: "What is the soil doing right now?",
   intro:
     "The city's soil probes at their locations. Each measures at six depth levels; pick a level with the strip below.",

@@ -5,12 +5,13 @@
 
 import type { Feature } from "geojson";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
+import { KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { fetchSensors } from "../api/sensorcity";
 import { AsyncBoundary } from "../components/Status";
 import { CollapsibleFilters } from "../components/CollapsibleFilters";
+import { DataFreshness } from "../components/DataFreshness";
 import { MapResetViewButton } from "../components/MapResetViewButton";
 import {
   CATEGORIES,
@@ -81,7 +82,7 @@ const MARKER_STYLE: InteractiveCircleStyle = {
 };
 
 export function MapView() {
-  const sensors = useAsync(fetchSensors, []);
+  const sensors = useAsync(fetchSensors, [], { reloadOnFocus: true });
   const [params, updateParams] = useUrlState();
   const { t } = useTranslation("map");
   const { t: tc } = useTranslation("common");
@@ -213,7 +214,6 @@ export function MapView() {
   return (
     <div>
       <div className="view-header view-header--wide">
-        <KernBadge label={t("badge")} variant="info" />
         <h1 className="kern-heading-medium">{t("heading")}</h1>
         <p className="kern-body kern-body--muted">
           {t("intro")} {t("introLinkPrefix")}
@@ -244,6 +244,7 @@ export function MapView() {
             )}
           </div>
           <div className="map-actions">
+            <DataFreshness state={sensors} />
             <MapResetViewButton onReset={resetView} />
             <KernButton
               type="button"

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { KernBadge, KernIcon } from "@kern-ux-annex/kern-react-kit";
+import { KernIcon } from "@kern-ux-annex/kern-react-kit";
 import { Link } from "react-router-dom";
 
 import type { ThemeMode } from "../App";
@@ -142,17 +142,11 @@ export function AboutView({
       <section className="surface-section">
         <h2 className="kern-heading-small">{t("dataSource.heading")}</h2>
         <p className="kern-body">{t("dataSource.body")}</p>
-        <div className="about-summary">
-          <KernBadge
-            label={t("dataSource.liveLayer", { count: liveLayers })}
-            variant="info"
-          />
-          <KernBadge
-            label={t("dataSource.archiveLayer", { count: archiveLayers })}
-            variant="info"
-          />
-          <KernBadge label={t("dataSource.readOnly")} variant="success" />
-        </div>
+        <p className="about-summary kern-body kern-body--small kern-body--muted">
+          {t("dataSource.liveLayer", { count: liveLayers })}
+          {" · "}
+          {t("dataSource.archiveLayer", { count: archiveLayers })}
+        </p>
         <div className="kern-table-responsive table-scroll">
           <table className="kern-table kern-table--striped kern-table--small">
             <caption className="visually-hidden">{t("dataSource.tableCaption")}</caption>
@@ -181,15 +175,9 @@ export function AboutView({
                   </td>
                   <td className="kern-table__cell">{tc(layerLabelKey(layer.id))}</td>
                   <td className="kern-table__cell">
-                    <KernBadge
-                      label={
-                        layer.live
-                          ? t("dataSource.typeLive")
-                          : t("dataSource.typeArchive")
-                      }
-                      variant={layer.live ? "success" : "info"}
-                      className="kern-badge--small"
-                    />
+                    {layer.live
+                      ? t("dataSource.typeLive")
+                      : t("dataSource.typeArchive")}
                   </td>
                 </tr>
               ))}

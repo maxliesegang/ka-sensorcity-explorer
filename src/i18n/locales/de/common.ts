@@ -46,7 +46,23 @@ export default {
   status: {
     loading: "Wird geladen…",
     errorTitle: "Daten konnten nicht geladen werden",
+    errorHint:
+      "Der Sensordienst der Stadt hat nicht geantwortet. Er ist häufig kurz nicht erreichbar — ein erneuter Versuch hilft meist.",
+    retry: "Erneut versuchen",
     empty: "Keine Daten verfügbar.",
+  },
+  // Shown by the views that draw live readings: when the data on screen was
+  // fetched, and the way to fetch it again.
+  freshness: {
+    pending: "Aktuelle Messwerte werden geladen…",
+    loadedAt: "Daten von {{time}} · {{ago}}",
+    refresh: "Aktualisieren",
+    refreshing: "Wird aktualisiert…",
+    badge: {
+      live: "Sendet",
+      stale: "Letzter Messwert {{ago}}",
+      unknown: "Kein Messzeitpunkt",
+    },
   },
   footer: {
     builtWith: "Erstellt mit KERN UX. Daten:",
@@ -126,7 +142,9 @@ export default {
     press: { label: "Luftdruck" },
     sonnenstrahlung: { label: "Sonnenstrahlung" },
     niederschlag: { label: "Niederschlag" },
-    clicks: { label: "Impulse" },
+    // The rain gauge's raw tipping-bucket count. "Impulse" named the wire field;
+    // this names what was counted, since the feed publishes no mm conversion.
+    clicks: { label: "Wippenimpulse" },
     soil_moisture_at_depth_01: { label: "Bodenfeuchte (Tiefe 0)" },
     soil_moisture_at_depth_11: { label: "Bodenfeuchte (Tiefe 1)" },
     soil_moisture_at_depth_21: { label: "Bodenfeuchte (Tiefe 2)" },

@@ -13,6 +13,11 @@ import type { DwdHourlyPoint } from "../api/brightsky";
 import type { OutStatistic, QueryParams } from "../api/arcgis";
 import { LIVE_LAYER_ID } from "../config/layers";
 import type { HistoryRow, HourlyBucket, TimeSeriesPoint } from "../api/sensorcity";
+import {
+  summarizePrecipitation,
+  type PrecipitationStatus,
+  type StationSeries,
+} from "../utils/precipitation";
 import type { Attributes, Feature, FieldInfo, QueryResponse } from "../types";
 import { loadSnapshot } from "./snapshot";
 
@@ -232,18 +237,40 @@ export async function historyRows(
  * per-device history rather than `rawArchiveFeatures`, which holds only a recent
  * head of the layer — too short a window to plot.
  */
+/**
+ * Every device's captured series for one archive layer + field, as
+ * `[deviceId, points]` pairs.
+ *
+ * The snapshot keys history by `${layerId}:${deviceId}:${field}`, and that
+ * convention is silently invalidated by a `config/layers.ts` change, so the
+ * readers below share this one decoding of it rather than each repeating the
+ * prefix/suffix match. The device id doubles as the closest thing to a station
+ * name the snapshot holds.
+ */
+async function fieldSeries(
+  archiveLayerId: number,
+  field: string,
+): Promise<Array<[string, TimeSeriesPoint[]]>> {
+  const snapshot = await loadSnapshot();
+  const prefix = `${archiveLayerId}:`;
+  const suffix = `:${field}`;
+  const matches: Array<[string, TimeSeriesPoint[]]> = [];
+
+  for (const [key, points] of Object.entries(snapshot.history)) {
+    if (!key.startsWith(prefix) || !key.endsWith(suffix)) continue;
+    matches.push([key.slice(prefix.length, key.length - suffix.length), points]);
+  }
+  return matches;
+}
+
 export async function hourlyBuckets(
   archiveLayerId: number,
   field: string,
   sinceMs: number,
 ): Promise<HourlyBucket[]> {
-  const snapshot = await loadSnapshot();
-  const prefix = `${archiveLayerId}:`;
-  const suffix = `:${field}`;
   const buckets = new Map<number, number[]>();
 
-  for (const [key, series] of Object.entries(snapshot.history)) {
-    if (!key.startsWith(prefix) || !key.endsWith(suffix)) continue;
+  for (const [, series] of await fieldSeries(archiveLayerId, field)) {
     for (const point of series) {
       if (point.timestamp < sinceMs) continue;
       const hour = Math.floor(point.timestamp / 3_600_000) * 3_600_000;
@@ -262,6 +289,47 @@ export async function hourlyBuckets(
       max: Math.max(...values),
       sampleCount: values.length,
     }));
+}
+
+/**
+ * The rain answer, rebuilt from the snapshot's per-device series for the field —
+ * same reason as {@link hourlyBuckets}: the live reader has the *service*
+ * aggregate per station, which the `/query` interpreter above doesn't do.
+ *
+ * The requested window is wall-clock and the snapshot is frozen, so nothing
+ * would ever fall inside it. Demo mode answers for the last hour *the snapshot
+ * holds* instead — the same question, asked of the captured moment.
+ *
+ * The counter reading itself is `summarizePrecipitation`'s, shared with the live
+ * path so demo mode can't drift into calling a standing counter "wet".
+ */
+export async function precipitationStatus(
+  archiveLayerId: number,
+  field: string,
+  windowMs: number,
+): Promise<PrecipitationStatus | null> {
+  const series = await fieldSeries(archiveLayerId, field);
+
+  let newest = 0;
+  for (const [, points] of series) {
+    for (const point of points) {
+      if (point.timestamp > newest) newest = point.timestamp;
+    }
+  }
+  if (newest === 0) return null;
+  const since = newest - windowMs;
+
+  // The snapshot keys history by device id and holds no station names, so the
+  // device id stands in for the name too.
+  const inWindow = new Map<string, StationSeries>();
+  for (const [deviceId, points] of series) {
+    inWindow.set(deviceId, {
+      name: deviceId,
+      values: points.filter((point) => point.timestamp >= since).map((point) => point.value),
+    });
+  }
+
+  return summarizePrecipitation(inWindow, since);
 }
 
 // --- Fallback history providers --------------------------------------------

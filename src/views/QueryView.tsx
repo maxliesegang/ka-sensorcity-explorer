@@ -4,17 +4,19 @@
 // user-triggered (no auto-run on mount), so we manage our own async state.
 
 import { useEffect, useState } from "react";
-import { KernAlert, KernBadge, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
+import { KernAlert, KernButton, KernIcon } from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
-import { ARCGIS_MAX_PAGE_SIZE, query, queryUrl } from "../api/arcgis";
+import { ARCGIS_MAX_PAGE_SIZE, fetchLayerFields, query, queryUrl } from "../api/arcgis";
 import type { QueryParams } from "../api/arcgis";
 import { LAYERS, TEMPERATURE_CATEGORY_KEY } from "../config/layers";
-import { Empty, ErrorMessage, Loading } from "../components/Status";
+import { AsyncBoundary, Empty, ErrorMessage, Loading } from "../components/Status";
+import { useAsync } from "../hooks/useAsync";
 import type { AttributeValue, Feature, QueryResponse } from "../types";
 import type { FieldInfo } from "../types";
 import { rowsToCsv } from "../utils/csv";
 import { downloadTextFile } from "../utils/download";
+import { ALL_OUT_FIELDS, parseOutFields, toggleOutField } from "../utils/outFields";
 import { formatTimestamp } from "../utils/format";
 
 const PRESETS = [
@@ -87,7 +89,7 @@ function toCsv(features: Feature[]): string {
 // Defaults for the form fields; values equal to these are dropped from the URL
 // so a shared link only carries what the user actually changed.
 const DEFAULT_WHERE = "1=1";
-const DEFAULT_OUT_FIELDS = "*";
+const DEFAULT_OUT_FIELDS = ALL_OUT_FIELDS;
 const DEFAULT_COUNT = 25;
 
 /** Coerce a raw `?layer=` param to a known layer id, falling back to the first layer. */
@@ -192,7 +194,6 @@ export function QueryView() {
   return (
     <section className="query-page">
       <div className="view-header view-header--wide">
-        <KernBadge label={t("badge")} variant="info" />
         <h1 className="kern-heading-medium">{t("heading")}</h1>
         <p className="kern-body kern-body--muted">{t("intro")}</p>
       </div>
@@ -261,6 +262,13 @@ export function QueryView() {
               value={outFields}
               onChange={(e) => setOutFields(e.target.value)}
             />
+            <FieldPicker
+              layerId={layerId}
+              outFields={outFields}
+              onToggleField={(field) =>
+                setOutFields(toggleOutField(outFields, field))
+              }
+            />
           </div>
             <div className="field kern-form-input">
             <label className="kern-label" htmlFor="q-order">orderByFields</label>
@@ -311,6 +319,85 @@ export function QueryView() {
 
       <QueryResult loading={loading} error={error} result={result} request={resultRequest} />
     </section>
+  );
+}
+
+/**
+ * The selected layer's actual columns, each a toggle into `outFields`.
+ *
+ * Without this the form assumes you already know the German attribute names by
+ * heart — the one piece of knowledge this page can't be used without, and the
+ * service publishes it at `/{layerId}?f=json`. Field names double as their own
+ * labels here deliberately: they are wire identifiers, and the point is to see
+ * exactly what to type.
+ */
+function FieldPicker({
+  layerId,
+  outFields,
+  onToggleField,
+}: {
+  layerId: number;
+  outFields: string;
+  onToggleField: (field: string) => void;
+}) {
+  const { t } = useTranslation("query");
+  // Opening the list is what asks the service for it: this page is used mostly
+  // by people who already know the columns, and switching layer shouldn't spend
+  // a request on a panel that stays shut.
+  const [isOpen, setIsOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
+  const fields = useAsync((signal) => fetchLayerFields(layerId, signal), [layerId], {
+    // Keep the first result cached while the disclosure is closed. Reopening a
+    // picker should not make the service answer the same metadata request again.
+    enabled: hasOpened,
+  });
+  const selected = new Set(parseOutFields(outFields));
+
+  return (
+    <details
+      className="field-picker"
+      open={isOpen}
+      onToggle={(event) => {
+        const open = event.currentTarget.open;
+        setIsOpen(open);
+        if (open) setHasOpened(true);
+      }}
+    >
+      <summary className="kern-link">
+        {fields.data
+          ? t("fields.summary", { count: fields.data.length })
+          : t("fields.summaryPending")}
+      </summary>
+      <p className="kern-body kern-body--small kern-body--muted">
+        {t("fields.hint")}
+      </p>
+      <AsyncBoundary
+        state={fields}
+        isEmpty={(data) => data.length === 0}
+        emptyLabel={t("fields.empty")}
+      >
+        {(data) => (
+          <ul className="field-picker__list">
+            {data.map((field) => {
+              const isSelected = selected.has(field.name);
+              return (
+                <li key={field.name}>
+                  <button
+                    type="button"
+                    className={`field-chip${isSelected ? " field-chip--selected" : ""}`}
+                    aria-pressed={isSelected}
+                    title={field.type}
+                    onClick={() => onToggleField(field.name)}
+                  >
+                    <span className="mono">{field.name}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </AsyncBoundary>
+    </details>
   );
 }
 
