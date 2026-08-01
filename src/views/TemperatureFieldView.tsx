@@ -52,16 +52,25 @@ export function TemperatureFieldView() {
   // The heavier insights section is opt-in and deep-linked (`?insights=1`), so a
   // shared link can land straight on the expanded analytics.
   const [showInsights, setShowInsights] = useBoolParam("insights", false);
-  const insights = useAsync(fetchTemperatureInsights, [], { enabled: showInsights });
+  // One archive request per temperature sensor, so this reports how far it has
+  // got. Its results are all cross-sensor comparisons — "warmest now", the city
+  // spread, the replay field — and a comparison over the sensors that happen to
+  // have answered so far would name a different warmest sensor every second, so
+  // the numbers land at the end and only the wait is progressive.
+  const insightsState = useAsync(
+    (signal, reportProgress) => fetchTemperatureInsights(signal, reportProgress),
+    [],
+    { enabled: showInsights },
+  );
   // One aggregated request, so unlike `insights` it needs no opt-in.
-  const cityAverage = useAsync(fetchCityTemperatureSeries, []);
+  const cityTemperatureSeriesState = useAsync(fetchCityTemperatureSeries, []);
   const { t } = useTranslation("temperature");
   const { t: tc } = useTranslation("common");
 
   const mapHandle = useMapLibreMap();
   const { containerRef, isStyleReady } = mapHandle;
 
-  const [mappedSensorCount, setMappedSensorCount] = useState(0);
+  const [renderedSensorCount, setRenderedSensorCount] = useState(0);
 
   const temperaturePoints = useMemo(
     () => (sensors.data ? getLiveTemperatureFieldPoints(sensors.data) : []),
@@ -132,7 +141,7 @@ export function TemperatureFieldView() {
 
     if (temperaturePoints.length === 0 || !adaptiveTemperatureScale) {
       fieldController.clear();
-      setMappedSensorCount(0);
+      setRenderedSensorCount(0);
       return;
     }
 
@@ -171,7 +180,7 @@ export function TemperatureFieldView() {
       getProperties: (point) => ({ objectId: point.sensor.objectId }),
     });
 
-    setMappedSensorCount(temperaturePoints.length);
+    setRenderedSensorCount(temperaturePoints.length);
   }, [
     isStyleReady,
     fieldControllerRef,
@@ -194,15 +203,15 @@ export function TemperatureFieldView() {
       : isDeviationModeActive
         ? t("baseline.status", {
             name: baselineLabel,
-            count: mappedSensorCount,
+            count: renderedSensorCount,
           })
         : adaptiveTemperatureScale
         ? t("status.showingRange", {
-            count: mappedSensorCount,
+            count: renderedSensorCount,
             min: adaptiveTemperatureScale.min.toFixed(1),
             max: adaptiveTemperatureScale.max.toFixed(1),
           })
-        : t("status.showing", { count: mappedSensorCount });
+        : t("status.showing", { count: renderedSensorCount });
 
   return (
     <div>
@@ -306,7 +315,7 @@ export function TemperatureFieldView() {
           {t("cityAverage.intro", { days: CITY_TEMPERATURE_SERIES_DAYS })}
         </p>
         <AsyncBoundary
-          state={cityAverage}
+          state={cityTemperatureSeriesState}
           isEmpty={(data) => data.length === 0}
           emptyLabel={t("cityAverage.empty")}
         >
@@ -316,13 +325,22 @@ export function TemperatureFieldView() {
 
       <section className="temp-insights-shell" aria-label={t("insights.heading")}>
         {showInsights ? (
-          <AsyncBoundary
-            state={insights}
-            isEmpty={(data) => data.sensorCount === 0}
-            emptyLabel={t("insights.empty")}
-          >
-            {(data) => <TemperatureInsights insights={data} />}
-          </AsyncBoundary>
+          <>
+            {/* The section owns its heading only until the analysis arrives with
+                its own: a progress bar under a blank space says less about what
+                is being waited for than the same bar under its title. */}
+            {insightsState.data == null && (
+              <h2 className="kern-heading-large">{t("insights.heading")}</h2>
+            )}
+            <AsyncBoundary
+              state={insightsState}
+              isEmpty={(data) => data.sensorCount === 0}
+              emptyLabel={t("insights.empty")}
+              loadingLabel={t("insights.loadingLabel")}
+            >
+              {(data) => <TemperatureInsights insights={data} />}
+            </AsyncBoundary>
+          </>
         ) : (
           <div className="temp-insights-cta">
             <h2 className="kern-heading-large">{t("insights.heading")}</h2>

@@ -19,10 +19,14 @@ export default {
     showingRange_other: "{{count}} Sensoren bei {{band}}, Werte {{min}}–{{max}}.",
     showing_one: "{{count}} Sensor bei {{band}}.",
     showing_other: "{{count}} Sensoren bei {{band}}.",
-    referenceLoading: "Historie wird verglichen…",
-    referenceError: "Der Vergleich ist gerade nicht verfügbar; Messwerte werden gezeigt.",
-    reference_one: "{{referenceCount}} von {{count}} Sensor verglichen · {{band}}.",
-    reference_other: "{{referenceCount}} von {{count}} Sensoren verglichen · {{band}}.",
+    historyLoading: "Historie wird geladen; solange werden Messwerte gezeigt.",
+    historyLoadingProgress_one:
+      "Historie für {{completed}} von {{count}} Sensor wird geladen; solange werden Messwerte gezeigt.",
+    historyLoadingProgress_other:
+      "Historie für {{completed}} von {{count}} Sensoren wird geladen; solange werden Messwerte gezeigt.",
+    historyError: "Der Vergleich ist gerade nicht verfügbar; Messwerte werden gezeigt.",
+    comparison_one: "{{comparedCount}} von {{count}} Sensor verglichen · {{band}}.",
+    comparison_other: "{{comparedCount}} von {{count}} Sensoren verglichen · {{band}}.",
   },
   controls: {
     quantityLabel: "Bodengröße",

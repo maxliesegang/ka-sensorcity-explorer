@@ -16,7 +16,7 @@ import {
   TEMPERATURE_FIELD_KEY,
 } from "../config/layers";
 import type { Sensor } from "../types";
-import { mapWithConcurrency } from "../utils/concurrency";
+import { mapWithConcurrency, type BatchProgress } from "../utils/concurrency";
 import { isRecentlyMeasured } from "../utils/sensorFreshness";
 import { mean } from "../utils/stats";
 import {
@@ -359,6 +359,7 @@ export async function fetchCityTemperatureSeries(
  */
 export async function fetchTemperatureInsights(
   signal?: AbortSignal,
+  onBatchProgress?: (batchProgress: BatchProgress) => void,
 ): Promise<TemperatureInsightsData> {
   const archiveLayerId = getCategory(TEMPERATURE_CATEGORY_KEY)?.archiveLayerId;
   const sensors = await fetchSensors(signal);
@@ -372,12 +373,15 @@ export async function fetchTemperatureInsights(
     return EMPTY_INSIGHTS();
   }
 
-  // Pull each sensor's rolling history with bounded concurrency.
+  // Pull each sensor's rolling history with bounded concurrency. Everything
+  // below is a cross-sensor aggregate, so there is nothing partial worth
+  // publishing on the way — only how far the fan-out has got.
   const histories = await mapWithConcurrency(
     temperatureSensors,
     CONCURRENCY,
     (sensor) =>
       fetchHistory(archiveLayerId, sensor.deviceId, TEMPERATURE_FIELD_KEY, {}, signal),
+    onBatchProgress,
   );
 
   const currents = temperatureSensors.map((sensor) => currentTemperature(sensor, now));

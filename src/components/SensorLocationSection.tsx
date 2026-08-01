@@ -62,7 +62,7 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
   const sensors = useAsync(fetchSensors, [], { reloadOnFocus: true });
   const { containerRef, mapRef, isStyleReady } = useMapLibreMap();
   const sensorBoundsRef = useRef<LngLatBounds | null>(null);
-  const [mappedSensorCount, setMappedSensorCount] = useState(0);
+  const [renderedSensorCount, setRenderedSensorCount] = useState(0);
 
   const selectedSensorCoordinates = useMemo(
     () => getSensorCoordinates(sensor),
@@ -127,7 +127,7 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
 
     upsertGeoJsonSource(map, SENSOR_SOURCE_ID, features);
     sensorBoundsRef.current = bounds;
-    setMappedSensorCount(features.length);
+    setRenderedSensorCount(features.length);
   }, [isStyleReady, mapRef, mapSensors, sensor.objectId, t, tc]);
 
   // The sensor is this map's context, so navigating to a different one re-centres
@@ -168,7 +168,7 @@ export function SensorLocationSection({ sensor }: { sensor: Sensor }) {
     ? t("location.status.loading")
     : sensors.error
       ? t("location.status.error")
-      : t("location.status.showing", { count: mappedSensorCount });
+      : t("location.status.showing", { count: renderedSensorCount });
 
   return (
     <section className="sensor-detail__section sensor-detail__section--plain sensor-location">

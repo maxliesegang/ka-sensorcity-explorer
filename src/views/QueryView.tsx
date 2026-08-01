@@ -418,7 +418,7 @@ function QueryResult({
 
   useEffect(() => setPage(1), [result]);
 
-  if (loading) return <Loading label={t("running")} />;
+  if (loading) return <Loading loadingLabel={t("running")} />;
   if (error) return <ErrorMessage error={error} />;
   if (result == null) return null;
   if (result.features.length === 0) return <Empty label={t("noFeatures")} />;

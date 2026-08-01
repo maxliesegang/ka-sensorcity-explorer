@@ -3,7 +3,7 @@
 // the archive exposes history per device rather than as a joined live view.
 
 import type { DepthProfile } from "../types";
-import { mapWithConcurrency } from "../utils/concurrency";
+import { mapWithConcurrency, type BatchProgress } from "../utils/concurrency";
 import {
   buildSoilHistoryStats,
   type SoilHistoryStats,
@@ -20,7 +20,7 @@ const SOIL_HISTORY_WINDOW_MS = SOIL_HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
 export interface SoilHistoryReferences {
   /** Per object id, then per depth-band index. */
-  bySensor: Readonly<Record<string, readonly (SoilHistoryStats | null)[]>>;
+  byObjectId: Readonly<Record<string, readonly (SoilHistoryStats | null)[]>>;
   failedProbeCount: number;
 }
 
@@ -29,6 +29,7 @@ export async function fetchSoilHistoryReferences(
   probes: readonly SoilProbeReading[],
   profile: DepthProfile,
   signal?: AbortSignal,
+  onBatchProgress?: (batchProgress: BatchProgress) => void,
 ): Promise<SoilHistoryReferences> {
   let failedProbeCount = 0;
   let firstFailure: unknown;
@@ -64,6 +65,7 @@ export async function fetchSoilHistoryReferences(
         return null;
       }
     },
+    onBatchProgress,
   );
 
   // Partial coverage is still useful; a total upstream failure is not. Let the
@@ -75,7 +77,7 @@ export async function fetchSoilHistoryReferences(
   }
 
   return {
-    bySensor: Object.fromEntries(entries.filter((entry) => entry != null)),
+    byObjectId: Object.fromEntries(entries.filter((entry) => entry != null)),
     failedProbeCount,
   };
 }

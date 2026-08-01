@@ -2,7 +2,7 @@
 // history. History is loaded only when requested and reduced to per-band stats;
 // map rendering never needs to know how the archive is queried.
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { fetchSoilHistoryReferences, type SoilHistoryReferences } from "../api/soilHistory";
@@ -33,7 +33,7 @@ export function useSoilFieldModel(
 ) {
   const { t } = useTranslation("soil");
   const [displayMode, setDisplayMode] = useEnumParam("mode", DISPLAY_MODES, "value");
-  const [hasHistoryCache, setHasHistoryCache] = useState(false);
+  const [hasLoadedHistoryReferences, setHasLoadedHistoryReferences] = useState(false);
   const [showLabels, setShowLabels] = useFieldLabelVisibility();
   const [showCells, setShowCells] = useFieldToggle(
     SOIL_CELLS_STORAGE_KEY,
@@ -42,53 +42,74 @@ export function useSoilFieldModel(
   );
 
   const archiveLayerId = getCategory(SOIL_CATEGORY_KEY)?.archiveLayerId;
-  const history = useAsync(
-    (signal) =>
+  const historyState = useAsync(
+    (signal, reportProgress) =>
       archiveLayerId == null
         ? Promise.resolve<SoilHistoryReferences>({
-            bySensor: {},
+            byObjectId: {},
             failedProbeCount: 0,
           })
-        : fetchSoilHistoryReferences(archiveLayerId, probes, profile, signal),
+        : fetchSoilHistoryReferences(
+            archiveLayerId,
+            probes,
+            profile,
+            signal,
+            reportProgress,
+          ),
     [archiveLayerId, profile, probes],
-    { enabled: (displayMode === "deviation" || hasHistoryCache) && probes.length > 0 },
+    {
+      enabled:
+        (displayMode === "deviation" || hasLoadedHistoryReferences) && probes.length > 0,
+    },
   );
   useEffect(() => {
-    if (history.data != null) setHasHistoryCache(true);
-  }, [history.data]);
+    if (historyState.data != null) setHasLoadedHistoryReferences(true);
+  }, [historyState.data]);
 
   const valueScale = useMemo(
     () => buildSoilValueScale(profile.ramp, getSoilFieldValues(probes)),
     [profile.ramp, probes],
   );
-  const isDeviationModeActive = displayMode === "deviation" && history.data != null;
-  const isHistoryComparisonVisible = displayMode === "deviation" && history.error == null;
+  const isHistoryComparisonActive = displayMode === "deviation" && historyState.data != null;
+  // The comparison needs the references to exist. Without this, switching to
+  // comparison greys every probe to "unavailable" for as long as 30 days × every
+  // probe takes to load — the map claiming there is no reference while it is
+  // being fetched. Holding the value colours until then keeps the readings the
+  // viewer already has on screen, and the switch happens once, when the answer
+  // is real.
+  const getHistoryReference = useCallback(
+    (point: SoilFieldPoint): SoilHistoryStats | null =>
+      historyState.data?.byObjectId[String(point.sensor.objectId)]?.[bandIndex] ?? null,
+    [historyState.data, bandIndex],
+  );
 
-  function getReference(point: SoilFieldPoint): SoilHistoryStats | null {
-    return history.data?.bySensor[String(point.sensor.objectId)]?.[bandIndex] ?? null;
-  }
+  const getHistoryStatus = useCallback(
+    (point: SoilFieldPoint): SoilHistoryStatus =>
+      classifySoilReading(point.value, getHistoryReference(point)),
+    [getHistoryReference],
+  );
 
-  function getStatus(point: SoilFieldPoint): SoilHistoryStatus {
-    return classifySoilReading(point.value, getReference(point));
-  }
+  const getColorForPoint = useCallback(
+    (point: SoilFieldPoint): string =>
+      isHistoryComparisonActive
+        ? soilHistoryStatusColor(profile.ramp, getHistoryStatus(point))
+        : valueScale?.css(point.value) ?? "",
+    [isHistoryComparisonActive, profile.ramp, getHistoryStatus, valueScale],
+  );
 
-  function getColorForPoint(point: SoilFieldPoint): string {
-    return isHistoryComparisonVisible
-      ? soilHistoryStatusColor(profile.ramp, getStatus(point))
-      : valueScale?.css(point.value) ?? "";
-  }
+  const formatLabelForPoint = useCallback(
+    (point: SoilFieldPoint): string =>
+      isHistoryComparisonActive
+        ? t(`reference.status.${getHistoryStatus(point)}.${profile.ramp}`)
+        : formatSoilValue(profile, point.value),
+    [isHistoryComparisonActive, t, getHistoryStatus, profile],
+  );
 
-  function formatLabelForPoint(point: SoilFieldPoint): string {
-    return isHistoryComparisonVisible
-      ? t(`reference.status.${getStatus(point)}.${profile.ramp}`)
-      : formatSoilValue(profile, point.value);
-  }
-
-  const referenceCount = isDeviationModeActive
+  const comparedProbeCount = isHistoryComparisonActive
     ? probes.filter(
         (probe) =>
           probe.bandValues[bandIndex] != null &&
-          history.data?.bySensor[String(probe.sensor.objectId)]?.[bandIndex] != null,
+          historyState.data?.byObjectId[String(probe.sensor.objectId)]?.[bandIndex] != null,
       ).length
     : 0;
 
@@ -99,13 +120,12 @@ export function useSoilFieldModel(
     setShowLabels,
     showCells,
     setShowCells,
-    isDeviationModeActive,
-    isHistoryComparisonVisible,
+    isHistoryComparisonActive,
     valueScale,
-    history,
-    referenceCount,
-    getReference,
-    getStatus,
+    historyState,
+    comparedProbeCount,
+    getHistoryReference,
+    getHistoryStatus,
     getColorForPoint,
     formatLabelForPoint,
   };

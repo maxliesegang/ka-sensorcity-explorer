@@ -28,7 +28,7 @@ import { SoilBandSummary } from "../components/SoilBandSummary";
 import { SoilComparisonCallout } from "../components/SoilComparisonCallout";
 import { SoilFieldControls } from "../components/SoilFieldControls";
 import { SoilHistoryGuide } from "../components/SoilHistoryGuide";
-import { AsyncBoundary, Empty } from "../components/Status";
+import { AsyncBoundary, Empty, LoadingProgressBar } from "../components/Status";
 import {
   categoryLabelKey,
   depthProfileLabelKey,
@@ -100,13 +100,12 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     setShowLabels,
     showCells,
     setShowCells,
-    isDeviationModeActive,
-    isHistoryComparisonVisible,
+    isHistoryComparisonActive,
     valueScale,
-    history,
-    referenceCount,
-    getReference,
-    getStatus,
+    historyState,
+    comparedProbeCount,
+    getHistoryReference,
+    getHistoryStatus,
     getColorForPoint,
     formatLabelForPoint,
   } = useSoilFieldModel(probes, profile, bandIndex);
@@ -170,15 +169,15 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
           { band: selectedBand },
         )}`,
       getPopupHtml: (point) => {
-        const reference = isHistoryComparisonVisible ? getReference(point) : null;
+        const reference = isHistoryComparisonActive ? getHistoryReference(point) : null;
         const referenceNote = reference
           ? t("popup.reference", {
-              status: t(`reference.status.${getStatus(point)}.${profile.ramp}`),
+              status: t(`reference.status.${getHistoryStatus(point)}.${profile.ramp}`),
               usualMin: formatSoilValue(profile, reference.lowerQuartile),
               usualMax: formatSoilValue(profile, reference.upperQuartile),
               mean: formatSoilValue(profile, reference.mean),
             })
-          : isHistoryComparisonVisible
+          : isHistoryComparisonActive
             ? t("popup.noReference")
             : undefined;
         return buildSensorPopupHtml({
@@ -213,10 +212,9 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     displayMode,
     showLabels,
     showCells,
-    isDeviationModeActive,
-    isHistoryComparisonVisible,
-    getReference,
-    getStatus,
+    isHistoryComparisonActive,
+    getHistoryReference,
+    getHistoryStatus,
     getColorForPoint,
     formatLabelForPoint,
     t,
@@ -229,19 +227,24 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     const values = points.map((point) => point.value);
     return { min: Math.min(...values), max: Math.max(...values) };
   }, [points]);
+  const historyLoadProgress = historyState.loadProgress;
   let mapStatus: string;
   if (sensors.loading) {
     mapStatus = t("status.loading");
   } else if (sensors.error) {
     mapStatus = t("status.error");
-  } else if (displayMode === "deviation" && history.loading) {
-    mapStatus = t("status.referenceLoading");
-  } else if (displayMode === "deviation" && history.error) {
-    mapStatus = t("status.referenceError");
-  } else if (isDeviationModeActive) {
-    mapStatus = t("status.reference", {
+  } else if (displayMode === "deviation" && historyState.loading) {
+    // The map is still showing readings underneath, so the status says so
+    // rather than implying the comparison is already on screen. It stays the
+    // *uncounted* sentence because this bar is an aria-live region: the count
+    // belongs to the progress bar below, which announces nothing on its own.
+    mapStatus = t("status.historyLoading");
+  } else if (displayMode === "deviation" && historyState.error) {
+    mapStatus = t("status.historyError");
+  } else if (isHistoryComparisonActive) {
+    mapStatus = t("status.comparison", {
       count: points.length,
-      referenceCount,
+      comparedCount: comparedProbeCount,
       band: bandLabel,
     });
   } else if (selectedRange) {
@@ -310,14 +313,31 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
 
         <div className="result-bar result-bar--compact" role="status" aria-live="polite">
           <span className="kern-body kern-body--small">{mapStatus}</span>
-          {isDeviationModeActive && (history.data?.failedProbeCount ?? 0) > 0 && (
+          {isHistoryComparisonActive && (historyState.data?.failedProbeCount ?? 0) > 0 && (
             <span className="kern-body kern-body--small kern-body--muted">
-              {t("reference.partial", { count: history.data?.failedProbeCount ?? 0 })}
+              {t("reference.partial", { count: historyState.data?.failedProbeCount ?? 0 })}
             </span>
           )}
           <DataFreshness state={sensors} />
           <MapResetViewButton onReset={resetView} />
         </div>
+
+        {/* One archive request per probe, and the total is known up front, so the
+            wait is reported as a bar rather than an open-ended spinner. */}
+        {displayMode === "deviation" &&
+          historyState.loading &&
+          historyLoadProgress &&
+          historyLoadProgress.total > 1 && (
+            <LoadingProgressBar
+              batchProgress={historyLoadProgress}
+              className="field-loading-progress"
+              loadingLabel={t("status.historyLoading")}
+              progressLabel={t("status.historyLoadingProgress", {
+                completed: historyLoadProgress.completed,
+                count: historyLoadProgress.total,
+              })}
+            />
+        )}
 
         <div className="map" ref={containerRef} role="region" aria-label={t("mapAria")} />
 
@@ -327,7 +347,7 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
           emptyLabel={probes.length === 0 ? t("empty") : t("emptyBand", { band: bandLabel })}
         >
           {() =>
-            isHistoryComparisonVisible ? (
+            isHistoryComparisonActive ? (
               <SoilHistoryGuide
                 ramp={profile.ramp}
                 heading={t("reference.heading")}

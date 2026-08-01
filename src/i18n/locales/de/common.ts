@@ -50,6 +50,10 @@ export default {
       "Der Sensordienst der Stadt hat nicht geantwortet. Er ist häufig kurz nicht erreichbar — ein erneuter Versuch hilft meist.",
     retry: "Erneut versuchen",
     empty: "Keine Daten verfügbar.",
+    // Beschriftung des Fortschrittsbalkens dort, wo die Anzahl der Anfragen
+    // vorab bekannt ist. Enthält die Ladebeschriftung des Aufrufers, damit der
+    // Balken sagt, worauf gewartet wird.
+    loadingProgress: "{{label}} {{completed}} von {{total}}",
   },
   // Shown by the views that draw live readings: when the data on screen was
   // fetched, and the way to fetch it again.

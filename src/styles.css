@@ -435,6 +435,22 @@ body {
   border-width: 4px;
 }
 
+/* A determinate load carries its own label above the bar, so it lays out as a
+   block rather than as a row beside a spinner. */
+.loader-wrap--progress {
+  display: block;
+}
+
+.loader-wrap--progress .kern-progress {
+  width: 100%;
+}
+
+/* Sits between a field map's result bar and its map, where the readings the bar
+   describes stay on screen while the comparison loads. */
+.field-loading-progress {
+  margin: 0 0 var(--kern-metric-space-small, 0.5rem);
+}
+
 .alert-stack {
   margin: 0.75rem 0;
 }

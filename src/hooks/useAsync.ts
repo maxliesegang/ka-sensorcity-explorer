@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { BatchProgress } from "../utils/concurrency";
+
 export interface AsyncState<T> {
   data: T | null;
   loading: boolean;
   error: string | null;
   /** When the currently held `data` landed (epoch ms), or null while it never has. */
   loadedAt: number | null;
+  /**
+   * How far a loader's batch has got, or null for the loaders (the great
+   * majority — one request) that do not report batch progress. Never outlives
+   * the load: it is cleared when one starts and when one settles.
+   */
+  loadProgress: BatchProgress | null;
   /** Re-run the loader with the same deps, e.g. from a refresh or retry button. */
   reload: () => void;
 }
@@ -33,9 +41,17 @@ function haveDependenciesChanged(
  * tab refetches, so a page left open all afternoon doesn't keep presenting the
  * morning's values as current. Data younger than FOCUS_RELOAD_MIN_AGE_MS is left
  * alone, so switching tabs back and forth doesn't hammer the service.
+ *
+ * The loader's second argument, `reportProgress`, is how a long fan-out
+ * surfaces its batch progress (see `mapWithConcurrency`); loaders that make one
+ * request simply ignore it and leave `loadProgress` null. Reports after abort
+ * or after the loader settles are dropped, like results.
  */
 export function useAsync<T>(
-  loader: (signal: AbortSignal) => Promise<T>,
+  loader: (
+    signal: AbortSignal,
+    reportProgress: (batchProgress: BatchProgress) => void,
+  ) => Promise<T>,
   deps: unknown[],
   options: { enabled?: boolean; reloadOnFocus?: boolean } = {},
 ): AsyncState<T> {
@@ -48,6 +64,7 @@ export function useAsync<T>(
     loading: enabled,
     error: null,
     loadedAt: null,
+    loadProgress: null,
   });
 
   const reload = useCallback(() => setReloadToken((token) => token + 1), []);
@@ -64,7 +81,13 @@ export function useAsync<T>(
 
   useEffect(() => {
     if (!enabled) {
-      setState({ data: null, loading: false, error: null, loadedAt: null });
+      setState({
+        data: null,
+        loading: false,
+        error: null,
+        loadedAt: null,
+        loadProgress: null,
+      });
       return;
     }
     // A reload asks for the same data again, so what's on screen stays there
@@ -76,23 +99,44 @@ export function useAsync<T>(
     lastReloadToken.current = reloadToken;
 
     const controller = new AbortController();
+    let settled = false;
     setState((s) => ({
       ...s,
       data: isReload ? s.data : null,
       loadedAt: isReload ? s.loadedAt : null,
       loading: true,
       error: null,
+      loadProgress: null,
     }));
-    loader(controller.signal)
+    const reportProgress = (batchProgress: BatchProgress) => {
+      if (controller.signal.aborted || settled) return;
+      setState((s) => ({ ...s, loadProgress: batchProgress }));
+    };
+    loader(controller.signal, reportProgress)
       .then((data) => {
-        if (!controller.signal.aborted) {
-          setState({ data, loading: false, error: null, loadedAt: Date.now() });
-        }
+        settled = true;
+        if (controller.signal.aborted) return;
+        setState({
+          data,
+          loading: false,
+          error: null,
+          loadedAt: Date.now(),
+          loadProgress: null,
+        });
       })
       .catch((err: unknown) => {
+        settled = true;
         if (controller.signal.aborted) return;
+        // Stop any sibling requests in a fan-out as soon as the load fails.
+        controller.abort();
         const message = err instanceof Error ? err.message : String(err);
-        setState({ data: null, loading: false, error: message, loadedAt: null });
+        setState({
+          data: null,
+          loading: false,
+          error: message,
+          loadedAt: null,
+          loadProgress: null,
+        });
       });
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps

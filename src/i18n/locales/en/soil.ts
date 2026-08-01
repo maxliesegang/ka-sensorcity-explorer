@@ -18,10 +18,14 @@ export default {
     showingRange_other: "{{count}} probes at {{band}}, reading {{min}}–{{max}}.",
     showing_one: "{{count}} probe at {{band}}.",
     showing_other: "{{count}} probes at {{band}}.",
-    referenceLoading: "Comparing history…",
-    referenceError: "The comparison is unavailable; showing readings.",
-    reference_one: "{{referenceCount}} of {{count}} probe compared · {{band}}.",
-    reference_other: "{{referenceCount}} of {{count}} probes compared · {{band}}.",
+    historyLoading: "Loading history; showing readings meanwhile.",
+    historyLoadingProgress_one:
+      "Loading history for {{completed}} of {{count}} probe; showing readings meanwhile.",
+    historyLoadingProgress_other:
+      "Loading history for {{completed}} of {{count}} probes; showing readings meanwhile.",
+    historyError: "The comparison is unavailable; showing readings.",
+    comparison_one: "{{comparedCount}} of {{count}} probe compared · {{band}}.",
+    comparison_other: "{{comparedCount}} of {{count}} probes compared · {{band}}.",
   },
   controls: {
     quantityLabel: "Soil quantity",

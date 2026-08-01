@@ -51,6 +51,10 @@ export default {
       "The city's sensor service didn't answer. It is often briefly unavailable — trying again usually helps.",
     retry: "Try again",
     empty: "No data available.",
+    // Label of the determinate progress bar, used where the loader knows how
+    // many requests it is making. Carries the caller's own loading label so the
+    // bar says what is being waited for, not just how far it has got.
+    loadingProgress: "{{label}} {{completed}} of {{total}}",
   },
   // Shown by the views that draw live readings: when the data on screen was
   // fetched, and the way to fetch it again.

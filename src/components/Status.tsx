@@ -1,16 +1,85 @@
 import type { ReactNode } from "react";
-import { KernAlert, KernButton, KernLoader } from "@kern-ux-annex/kern-react-kit";
+import {
+  KernAlert,
+  KernButton,
+  KernLoader,
+  KernProgress,
+} from "@kern-ux-annex/kern-react-kit";
 import { useTranslation } from "react-i18next";
 
 import type { AsyncState } from "../hooks/useAsync";
+import type { BatchProgress } from "../utils/concurrency";
 
-/** Spinner + label, announced politely to assistive tech. */
-export function Loading({ label }: { label?: string }) {
+/** Shared determinate progress bar for loads with a known task count. */
+export function LoadingProgressBar({
+  batchProgress,
+  progressLabel,
+  loadingLabel,
+  className,
+}: {
+  batchProgress: BatchProgress;
+  progressLabel: string;
+  loadingLabel: string;
+  className?: string;
+}) {
+  const classes = ["loader-wrap", "loader-wrap--progress", className]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <div className={classes}>
+      <span className="visually-hidden" role="status" aria-live="polite">
+        {loadingLabel}
+      </span>
+      <KernProgress
+        label={progressLabel}
+        aria-label={progressLabel}
+        value={batchProgress.completed}
+        max={batchProgress.total}
+      />
+    </div>
+  );
+}
+
+/**
+ * Spinner + label, announced politely to assistive tech.
+ *
+ * A loader that reports batch progress gets KERN's determinate bar instead of
+ * the indeterminate spinner alone: the fan-out loads know their total up front,
+ * and a multi-second wait that says how far it has got is a different experience
+ * from one that doesn't. A single-item fan-out stays a spinner — a bar that goes
+ * 0 → 100 in one step is chrome, not information.
+ */
+export function Loading({
+  loadingLabel,
+  loadProgress,
+}: {
+  loadingLabel?: string;
+  loadProgress?: BatchProgress | null;
+}) {
   const { t } = useTranslation();
+  const loadingText = loadingLabel ?? t("status.loading");
+  if (loadProgress && loadProgress.total > 1) {
+    const loadingProgressLabel = t("status.loadingProgress", {
+      label: loadingText,
+      completed: loadProgress.completed,
+      total: loadProgress.total,
+    });
+    // Keep the changing count out of the live region: a polite announcement for
+    // every settled request would read all thirty-odd of them aloud. The hidden
+    // static label announces the start once; the progressbar exposes its value
+    // to assistive tech on demand and receives the changing accessible name.
+    return (
+      <LoadingProgressBar
+        batchProgress={loadProgress}
+        progressLabel={loadingProgressLabel}
+        loadingLabel={loadingText}
+      />
+    );
+  }
   return (
     <div className="loader-wrap" role="status">
       <KernLoader />
-      <span className="kern-body kern-body--small">{label ?? t("status.loading")}</span>
+      <span className="kern-body kern-body--small">{loadingText}</span>
     </div>
   );
 }
@@ -71,14 +140,17 @@ export function AsyncBoundary<T>({
   state,
   isEmpty,
   emptyLabel,
+  loadingLabel,
   children,
 }: {
   state: AsyncState<T>;
   isEmpty?: (data: T) => boolean;
   emptyLabel?: string;
+  loadingLabel?: string;
   children: (data: T) => ReactNode;
 }) {
-  if (state.loading && state.data == null) return <Loading />;
+  if (state.loading && state.data == null)
+    return <Loading loadingLabel={loadingLabel} loadProgress={state.loadProgress} />;
   if (state.error) return <ErrorMessage error={state.error} onRetry={state.reload} />;
   if (state.data == null || (isEmpty && isEmpty(state.data)))
     return <Empty label={emptyLabel} />;

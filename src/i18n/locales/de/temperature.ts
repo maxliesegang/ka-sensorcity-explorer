@@ -113,6 +113,9 @@ export default {
       "Karlsruhes Temperatursensoren über das Archiv vergleichen.",
     selectedArchiveTime: "Gewählter Archivzeitpunkt",
     empty: "Kein Temperatur-Archiv verfügbar.",
+    // Alle Kennzahlen vergleichen die Sensoren untereinander und erscheinen
+    // deshalb gemeinsam am Ende; währenddessen läuft der Archivabruf.
+    loadingLabel: "Archive je Sensor werden gelesen",
     noCurrent:
       "Ein Live-Vergleich braucht mindestens zwei aktuelle Messwerte.",
     live: {

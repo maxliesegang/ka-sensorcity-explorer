@@ -111,6 +111,9 @@ export default {
       "Compare Karlsruhe's temperature sensors across the archive.",
     selectedArchiveTime: "Selected archive time",
     empty: "No temperature archive available.",
+    // Every figure here compares the sensors against each other, so they appear
+    // together at the end; what progresses meanwhile is the archive fetch.
+    loadingLabel: "Reading each sensor's archive",
     noCurrent:
       "A live comparison needs at least two recent readings.",
     live: {
