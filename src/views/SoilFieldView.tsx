@@ -3,8 +3,9 @@
 // (Thiessen / Voronoi) regions. Points are the default here: the probes are
 // sparse enough that shading the whole city from them overstates what they know.
 //
-// A sibling of TemperatureFieldView — same MapLibre field controller, baseline
-// controls and legend — with the depth dimension the soil probes actually have.
+// A sibling of TemperatureFieldView — same MapLibre field controller and value
+// legend — with the depth dimension the soil probes actually have. Its comparison
+// mode is deliberately local: each probe is judged against its own history.
 // Three things make the bands legible at once: the strip switches the band on a
 // scale shared by all of them, a clicked probe's popup lists its whole column,
 // and the summary table shows every band's city-wide spread.
@@ -18,12 +19,15 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { fetchSensors } from "../api/sensorcity";
+import { SOIL_HISTORY_WINDOW_DAYS } from "../api/soilHistory";
 import { DataFreshness } from "../components/DataFreshness";
 import { FieldBaselineControls } from "../components/FieldBaselineControls";
 import { FieldLegend } from "../components/FieldLegend";
 import { MapResetViewButton } from "../components/MapResetViewButton";
 import { SoilBandSummary } from "../components/SoilBandSummary";
+import { SoilComparisonCallout } from "../components/SoilComparisonCallout";
 import { SoilFieldControls } from "../components/SoilFieldControls";
+import { SoilHistoryGuide } from "../components/SoilHistoryGuide";
 import { AsyncBoundary, Empty } from "../components/Status";
 import {
   categoryLabelKey,
@@ -92,22 +96,19 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
   const {
     displayMode,
     setDisplayMode,
-    baselineId,
-    setBaselineId,
-    selectBaseline,
-    baselineOptions,
-    baselineLabel,
-    baselineValue,
     showLabels,
     setShowLabels,
     showCells,
     setShowCells,
     isDeviationModeActive,
-    isBaselineValueUnavailable,
+    isHistoryComparisonVisible,
     valueScale,
-    scale,
-    getColorForValue,
-    formatLabelForValue,
+    history,
+    referenceCount,
+    getReference,
+    getStatus,
+    getColorForPoint,
+    formatLabelForPoint,
   } = useSoilFieldModel(probes, profile, bandIndex);
 
   const mapHandle = useMapLibreMap();
@@ -119,10 +120,6 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
       popupClassName: "sensor-popup",
       tooltipClassName: "sensor-tooltip",
       markerStyle: SOIL_MARKER_STYLE,
-      onPopupAction: (properties, popup) => {
-        selectBaseline(String(properties.objectId));
-        popup.remove();
-      },
     },
     // Extent from every probe, not the band on screen: a probe that can't read
     // the selected band drops out of `points`, and fitting to those would move
@@ -166,19 +163,26 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     fieldController.render<SoilFieldPoint>({
       points,
       getId: (point) => point.sensor.objectId,
-      getColor: (point) => getColorForValue(point.value),
+      getColor: getColorForPoint,
       getTooltipText: (point) =>
         `${point.sensor.name} — ${formatSoilValue(profile, point.value)} · ${tc(
           "depth.band",
           { band: selectedBand },
         )}`,
       getPopupHtml: (point) => {
-        // Hide "set as reference" on the probe that already is the baseline.
-        const isCurrentBaseline =
-          displayMode === "deviation" &&
-          baselineId === String(point.sensor.objectId);
+        const reference = isHistoryComparisonVisible ? getReference(point) : null;
+        const referenceNote = reference
+          ? t("popup.reference", {
+              status: t(`reference.status.${getStatus(point)}.${profile.ramp}`),
+              usualMin: formatSoilValue(profile, reference.lowerQuartile),
+              usualMax: formatSoilValue(profile, reference.upperQuartile),
+              mean: formatSoilValue(profile, reference.mean),
+            })
+          : isHistoryComparisonVisible
+            ? t("popup.noReference")
+            : undefined;
         return buildSensorPopupHtml({
-          color: getColorForValue(point.value),
+          color: getColorForPoint(point),
           label: `${soilCategoryLabel} · ${profileLabel}`,
           name: point.sensor.name,
           readingSummary: `${tc("depth.band", { band: selectedBand })}: ${formatSoilValue(
@@ -186,18 +190,14 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
             point.value,
           )}`,
           readingTime: point.sensor.measuredAt,
+          note: referenceNote,
           href: `#/sensor/${point.sensor.objectId}`,
           linkLabel: t("popup.viewDetails"),
-          secondaryAction: isCurrentBaseline
-            ? undefined
-            : { label: t("popup.setReference") },
           detailRows: probeColumnRows(point),
         });
       },
-      getLabel: showLabels ? (point) => formatLabelForValue(point.value) : undefined,
+      getLabel: showLabels ? formatLabelForPoint : undefined,
       showCells,
-      isHighlighted: (point) =>
-        displayMode === "deviation" && String(point.sensor.objectId) === baselineId,
       getProperties: (point) => ({ objectId: point.sensor.objectId }),
     });
 
@@ -210,12 +210,15 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     bandIndex,
     selectedBand,
     profileLabel,
-    baselineId,
     displayMode,
     showLabels,
     showCells,
-    getColorForValue,
-    formatLabelForValue,
+    isDeviationModeActive,
+    isHistoryComparisonVisible,
+    getReference,
+    getStatus,
+    getColorForPoint,
+    formatLabelForPoint,
     t,
     tc,
   ]);
@@ -226,24 +229,31 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
     const values = points.map((point) => point.value);
     return { min: Math.min(...values), max: Math.max(...values) };
   }, [points]);
-  const mapStatus = sensors.loading
-    ? t("status.loading")
-    : sensors.error
-      ? t("status.error")
-      : isDeviationModeActive
-        ? t("status.deviation", {
-            count: points.length,
-            band: bandLabel,
-            name: baselineLabel,
-          })
-        : selectedRange
-          ? t("status.showingRange", {
-              count: points.length,
-              band: bandLabel,
-              min: formatSoilValue(profile, selectedRange.min),
-              max: formatSoilValue(profile, selectedRange.max),
-            })
-          : t("status.showing", { count: points.length, band: bandLabel });
+  let mapStatus: string;
+  if (sensors.loading) {
+    mapStatus = t("status.loading");
+  } else if (sensors.error) {
+    mapStatus = t("status.error");
+  } else if (displayMode === "deviation" && history.loading) {
+    mapStatus = t("status.referenceLoading");
+  } else if (displayMode === "deviation" && history.error) {
+    mapStatus = t("status.referenceError");
+  } else if (isDeviationModeActive) {
+    mapStatus = t("status.reference", {
+      count: points.length,
+      referenceCount,
+      band: bandLabel,
+    });
+  } else if (selectedRange) {
+    mapStatus = t("status.showingRange", {
+      count: points.length,
+      band: bandLabel,
+      min: formatSoilValue(profile, selectedRange.min),
+      max: formatSoilValue(profile, selectedRange.max),
+    });
+  } else {
+    mapStatus = t("status.showing", { count: points.length, band: bandLabel });
+  }
 
   return (
     <div>
@@ -259,6 +269,10 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
           .
         </p>
       </div>
+
+      {displayMode === "value" && (
+        <SoilComparisonCallout onActivate={() => setDisplayMode("deviation")} />
+      )}
 
       <section className="map-shell" aria-label={t("canvasAria")}>
         <SoilFieldControls
@@ -281,16 +295,11 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
         />
 
         <FieldBaselineControls
-          baselineSelectId="soil-field-baseline-select"
           displayMode={displayMode}
           onDisplayModeChange={setDisplayMode}
-          baselineId={baselineId}
-          onBaselineIdChange={setBaselineId}
-          baselineOptions={baselineOptions}
           displayModeLabel={t("baseline.displayModeLabel")}
           valueModeLabel={t("baseline.valueMode")}
           deviationModeLabel={t("baseline.deviationMode")}
-          baselineSelectLabel={t("baseline.selectLabel")}
           showLabels={showLabels}
           onShowLabelsChange={setShowLabels}
           showLabelsLabel={t("baseline.showLabels")}
@@ -301,18 +310,9 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
 
         <div className="result-bar result-bar--compact" role="status" aria-live="polite">
           <span className="kern-body kern-body--small">{mapStatus}</span>
-          {isDeviationModeActive && baselineValue != null && (
+          {isDeviationModeActive && (history.data?.failedProbeCount ?? 0) > 0 && (
             <span className="kern-body kern-body--small kern-body--muted">
-              {t("baseline.reading", {
-                name: baselineLabel,
-                band: bandLabel,
-                value: formatSoilValue(profile, baselineValue),
-              })}
-            </span>
-          )}
-          {isBaselineValueUnavailable && (
-            <span className="kern-body kern-body--small kern-body--muted">
-              {t("baseline.unavailable", { band: bandLabel })}
+              {t("reference.partial", { count: history.data?.failedProbeCount ?? 0 })}
             </span>
           )}
           <DataFreshness state={sensors} />
@@ -327,24 +327,30 @@ function SoilField({ profiles }: { profiles: [DepthProfile, ...DepthProfile[]] }
           emptyLabel={probes.length === 0 ? t("empty") : t("emptyBand", { band: bandLabel })}
         >
           {() =>
-            scale && (
+            isHistoryComparisonVisible ? (
+              <SoilHistoryGuide
+                ramp={profile.ramp}
+                heading={t("reference.heading")}
+                lowerLabel={t(`reference.status.lower.${profile.ramp}`)}
+                normalLabel={t(`reference.status.normal.${profile.ramp}`)}
+                higherLabel={t(`reference.status.higher.${profile.ramp}`)}
+                unavailableLabel={t("reference.noData")}
+                caption={t("reference.caption", {
+                  band: bandLabel,
+                  days: SOIL_HISTORY_WINDOW_DAYS,
+                })}
+              />
+            ) : valueScale ? (
               <FieldLegend
-                scale={scale}
-                isDeviation={isDeviationModeActive}
+                scale={valueScale}
+                isDeviation={false}
                 formatValue={(value) => formatSoilValue(profile, value)}
                 formatDelta={(delta) => formatSoilDelta(profile, delta)}
                 minEndLabel={t(`legend.${profile.ramp}.low`)}
                 maxEndLabel={t(`legend.${profile.ramp}.high`)}
-                caption={
-                  isDeviationModeActive
-                    ? t("legend.deviationCaption", {
-                        name: baselineLabel,
-                        band: bandLabel,
-                      })
-                    : t("legend.caption", { count: points.length, band: bandLabel })
-                }
+                caption={t("legend.caption", { count: points.length, band: bandLabel })}
               />
-            )
+            ) : null
           }
         </AsyncBoundary>
       </section>

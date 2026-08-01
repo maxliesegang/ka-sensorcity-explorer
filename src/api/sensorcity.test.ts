@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { fetchHourlyBuckets } from "./sensorcity";
+import { fetchHistoryRows, fetchHourlyBuckets } from "./sensorcity";
 
 const HOUR = 3_600_000;
 const DAY = Date.UTC(2026, 6, 29);
@@ -98,5 +98,22 @@ describe("fetchHourlyBuckets", () => {
         (stat: { statisticType: string }) => stat.statisticType,
       ),
     ).toEqual(["avg", "min", "max", "count"]);
+  });
+});
+
+describe("fetchHistoryRows", () => {
+  it("limits archive reads to the requested rolling window", async () => {
+    const fetchMock = stubQuery({ features: [], exceededTransferLimit: false });
+    await fetchHistoryRows(
+      4,
+      "soil-1",
+      ["soil_moisture_at_depth_0"],
+      { since: new Date(Date.UTC(2026, 6, 2, 8, 30, 0)) },
+    );
+
+    const url = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(url.searchParams.get("where")).toBe(
+      "device_id='soil-1' AND measured_at >= TIMESTAMP '2026-07-02 08:30:00'",
+    );
   });
 });

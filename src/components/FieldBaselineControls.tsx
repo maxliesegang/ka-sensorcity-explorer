@@ -7,18 +7,21 @@ import type { BaselineOption } from "../config/temperatureBaselines";
 import type { FieldDisplayMode } from "../types";
 
 export interface FieldBaselineControlsProps {
-  baselineSelectId: string;
   displayMode: FieldDisplayMode;
   onDisplayModeChange: (mode: FieldDisplayMode) => void;
-  baselineId: string | null;
-  onBaselineIdChange: (id: string) => void;
-  /** Selectable baseline options, already localized. */
-  baselineOptions: BaselineOption[];
   displayModeLabel: string;
   /** Label for the "show the reading itself" mode (e.g. "Temperature", "Moisture"). */
   valueModeLabel: string;
   deviationModeLabel: string;
-  baselineSelectLabel: string;
+  /** Omit when comparison has an intrinsic reference, such as each probe's history. */
+  baselineSelect?: {
+    id: string;
+    value: string | null;
+    onChange: (id: string) => void;
+    /** Selectable baseline options, already localized. */
+    options: readonly BaselineOption[];
+    label: string;
+  };
   /** Whether per-cell value labels are drawn on the map. */
   showLabels: boolean;
   onShowLabelsChange: (value: boolean) => void;
@@ -33,16 +36,12 @@ export interface FieldBaselineControlsProps {
 }
 
 export function FieldBaselineControls({
-  baselineSelectId,
   displayMode,
   onDisplayModeChange,
-  baselineId,
-  onBaselineIdChange,
-  baselineOptions,
   displayModeLabel,
   valueModeLabel,
   deviationModeLabel,
-  baselineSelectLabel,
+  baselineSelect,
   showLabels,
   onShowLabelsChange,
   showLabelsLabel,
@@ -83,31 +82,33 @@ export function FieldBaselineControls({
         </button>
       </div>
 
-      <div
-        className={
-          "field kern-form-input temperature-baseline-controls__field" +
-          (baselineSelectDisabled ? " temperature-baseline-controls__field--disabled" : "")
-        }
-      >
-        <label className="kern-label" htmlFor={baselineSelectId}>
-          {baselineSelectLabel}
-        </label>
-        <div className="kern-form-input__select-wrapper">
-          <select
-            id={baselineSelectId}
-            className="kern-form-input__select"
-            value={baselineId ?? baselineOptions[0]?.id ?? ""}
-            disabled={baselineSelectDisabled}
-            onChange={(e) => onBaselineIdChange(e.target.value)}
-          >
-            {baselineOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+      {baselineSelect && (
+        <div
+          className={
+            "field kern-form-input temperature-baseline-controls__field" +
+            (baselineSelectDisabled ? " temperature-baseline-controls__field--disabled" : "")
+          }
+        >
+          <label className="kern-label" htmlFor={baselineSelect.id}>
+            {baselineSelect.label}
+          </label>
+          <div className="kern-form-input__select-wrapper">
+            <select
+              id={baselineSelect.id}
+              className="kern-form-input__select"
+              value={baselineSelect.value ?? baselineSelect.options[0]?.id ?? ""}
+              disabled={baselineSelectDisabled}
+              onChange={(e) => baselineSelect.onChange(e.target.value)}
+            >
+              {baselineSelect.options.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      )}
 
       <label className="temperature-baseline-controls__toggle">
         <input

@@ -19,10 +19,10 @@ export default {
     showingRange_other: "{{count}} Sensoren bei {{band}}, Werte {{min}}–{{max}}.",
     showing_one: "{{count}} Sensor bei {{band}}.",
     showing_other: "{{count}} Sensoren bei {{band}}.",
-    deviation_one:
-      "{{count}} Sensor bei {{band}}, eingefärbt nach Abweichung von {{name}}.",
-    deviation_other:
-      "{{count}} Sensoren bei {{band}}, eingefärbt nach Abweichung von {{name}}.",
+    referenceLoading: "Historie wird verglichen…",
+    referenceError: "Der Vergleich ist gerade nicht verfügbar; Messwerte werden gezeigt.",
+    reference_one: "{{referenceCount}} von {{count}} Sensor verglichen · {{band}}.",
+    reference_other: "{{referenceCount}} von {{count}} Sensoren verglichen · {{band}}.",
   },
   controls: {
     quantityLabel: "Bodengröße",
@@ -30,17 +30,32 @@ export default {
     shallowest: "Oberflächennah",
     deepest: "Am tiefsten",
   },
+  comparisonCallout: {
+    heading: "Ist dieser Ort gerade ungewöhnlich?",
+    hint:
+      "Vergleichen Sie jeden Sensor mit seinen eigenen letzten 30 Tagen und erkennen Sie ungewöhnlich trockene, feuchte, kühle oder warme Böden.",
+    button: "Mit Historie vergleichen",
+  },
   baseline: {
     displayModeLabel: "Kartenwerte",
     valueMode: "Messwerte",
-    deviationMode: "Abweichung von Referenz",
-    selectLabel: "Referenzsensor",
+    deviationMode: "Im Vergleich",
     showLabels: "Werte auf der Karte anzeigen",
     showCells: "Flächen einfärben",
-    averageOption: "Mittelwert aller Sensoren",
-    reading: "{{name}} bei {{band}}: {{value}}.",
-    unavailable:
-      "Die gewählte Referenz hat bei {{band}} keinen Messwert; es werden Werte gezeigt.",
+  },
+  reference: {
+    heading: "So funktioniert der Vergleich",
+    status: {
+      lower: { moisture: "Trockener", temperature: "Kühler" },
+      normal: { moisture: "Normal", temperature: "Normal" },
+      higher: { moisture: "Feuchter", temperature: "Wärmer" },
+      unavailable: { moisture: "Keine Historie", temperature: "Keine Historie" },
+    },
+    noData: "Keine Historie",
+    caption:
+      "Aktueller Wert bei {{band}} im Vergleich zu den letzten {{days}} Tagen. Normal ist die mittlere Hälfte der Werte.",
+    partial_one: "Die Historie von {{count}} Sensor fehlt.",
+    partial_other: "Die Historie von {{count}} Sensoren fehlt.",
   },
   legend: {
     temperature: {
@@ -55,8 +70,6 @@ export default {
       "Jeder Sensor bei {{band}} ({{count}} insgesamt). Eine Farbskala umfasst alle Tiefenstufen, sodass die Stufen direkt vergleichbar sind.",
     caption_other:
       "Jeder Sensor bei {{band}} ({{count}} insgesamt). Eine Farbskala umfasst alle Tiefenstufen, sodass die Stufen direkt vergleichbar sind.",
-    deviationCaption:
-      "Abweichung von {{name}}, verglichen bei {{band}} — auf beiden Seiten dieselbe Tiefe.",
   },
   bands: {
     heading: "Alle Tiefenstufen auf einmal",
@@ -71,6 +84,7 @@ export default {
   },
   popup: {
     viewDetails: "Details ansehen",
-    setReference: "Als Referenz setzen",
+    reference: "{{status}} · üblich {{usualMin}}–{{usualMax}} · Ø {{mean}}",
+    noReference: "Noch nicht genug Historie.",
   },
 } as const;

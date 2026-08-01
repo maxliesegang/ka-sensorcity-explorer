@@ -1,72 +1,39 @@
-// Derived state for the soil field map: which quantity and depth band are shown,
-// what the colours mean, and everything the legend and status line need.
-//
-// The soil analogue of useTemperatureFieldModel, with two differences that are
-// the whole point of a separate page. The selection carries a *band*, and the
-// colour scales span every band at once so switching band compares depths rather
-// than re-normalising the map. And the deviation baseline is a column — one value
-// per band, compared at the same depth — offering the city average or another
-// probe, but never DWD Rheinstetten, which measures air.
+// Derived state for the soil map: readings or comparison with each probe's own
+// history. History is loaded only when requested and reduced to per-band stats;
+// map rendering never needs to know how the archive is queried.
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  AVERAGE_BASELINE_ID,
-  buildBaselineOptions,
-  getBaselineLabel,
-} from "../config/temperatureBaselines";
-import type { DepthProfile } from "../types";
-import {
-  getSoilDeviationDeltas,
-  resolveSoilBaselineValues,
-} from "../utils/soilFieldBaseline";
-import { formatSoilDelta, formatSoilValue } from "../utils/soilFieldFormat";
-import type { SoilProbeReading } from "../utils/soilFieldReadings";
+import { fetchSoilHistoryReferences, type SoilHistoryReferences } from "../api/soilHistory";
+import { getCategory, SOIL_CATEGORY_KEY } from "../config/layers";
+import type { DepthProfile, FieldDisplayMode } from "../types";
+import { formatSoilValue } from "../utils/soilFieldFormat";
+import type { SoilFieldPoint, SoilProbeReading } from "../utils/soilFieldReadings";
 import { getSoilFieldValues } from "../utils/soilFieldReadings";
 import {
-  buildFieldValueAccessors,
-  type FieldScale,
-} from "../utils/fieldScale";
-import {
-  buildSoilDeviationScale,
-  buildSoilValueScale,
-} from "../utils/soilFieldScale";
-import { useFieldBaselineSelection } from "./useFieldBaselineSelection";
-import { useFieldToggle } from "./useFieldToggle";
+  classifySoilReading,
+  soilHistoryStatusColor,
+  type SoilHistoryStats,
+  type SoilHistoryStatus,
+} from "../utils/soilHistoryReference";
+import { buildSoilValueScale } from "../utils/soilFieldScale";
+import { useAsync } from "./useAsync";
 import { useFieldLabelVisibility } from "./useFieldLabelVisibility";
+import { useFieldToggle } from "./useFieldToggle";
+import { useEnumParam } from "./useUrlState";
 
 const SOIL_CELLS_STORAGE_KEY = "soilField.showCells";
+const DISPLAY_MODES: FieldDisplayMode[] = ["value", "deviation"];
 
-/**
- * Derive the soil field's model from the probes on screen, the quantity they
- * report and the band being drawn.
- *
- * `getColorForValue` / `formatLabelForValue` take a value already read at
- * `bandIndex`, so callers never repeat the value-vs-deviation branching.
- */
 export function useSoilFieldModel(
   probes: readonly SoilProbeReading[],
   profile: DepthProfile,
   bandIndex: number,
 ) {
   const { t } = useTranslation("soil");
-
-  const baselineOptions = useMemo(
-    () =>
-      buildBaselineOptions(
-        probes.flatMap((probe) =>
-          probe.bandValues[bandIndex] == null
-            ? []
-            : [{ id: String(probe.sensor.objectId), label: probe.sensor.name }],
-        ),
-        { [AVERAGE_BASELINE_ID]: t("baseline.averageOption") },
-      ),
-    [bandIndex, probes, t],
-  );
-
-  const { displayMode, setDisplayMode, baselineId, setBaselineId, selectBaseline } =
-    useFieldBaselineSelection(baselineOptions);
+  const [displayMode, setDisplayMode] = useEnumParam("mode", DISPLAY_MODES, "value");
+  const [hasHistoryCache, setHasHistoryCache] = useState(false);
   const [showLabels, setShowLabels] = useFieldLabelVisibility();
   const [showCells, setShowCells] = useFieldToggle(
     SOIL_CELLS_STORAGE_KEY,
@@ -74,76 +41,72 @@ export function useSoilFieldModel(
     "cells",
   );
 
-  const baselineLabel = useMemo(
-    () => getBaselineLabel(baselineOptions, baselineId),
-    [baselineOptions, baselineId],
+  const archiveLayerId = getCategory(SOIL_CATEGORY_KEY)?.archiveLayerId;
+  const history = useAsync(
+    (signal) =>
+      archiveLayerId == null
+        ? Promise.resolve<SoilHistoryReferences>({
+            bySensor: {},
+            failedProbeCount: 0,
+          })
+        : fetchSoilHistoryReferences(archiveLayerId, probes, profile, signal),
+    [archiveLayerId, profile, probes],
+    { enabled: (displayMode === "deviation" || hasHistoryCache) && probes.length > 0 },
   );
-
-  const baselineValues = useMemo(
-    () =>
-      resolveSoilBaselineValues({
-        displayMode,
-        baselineId,
-        probes,
-        bandCount: profile.bands.length,
-      }),
-    [displayMode, baselineId, probes, profile.bands.length],
-  );
-
-  // The baseline for the band on screen. A probe can report some bands and not
-  // others, so a baseline that resolved may still have nothing at this depth.
-  const baselineValue = baselineValues?.[bandIndex] ?? null;
-  const isDeviationModeActive =
-    displayMode === "deviation" && baselineValue != null;
-  const isBaselineValueUnavailable =
-    displayMode === "deviation" && baselineValue == null;
+  useEffect(() => {
+    if (history.data != null) setHasHistoryCache(true);
+  }, [history.data]);
 
   const valueScale = useMemo(
     () => buildSoilValueScale(profile.ramp, getSoilFieldValues(probes)),
     [profile.ramp, probes],
   );
+  const isDeviationModeActive = displayMode === "deviation" && history.data != null;
+  const isHistoryComparisonVisible = displayMode === "deviation" && history.error == null;
 
-  const deviationScale = useMemo(() => {
-    if (!isDeviationModeActive || !baselineValues) return null;
-    return buildSoilDeviationScale(
-      profile.ramp,
-      getSoilDeviationDeltas(probes, baselineValues),
-    );
-  }, [isDeviationModeActive, baselineValues, probes, profile.ramp]);
+  function getReference(point: SoilFieldPoint): SoilHistoryStats | null {
+    return history.data?.bySensor[String(point.sensor.objectId)]?.[bandIndex] ?? null;
+  }
 
-  const scale: FieldScale | null = deviationScale ?? valueScale;
-  const valueAccessors = useMemo(
-    () =>
-      buildFieldValueAccessors({
-        valueScale,
-        deviationScale,
-        baselineValue,
-        formatValue: (value) => formatSoilValue(profile, value),
-        formatDelta: (delta) => formatSoilDelta(profile, delta),
-      }),
-    [valueScale, deviationScale, baselineValue, profile],
-  );
+  function getStatus(point: SoilFieldPoint): SoilHistoryStatus {
+    return classifySoilReading(point.value, getReference(point));
+  }
+
+  function getColorForPoint(point: SoilFieldPoint): string {
+    return isHistoryComparisonVisible
+      ? soilHistoryStatusColor(profile.ramp, getStatus(point))
+      : valueScale?.css(point.value) ?? "";
+  }
+
+  function formatLabelForPoint(point: SoilFieldPoint): string {
+    return isHistoryComparisonVisible
+      ? t(`reference.status.${getStatus(point)}.${profile.ramp}`)
+      : formatSoilValue(profile, point.value);
+  }
+
+  const referenceCount = isDeviationModeActive
+    ? probes.filter(
+        (probe) =>
+          probe.bandValues[bandIndex] != null &&
+          history.data?.bySensor[String(probe.sensor.objectId)]?.[bandIndex] != null,
+      ).length
+    : 0;
 
   return {
     displayMode,
     setDisplayMode,
-    baselineId,
-    setBaselineId,
-    selectBaseline,
-    baselineOptions,
-    baselineLabel,
-    baselineValue,
     showLabels,
     setShowLabels,
     showCells,
     setShowCells,
     isDeviationModeActive,
-    isBaselineValueUnavailable,
+    isHistoryComparisonVisible,
     valueScale,
-    deviationScale,
-    /** The scale the map is drawing with — the deviation one when it's active. */
-    scale,
-    getColorForValue: valueAccessors.getColor,
-    formatLabelForValue: valueAccessors.formatLabel,
+    history,
+    referenceCount,
+    getReference,
+    getStatus,
+    getColorForPoint,
+    formatLabelForPoint,
   };
 }

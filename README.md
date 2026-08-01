@@ -26,10 +26,11 @@ Built with **Vite + React + TypeScript**, styled with the
 - **Soil** — the same nearest-probe field for the soil probes, which measure at
   six stacked depth levels. Pick the quantity (soil temperature or moisture) and
   the depth level; one colour scale spans every level, so switching level
-  compares depths instead of re-normalising the map. A clicked probe's popup
-  lists its whole column, a summary table gives every level's city-wide spread,
-  and deviation mode compares against the city average or another probe *at the
-  same depth* (no DWD option here — Rheinstetten measures air).
+  compares depths instead of re-normalising the map. The comparison mode marks
+  each spot as lower, normal, or higher than the middle half of that probe's own
+  last 30 days (drier/normal/wetter for moisture). A clicked probe's popup
+  lists its whole column, and a summary table gives every level's city-wide
+  spread.
 - **Sensor detail** — current readings plus an interactive time-series chart of
   the chosen measurement, pulled from the matching history archive (or an
   fallback FeatureServer where the main archive has no matching layer). Probes

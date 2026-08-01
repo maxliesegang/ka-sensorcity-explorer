@@ -18,10 +18,10 @@ export default {
     showingRange_other: "{{count}} probes at {{band}}, reading {{min}}–{{max}}.",
     showing_one: "{{count}} probe at {{band}}.",
     showing_other: "{{count}} probes at {{band}}.",
-    deviation_one:
-      "{{count}} probe at {{band}}, coloured by difference from {{name}}.",
-    deviation_other:
-      "{{count}} probes at {{band}}, coloured by difference from {{name}}.",
+    referenceLoading: "Comparing history…",
+    referenceError: "The comparison is unavailable; showing readings.",
+    reference_one: "{{referenceCount}} of {{count}} probe compared · {{band}}.",
+    reference_other: "{{referenceCount}} of {{count}} probes compared · {{band}}.",
   },
   controls: {
     quantityLabel: "Soil quantity",
@@ -29,17 +29,32 @@ export default {
     shallowest: "Near surface",
     deepest: "Deepest",
   },
+  comparisonCallout: {
+    heading: "Is this spot unusual right now?",
+    hint:
+      "Compare each probe with its own last 30 days to spot soil that is drier, wetter, cooler, or warmer than usual.",
+    button: "Compare with history",
+  },
   baseline: {
     displayModeLabel: "Map values",
     valueMode: "Readings",
-    deviationMode: "Difference from baseline",
-    selectLabel: "Baseline probe",
+    deviationMode: "Compared",
     showLabels: "Show values on map",
     showCells: "Show area shading",
-    averageOption: "Average of all probes",
-    reading: "{{name}} at {{band}}: {{value}}.",
-    unavailable:
-      "The chosen baseline has no reading at {{band}}; showing values.",
+  },
+  reference: {
+    heading: "How comparison works",
+    status: {
+      lower: { moisture: "Drier", temperature: "Cooler" },
+      normal: { moisture: "Normal", temperature: "Normal" },
+      higher: { moisture: "Wetter", temperature: "Warmer" },
+      unavailable: { moisture: "No history", temperature: "No history" },
+    },
+    noData: "No history",
+    caption:
+      "Current reading at {{band}} compared with the last {{days}} days. Normal is the middle half of those readings.",
+    partial_one: "History is missing for {{count}} probe.",
+    partial_other: "History is missing for {{count}} probes.",
   },
   legend: {
     temperature: {
@@ -54,8 +69,6 @@ export default {
       "Each probe at {{band}} ({{count}} total). One colour scale spans every depth level, so levels compare directly.",
     caption_other:
       "Each probe at {{band}} ({{count}} total). One colour scale spans every depth level, so levels compare directly.",
-    deviationCaption:
-      "Difference from {{name}}, compared at {{band}} — the same depth on both sides.",
   },
   bands: {
     heading: "Every depth level at once",
@@ -70,6 +83,7 @@ export default {
   },
   popup: {
     viewDetails: "View details",
-    setReference: "Set as reference",
+    reference: "{{status}} · usual {{usualMin}}–{{usualMax}} · avg {{mean}}",
+    noReference: "Not enough history yet.",
   },
 } as const;

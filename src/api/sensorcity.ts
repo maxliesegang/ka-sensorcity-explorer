@@ -64,6 +64,8 @@ export interface TimeSeriesPoint {
 interface HistoryOptions {
   /** Cap on rows pulled; omit for the full retained archive. */
   maxRows?: number;
+  /** Ignore archive rows before this instant. */
+  since?: Date;
 }
 
 /**
@@ -77,10 +79,14 @@ function fetchArchiveFeatures(
   options: HistoryOptions,
   signal?: AbortSignal,
 ): Promise<Feature[]> {
+  const deviceClause = `device_id='${deviceId.replace(/'/g, "''")}'`;
+  const timeClause = options.since
+    ? ` AND measured_at >= TIMESTAMP '${toSqlTimestamp(options.since)}'`
+    : "";
   return queryAll(
     archiveLayerId,
     {
-      where: `device_id='${deviceId.replace(/'/g, "''")}'`,
+      where: deviceClause + timeClause,
       outFields: ["measured_at", ...fields].join(","),
       orderByFields: "measured_at ASC",
     },
@@ -101,7 +107,11 @@ export async function fetchHistory(
   options: HistoryOptions = {},
   signal?: AbortSignal,
 ): Promise<TimeSeriesPoint[]> {
-  if (isDemoMode()) return (await loadDemoApi()).history(archiveLayerId, deviceId, field);
+  if (isDemoMode()) {
+    const points = await (await loadDemoApi()).history(archiveLayerId, deviceId, field);
+    const since = options.since?.getTime();
+    return since == null ? points : points.filter((point) => point.timestamp >= since);
+  }
   const features = await fetchArchiveFeatures(archiveLayerId, deviceId, [field], options, signal);
   const points: TimeSeriesPoint[] = [];
   for (const feature of features) {
@@ -134,7 +144,9 @@ export async function fetchHistoryRows(
 ): Promise<HistoryRow[]> {
   if (fields.length === 0) return [];
   if (isDemoMode()) {
-    return (await loadDemoApi()).historyRows(archiveLayerId, deviceId, fields);
+    const rows = await (await loadDemoApi()).historyRows(archiveLayerId, deviceId, fields);
+    const since = options.since?.getTime();
+    return since == null ? rows : rows.filter((row) => row.timestamp >= since);
   }
   const features = await fetchArchiveFeatures(archiveLayerId, deviceId, fields, options, signal);
   const rows: HistoryRow[] = [];

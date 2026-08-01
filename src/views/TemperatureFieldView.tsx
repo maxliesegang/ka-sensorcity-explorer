@@ -230,16 +230,18 @@ export function TemperatureFieldView() {
 
       <section className="map-shell" aria-label={t("canvasAria")}>
         <FieldBaselineControls
-          baselineSelectId="city-temperature-baseline-controls-select"
           displayMode={displayMode}
           onDisplayModeChange={setDisplayMode}
-          baselineId={baselineId}
-          onBaselineIdChange={setBaselineId}
-          baselineOptions={baselineOptions}
           displayModeLabel={t("baseline.displayModeLabel")}
           valueModeLabel={t("baseline.temperatureMode")}
           deviationModeLabel={t("baseline.deviationMode")}
-          baselineSelectLabel={t("baseline.selectLabel")}
+          baselineSelect={{
+            id: "city-temperature-baseline-controls-select",
+            value: baselineId,
+            onChange: setBaselineId,
+            options: baselineOptions,
+            label: t("baseline.selectLabel"),
+          }}
           showLabels={showLabels}
           onShowLabelsChange={setShowLabels}
           showLabelsLabel={t("baseline.showLabels")}

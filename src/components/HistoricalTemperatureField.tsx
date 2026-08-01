@@ -357,16 +357,18 @@ export function HistoricalTemperatureField({
 
       <div className="map-shell historical-temperature-field__shell">
         <FieldBaselineControls
-          baselineSelectId="historical-temperature-baseline-controls-select"
           displayMode={displayMode}
           onDisplayModeChange={setDisplayMode}
-          baselineId={baselineId}
-          onBaselineIdChange={setBaselineId}
-          baselineOptions={baselineOptions}
           displayModeLabel={t("baseline.displayModeLabel")}
           valueModeLabel={t("baseline.temperatureMode")}
           deviationModeLabel={t("baseline.deviationMode")}
-          baselineSelectLabel={t("baseline.selectLabel")}
+          baselineSelect={{
+            id: "historical-temperature-baseline-controls-select",
+            value: baselineId,
+            onChange: setBaselineId,
+            options: baselineOptions,
+            label: t("baseline.selectLabel"),
+          }}
           showLabels={showLabels}
           onShowLabelsChange={setShowLabels}
           showLabelsLabel={t("baseline.showLabels")}

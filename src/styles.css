@@ -3593,6 +3593,48 @@ code,
   margin: 0;
 }
 
+.soil-history-guide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kern-metric-space-small, 0.75rem)
+    var(--kern-metric-space-large, 1.5rem);
+  padding: var(--kern-metric-space-default, 1rem);
+  border: 1px solid var(--kern-color-layout-border-contextual, #a5aac3);
+  border-left: var(--kern-metric-border-width-bold, 4px) solid
+    var(--kern-color-action-default-contextual, #2044aa);
+  border-radius: var(--kern-metric-border-radius-default, 4px);
+  background: var(--kern-color-layout-layer-surface-contextual, #f3f4f7);
+}
+
+.soil-history-guide__copy {
+  flex: 1 1 24rem;
+}
+
+.soil-history-guide__copy p {
+  margin: var(--kern-metric-space-2x-small, 0.25rem) 0 0;
+}
+
+.soil-history-legend__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kern-metric-space-small, 0.75rem) var(--kern-metric-space-default, 1rem);
+}
+
+.soil-history-legend__items > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kern-metric-space-x-small, 0.5rem);
+}
+
+.soil-history-legend__swatch {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 1px solid rgba(19, 21, 37, 0.28);
+  border-radius: 50%;
+}
+
 @media (max-width: 600px) {
   /* Stack the controls full-width once they no longer fit side by side. */
   .temperature-baseline-controls__modes,
@@ -3936,7 +3978,8 @@ code,
 
 /* Heat island -------------------------------------------------------------
    The city-vs-countryside comparison as one sentence and one button. */
-.heat-island {
+.heat-island,
+.field-mode-callout {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3951,12 +3994,14 @@ code,
   background: var(--kern-color-layout-background-default-contextual, #fff);
 }
 
-.heat-island__text {
+.heat-island__text,
+.field-mode-callout__text {
   flex: 1 1 22rem;
   min-width: 0;
 }
 
-.heat-island__text p {
+.heat-island__text p,
+.field-mode-callout__text p {
   margin: 0.25rem 0 0;
 }
 
